@@ -1,0 +1,29 @@
+all: init
+
+# Remove any builtin targets...
+.SUFFIXES:
+
+# Make sure we know where to get nolibc
+ifndef NOLIBCDIR
+$(error Please pass NOLIBCDIR with the path to your copy of nolibc (tools/include/nolibc/ in the linux source))
+endif
+
+COPTS=-m68000 \
+	-g \
+	-nostdlib \
+	-std=c99 \
+	-flto \
+	-Os
+
+%.o: %.c
+	$(CC) $(COPTS) \
+	 -include $(NOLIBCDIR)/nolibc.h \
+	 -c -o $@ $<
+
+
+init: init.o
+	$(CC) $(COPTS) $^ -o $@
+
+.PHONY: clean
+clean:
+	rm -f init *.o *.gdb
