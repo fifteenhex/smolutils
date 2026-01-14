@@ -1,6 +1,6 @@
 int main (int argc, char **argv, char **envp)
 {
-	printf("smol init\n");
+	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
 
 	while (true) {
 		pid_t pid = vfork();
