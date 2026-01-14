@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This avoids having to use a mount command, fstab etc */
 static int do_mount(const char *source, const char *target, const char *type)
 {
