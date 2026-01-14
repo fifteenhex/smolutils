@@ -1,4 +1,4 @@
-all: init
+all: init smolsh
 
 # Remove any builtin targets...
 .SUFFIXES:
@@ -20,10 +20,12 @@ COPTS=-m68000 \
 	 -include $(NOLIBCDIR)/nolibc.h \
 	 -c -o $@ $<
 
-
 init: init.o
+	$(CC) $(COPTS) $^ -o $@
+
+smolsh: smolsh.o
 	$(CC) $(COPTS) $^ -o $@
 
 .PHONY: clean
 clean:
-	rm -f init *.o *.gdb
+	rm -f init smolsh *.o *.gdb
