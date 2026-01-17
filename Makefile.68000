@@ -19,10 +19,15 @@ STRIP=$(CROSS_COMPILE)strip
 
 COPTS=-m68000 \
 	-g \
+	-ffunction-sections \
+	-fdata-sections \
 	-nostdlib \
 	-std=c99 \
-	-flto \
-	-Os
+	-DNOLIBC_STATIC_PIE \
+	-Os \
+	-I_build/headers/include
+
+
 
 %.o: %.c
 	$(CC) $(COPTS) \
@@ -34,6 +39,22 @@ init: init.o
 
 smolsh: smolsh.o
 	$(CC) $(COPTS) $^ -o $@
+
+define ELF_BUILD
+$(1).elf.dbg: $(1).o
+	$$(BFDLD) \
+		--gc-sections \
+		--print-gc-sections \
+		--no-dynamic-linker \
+		--hash-style=gnu \
+		-pie $$^ -o $$@
+
+$(1).elf: $(1).elf.dbg
+	$$(STRIP) $$< -o $$@
+endef
+
+$(eval $(call ELF_BUILD,init))
+$(eval $(call ELF_BUILD,smolsh))
 
 .PHONY: clean
 clean:

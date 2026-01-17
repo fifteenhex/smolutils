@@ -1,0 +1,31 @@
+_build:
+	mkdir $@
+
+TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
+TOOLCHAIN_M68K=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
+_build/$(TOOLCHAIN_M68K): | _build
+	wget $(TOOLCHAIN_URL)/x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz -O $@
+
+_build/.stamp.toolchain_m68k_extracted: _build/$(TOOLCHAIN_M68K)
+	tar -C _build/ -xaf _build/$(TOOLCHAIN_M68K)
+	touch $@
+
+_build/.stamp.linux_cloned:
+	git -C _build clone --depth 1 --branch m68kdt_mochi20260114 https://github.com/fifteenhex/linux.git
+	touch $@
+
+_build/.stamp.linux_headers: _build/.stamp.linux_cloned
+	make -C _build/linux/ ARCH=m68k defconfig
+	mkdir _build/headers
+	make -C _build/linux/ ARCH=m68k INSTALL_HDR_PATH=`realpath _build/headers` headers_install
+	touch $@
+
+SIXEIGHTOPTS=NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` CROSS_COMPILE=`realpath _build/gcc-15.2.0-nolibc/m68k-linux/bin/m68k-linux-`
+
+.PHONY: build
+build: _build/.stamp.toolchain_m68k_extracted _build/.stamp.linux_headers
+	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) init.elf smolsh.elf
+
+.PHONY: clean
+clean:
+	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) clean
