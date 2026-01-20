@@ -17,10 +17,13 @@ CC=$(CROSS_COMPILE)gcc
 BFDLD=$(CROSS_COMPILE)ld.bfd
 STRIP=$(CROSS_COMPILE)strip
 
+#	-ffunction-sections \
+#	-fdata-sections \
+
+
 COPTS=-m68000 \
 	-g \
-	-ffunction-sections \
-	-fdata-sections \
+	-flto \
 	-nostdlib \
 	-std=c99 \
 	-Os \
@@ -46,19 +49,30 @@ smolsh: smolsh.o
 # stop deleting my dbg elf!
 .SECONDARY:
 
-%.elf.dbg: %.pie.o
-	$(BFDLD) \
-		--gc-sections \
-		--print-gc-sections \
-		--no-dynamic-linker \
-		--hash-style=gnu \
-		-pie $^ -o $@
+#%.elf.dbg: %.pie.o
+#	$(BFDLD) \
+#		--gc-sections \
+#		--print-gc-sections \
+#		--no-dynamic-linker \
+#		--hash-style=gnu \
+#		--undefined=_start_c \
+#		-pie $^ -o $@
+
+%.elf.dbg: %.c
+	$(CC) $(COPTS) \
+	-include $(NOLIBCDIR)/nolibc.h \
+	-Wl,--no-dynamic-linker \
+	-Wl,--undefined=_relocate \
+	-Wl,--hash-style=gnu \
+	-Wl,-z,max-page-size=4 \
+	-pie \
+	-o $@ $<
 
 %.elf: %.elf.dbg
 	$(STRIP) $< -o $@
 
 .PHONY: elfs
-elfs: init.elf smolsh.elf dmesg.elf
+elfs: init.elf smolsh.elf dmesg.elf ls.elf cat.elf
 
 .PHONY: clean
 clean:
