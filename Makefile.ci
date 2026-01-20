@@ -24,7 +24,7 @@ SIXEIGHTOPTS=NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` CROSS_COMPI
 
 .PHONY: build
 build: _build/.stamp.toolchain_m68k_extracted _build/.stamp.linux_headers
-	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) init.elf smolsh.elf
+	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) elfs
 
 .PHONY: clean
 clean:
