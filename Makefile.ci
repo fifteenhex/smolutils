@@ -3,8 +3,10 @@ _build:
 
 TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
 TOOLCHAIN_M68K=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
+TOOLCHAIN_DIR=gcc-15.2.0-nolibc
 #TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.3.0/"
 #TOOLCHAIN_M68K=x86_64-gcc-14.3.0-nolibc-m68k-linux.tar.xz
+#TOOLCHAIN_DIR=gcc-14.3.0-nolibc
 _build/$(TOOLCHAIN_M68K): | _build
 	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_M68K) -O $@
 
@@ -22,7 +24,7 @@ _build/.stamp.linux_headers: _build/.stamp.linux_cloned
 	make -C _build/linux/ ARCH=m68k INSTALL_HDR_PATH=`realpath _build/headers` headers_install
 	touch $@
 
-SIXEIGHTOPTS=NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` CROSS_COMPILE=`realpath _build/gcc-14.3.0-nolibc/m68k-linux/bin/m68k-linux-`
+SIXEIGHTOPTS=NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
 
 .PHONY: build
 build: _build/.stamp.toolchain_m68k_extracted _build/.stamp.linux_headers
