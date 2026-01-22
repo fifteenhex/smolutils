@@ -1,0 +1,26 @@
+include common.mk
+
+COPTS=\
+	-ggdb \
+	-flto \
+	-nostdlib \
+	-std=c99 \
+	-Os
+
+#	-Wl,--no-dynamic-linker \
+
+
+%.x86_64.elf.dbg: %.c
+	$(CC) $(COPTS) \
+	-include $(NOLIBCDIR)/nolibc.h \
+	-Wl,--undefined=_relocate \
+	-Wl,--hash-style=gnu \
+	-Wl,--no-dynamic-linker \
+	-pie \
+	-o $@ $<
+
+%.x86_64.elf: %.x86_64.elf.dbg
+	$(STRIP) $< -o $@
+
+.PHONY: elfs
+elfs: smolsh.x86_64.elf
