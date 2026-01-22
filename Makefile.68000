@@ -60,7 +60,7 @@ smolsh: smolsh.o
 	$(STRIP) $< -o $@
 
 .PHONY: elfs
-elfs: init.elf smolsh.elf dmesg.elf ls.elf cat.elf
+elfs: init.elf smolsh.elf dmesg.elf ls.elf cat.elf mkdir.elf
 
 .PHONY: clean
 clean:
