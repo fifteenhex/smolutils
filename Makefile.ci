@@ -3,38 +3,56 @@ _build:
 
 NOLIBCBRANCH=nolibc-staticpie-20260427
 
-
 TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
 TOOLCHAIN_M68K=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
 TOOLCHAIN_DIR=gcc-15.2.0-nolibc
 #TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.3.0/"
 #TOOLCHAIN_M68K=x86_64-gcc-14.3.0-nolibc-m68k-linux.tar.xz
 #TOOLCHAIN_DIR=gcc-14.3.0-nolibc
-_build/$(TOOLCHAIN_M68K): | _build
-	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_M68K) -O $@
 
-_build/.stamp.toolchain_m68k_extracted: _build/$(TOOLCHAIN_M68K)
-	tar -C _build/ -xaf _build/$(TOOLCHAIN_M68K)
-	touch $@
+TOOLCHAIN_X86_64=x86_64-gcc-15.2.0-nolibc-x86_64-linux.tar.gz
 
 _build/.stamp.linux_cloned:
 	git -C _build clone --depth 1 --branch $(NOLIBCBRANCH) https://github.com/fifteenhex/linux.git
 	touch $@
 
-_build/.stamp.linux_headers: _build/.stamp.linux_cloned
-	make -C _build/linux/ ARCH=m68k defconfig
-	mkdir _build/headers
-	make -C _build/linux/ ARCH=m68k INSTALL_HDR_PATH=`realpath _build/headers` headers_install
-	touch $@
+define toolchain_targets
+_build/$(TOOLCHAIN_$(1)): | _build
+	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_$(1)) -O $$@
 
-SIXEIGHTOPTS = UAPIDIR=`realpath _build/headers/include` \
+_build/.stamp.toolchain_$(2)_extracted: _build/$(TOOLCHAIN_$(1))
+	tar -C _build/ -xaf _build/$(TOOLCHAIN_$(1))
+	touch $$@
+
+UAPI_$(1) = _build/headers_$(2)
+
+_build/.stamp.linux_headers_$(2): _build/.stamp.linux_cloned
+	make -C _build/linux/ ARCH=$(2) defconfig
+	mkdir $(UAPI_$(1))
+	make -C _build/linux/ ARCH=$(2) INSTALL_HDR_PATH=`realpath $(UAPI_$(1))` headers_install
+	touch $$@
+
+TOOLCHAINDEP += _build/.stamp.toolchain_$(2)_extracted
+HEADERDEP += _build/.stamp.linux_headers_$(2)
+endef
+
+$(eval $(call toolchain_targets,M68K,m68k))
+$(eval $(call toolchain_targets,X86_64,x86_64))
+
+SIXEIGHTOPTS = UAPIDIR=`realpath $(UAPI_M68K)/include` \
 		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
 
+PEKEHACHIROKUOPTS = UAPIDIR=`realpath $(UAPI_X86_64)/include` \
+		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
+		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-`
+
 .PHONY: build
-build: _build/.stamp.toolchain_m68k_extracted _build/.stamp.linux_headers
+build: $(TOOLCHAINDEP) $(HEADERDEP)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) elfs
+	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) elfs
 
 .PHONY: clean
 clean:
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) clean
+	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) clean
