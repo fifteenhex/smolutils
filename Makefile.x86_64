@@ -8,6 +8,7 @@ COPTS=\
 	-flto \
 	-Os
 
+.SECONDARY:
 %.x86_64.elf.dbg: %.c
 	$(CC) $(COPTS) \
 	-include $(NOLIBCDIR)/nolibc.h \
@@ -21,3 +22,7 @@ COPTS=\
 
 .PHONY: elfs
 elfs: $(addsuffix .x86_64.elf,$(PROGS))
+
+.PHONY: clean
+clean:
+	rm -f *.x86_64.elf *.x86_64.elf.dbg
