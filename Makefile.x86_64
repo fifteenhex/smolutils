@@ -1,18 +1,8 @@
 include common.mk
 
-COPTS=\
-	-ggdb \
-	-nostdlib \
-	-std=c99 \
-	-fpie \
-	-flto \
-	-Os
-
 .SECONDARY:
 %.x86_64.elf.dbg: %.c
 	$(CC) $(COPTS) \
-	-include $(NOLIBCDIR)/nolibc.h \
-	-Wl,--hash-style=gnu \
 	-static-pie \
 	-D R_AMD64_RELATIVE=8 \
 	-o $@ $<

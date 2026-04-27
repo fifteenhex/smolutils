@@ -2,21 +2,14 @@ include common.mk
 
 all: elfs
 
-# Remove any builtin targets...
-.SUFFIXES:
-
 #	-ffunction-sections \
 #	-fdata-sections \
 
 
-COPTS=-m68000 \
-	-ggdb \
-	-flto \
-	-nostdlib \
-	-std=c99 \
-	-Os \
-	-D R_68K_RELATIVE=22 \
-	-I_build/headers/include
+COPTS += -m68000 \
+	 -D R_68K_RELATIVE=22
+
+#	-I_build/headers/include
 
 # stop deleting my dbg elf!
 .SECONDARY:
@@ -33,13 +26,14 @@ COPTS=-m68000 \
 
 #	-Wl,--no-dynamic-linker \
 
+STATICPIE=-fpie -pie -Wl,--no-dynamic-linker
+
+#	-Wl,-z,max-page-size=4 \
+
 
 %.68000.elf.dbg: %.c
 	$(CC) $(COPTS) \
-	-include $(NOLIBCDIR)/nolibc.h \
-	-Wl,--hash-style=gnu \
-	-Wl,-z,max-page-size=4 \
-	-pie -Wl,--no-dynamic-linker \
+	$(STATICPIE) \
 	-o $@ $< -lgcc
 
 %.68000.elf: %.68000.elf.dbg
@@ -50,4 +44,4 @@ elfs: $(addsuffix .68000.elf,$(PROGS))
 
 .PHONY: clean
 clean:
-	rm -f init smolsh *.o *.gdb *.68000.elf *.68000.elf.dbg
+	rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg
