@@ -1,9 +1,11 @@
 include common.mk
 
+STATICPIE=-static-pie
+
 .SECONDARY:
 %.x86_64.elf.dbg: %.c
 	$(CC) $(COPTS) \
-	-static-pie \
+	$(STATICPIE) \
 	-D R_AMD64_RELATIVE=8 \
 	-o $@ $<
 

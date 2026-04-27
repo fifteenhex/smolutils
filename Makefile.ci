@@ -27,7 +27,9 @@ _build/.stamp.linux_headers: _build/.stamp.linux_cloned
 	make -C _build/linux/ ARCH=m68k INSTALL_HDR_PATH=`realpath _build/headers` headers_install
 	touch $@
 
-SIXEIGHTOPTS=NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
+SIXEIGHTOPTS = UAPIDIR=`realpath _build/headers/include` \
+		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
+		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
 
 .PHONY: build
 build: _build/.stamp.toolchain_m68k_extracted _build/.stamp.linux_headers

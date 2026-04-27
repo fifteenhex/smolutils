@@ -16,10 +16,16 @@ STRIP=$(CROSS_COMPILE)strip
 
 PROGS=init smolsh dmesg ls cat mkdir sha256sum
 
+#	-flto \
+
+
 COPTS= -ggdb \
 	-nostdlib \
 	-std=c99 \
-	-flto \
 	-Os \
 	-include $(NOLIBCDIR)/nolibc.h \
 	-Wl,--hash-style=gnu
+
+ifdef UAPIDIR
+	COPTS += -I$(UAPIDIR)
+endif
