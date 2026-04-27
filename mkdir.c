@@ -2,12 +2,15 @@
 
 int main (int argc, char **argv, char **envp)
 {
+	const char *path;
 	int ret;
 
 	if (argc != 2)
 		return 1;
 
-	ret = mkdir(argv[2], 0755);
+	path = argv[1];
+
+	ret = mkdir(path, 0755);
 	if (!ret)
 		return 1;
 
