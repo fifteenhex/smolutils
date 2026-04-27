@@ -1,3 +1,5 @@
+MAKEFLAGS += --no-builtin-rules
+
 # Make sure we know where to get nolibc
 ifndef NOLIBCDIR
 $(error Please pass NOLIBCDIR with the path to your copy of nolibc (tools/include/nolibc/ in the linux source))
