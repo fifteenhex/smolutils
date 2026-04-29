@@ -14,7 +14,7 @@ static void print_process(const char *pid, const char *comm_path)
 
 	tmp[len - 1] = '\0';
 
-	printf("%s\t%s\n", pid, tmp);
+	printf("%s\t\t%s\n", pid, tmp);
 
 	close(fd);
 }
@@ -29,7 +29,7 @@ int main (int argc, char **argv, char **envp)
 	if (!dir)
 		return 1;
 
-	printf("PID\tCMD\n");
+	printf("PID\t\tCMD\n");
 
 	while ((readdir_r(dir, &e, &result) == 0) && result) {
 		const char *name = e.d_name;
