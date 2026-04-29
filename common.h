@@ -11,8 +11,19 @@
 
 #ifdef CONFIG_DEBUG
 #define debug(...) printf(__VA_ARGS__)
+/*
+ * VERBOSE is for really noisy messages that you
+ * probably don't want to enable globally, define
+ * this in the file you are debugging.
+ */
+#ifdef VERBOSE
+#define verbose(...) printf(__VA_ARGS__)
+#else
+#define verbose(...)
+#endif
 #else
 #define debug(...)
+#define verbose(...)
 #endif
 
 #define error(...) printf(__VA_ARGS__)
