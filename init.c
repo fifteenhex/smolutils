@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#define SHELL_PATH "/bin/sh"
+
 static int do_mount(const char *source, const char *target, const char *type)
 {
 	int ret;
@@ -64,7 +66,7 @@ int main (int argc, char **argv, char **envp)
 			static char *newargv[] = { "sh", NULL };
 			static char *newenviron[] = { NULL };
 
-			execve("/bin/sh", newargv, newenviron);
+			execve(SHELL_PATH, newargv, newenviron);
 			printf("execve failed\n");
 			break;
 		}
