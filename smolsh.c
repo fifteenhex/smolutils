@@ -5,10 +5,15 @@
 
 #define MAX_CMDLINE 256
 
-static void run_cmd(void)
-{
-	const char *bin = "/bin/ls";
+/* These aren't really builtin's, this just quick lookup */
+static const char builtin_ls[] = "ls ";
+static const char builtin_dmesg[] = "dmesg ";
 
+static const char ls_path[] = "/bin/ls";
+static const char dmesg_path[] = "/bin/dmesg";
+
+static void run_cmd(const char *bin)
+{
 	pid_t pid = vfork();
 
 	/* We are smolsh */
@@ -28,6 +33,18 @@ static void run_cmd(void)
 	}
 }
 
+static void try_builtin(const char *cmdline)
+{
+	const char *bin = NULL;
+
+	if (STARTS_WITH(cmdline, builtin_ls))
+		bin = ls_path;
+	else if (STARTS_WITH(cmdline, builtin_dmesg))
+		bin = dmesg_path;
+
+	if (bin)
+		run_cmd(bin);
+}
 
 int main (int argc, char **argv, char **envp)
 {
@@ -35,11 +52,17 @@ int main (int argc, char **argv, char **envp)
 
 
 	while (1) {
-		printf("smolsh> ");
-		read(STDIN_FILENO, &ch, ARRAY_SIZE(ch));
-		printf("%s", ch);
+		int len;
 
-		run_cmd();
+		printf("smolsh> ");
+		len = read(STDIN_FILENO, &ch, ARRAY_SIZE(ch));
+
+		/* Turn the last char, \n, into a space */
+		ch[len -1] = ' ';
+
+		debug("Got command line: \"%s\"", ch);
+
+		try_builtin(ch);
 	}
 
 	return 0;
