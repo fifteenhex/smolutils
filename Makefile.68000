@@ -52,7 +52,10 @@ clean:
 m68k.erofs: init.68000.elf \
 	    getty.68000.elf \
 	    smolsh.68000.elf \
-	    ls.68000.elf
+	    ls.68000.elf \
+	    dmesg.68000.elf \
+	    cat.68000.elf \
+	    mkdir.68000.elf
 	mkdir -p m68kroot/sys
 	mkdir -p m68kroot/dev
 	mkdir -p m68kroot/proc
@@ -64,5 +67,8 @@ m68k.erofs: init.68000.elf \
 
 	cp smolsh.68000.elf m68kroot/bin/smolsh
 	cp ls.68000.elf m68kroot/bin/ls
+	cp dmesg.68000.elf m68kroot/bin/dmesg
+	cp cat.68000.elf m68kroot/bin/cat
+	cp mkdir.68000.elf m68kroot/bin/mkdir
 
 	mkfs.erofs -zlz4 $@ m68kroot/
