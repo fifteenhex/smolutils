@@ -49,7 +49,7 @@ clean:
 	rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg
 
 .PHONY: m68k.erofs
-m68k.erofs: init.68000.elf smolsh.68000.elf
+m68k.erofs: init.68000.elf getty.68000.elf smolsh.68000.elf
 	mkdir -p m68kroot/sys
 	mkdir -p m68kroot/dev
 	mkdir -p m68kroot/proc
@@ -57,5 +57,6 @@ m68k.erofs: init.68000.elf smolsh.68000.elf
 	mkdir -p m68kroot/bin
 	mkdir -p m68kroot/sbin
 	cp init.68000.elf m68kroot/sbin/init
+	cp getty.68000.elf m68kroot/sbin/getty
 	cp smolsh.68000.elf m68kroot/bin/sh
 	mkfs.erofs -zlz4 $@ m68kroot/
