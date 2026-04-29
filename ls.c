@@ -2,9 +2,9 @@
 
 int main (int argc, char **argv, char **envp)
 {
-	DIR *dir;
 	struct dirent e, *result;
 	char *path = ".";
+	DIR *dir;
 
 	if (argc == 2)
 		path = argv[1];
@@ -13,7 +13,7 @@ int main (int argc, char **argv, char **envp)
 	if (!dir)
 		return 1;
 
-	while (readdir_r(dir, &e, &result) == 0 && result)
+	while ((readdir_r(dir, &e, &result) == 0) && result)
 		printf("%s\n", e.d_name);
 
 	closedir(dir);
