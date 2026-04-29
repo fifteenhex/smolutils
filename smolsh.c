@@ -100,6 +100,16 @@ static bool try_fixed(const char *cmd, char **path)
 	return false;
 }
 
+static bool try_absolute(const char *cmd, char **path)
+{
+	if (access(cmd, X_OK) == 0) {
+		*path = cmd;
+		return true;
+	}
+
+	return false;
+}
+
 static void toktoktok(char *str, size_t len, char** tokens, unsigned max_tokens, unsigned *num_tokens)
 {
 	unsigned int token_count = 0;
@@ -113,7 +123,7 @@ static void toktoktok(char *str, size_t len, char** tokens, unsigned max_tokens,
 		if (ch != ' ' && ch != '\0') {
 			/* Start of a new token */
 			if (token_len == 0) {
-				debug("Token started at %d\n", i);
+				verbose("Token started at %d\n", i);
 				token_start = str;
 			}
 
@@ -123,7 +133,7 @@ static void toktoktok(char *str, size_t len, char** tokens, unsigned max_tokens,
 		else {
 			/* Was in a token, token is done */
 			if (token_len) {
-				debug("Token ended at %d\n", i);
+				verbose("Token ended at %d\n", i);
 				/* Terminate token */
 				*str = '\0';
 				token_len = 0;
@@ -131,7 +141,7 @@ static void toktoktok(char *str, size_t len, char** tokens, unsigned max_tokens,
 				tokens[token_count] = token_start;
 				token_count++;
 
-				debug("Token: %s\n", token_start);
+				verbose("Token: %s\n", token_start);
 			}
 			// Junk white space?
 		}
@@ -169,7 +179,7 @@ int main (int argc, char **argv, char **envp)
 		/* Terminate the end of the string, this should be \n */
 		line[len - 1] = '\0';
 
-		debug("Got command line: \"%s\"\n", line);
+		verbose("Got command line: \"%s\"\n", line);
 
 		toktoktok(line, len, tokens, ARRAY_SIZE(tokens), &num_tokens);
 
@@ -187,9 +197,15 @@ int main (int argc, char **argv, char **envp)
 
 		if (try_fixed(cmd, &path)) {
 			run_cmd(path, tokens);
+			continue;
 		}
-		else
-			printf("Sorry, don't know how to: \"%s\"\n", cmd);
+
+		if (try_absolute(cmd, &path)) {
+			run_cmd(path, tokens);
+			continue;
+		}
+
+		printf("Sorry, don't know how to: \"%s\"\n", cmd);
 	}
 
 	debug("Exiting\n");
