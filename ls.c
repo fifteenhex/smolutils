@@ -13,8 +13,17 @@ int main (int argc, char **argv, char **envp)
 	if (!dir)
 		return 1;
 
-	while ((readdir_r(dir, &e, &result) == 0) && result)
-		printf("%s\n", e.d_name);
+	while ((readdir_r(dir, &e, &result) == 0) && result) {
+		const char *name = e.d_name;
+
+		if (strcmp(name, ".") == 0)
+			continue;
+
+		if (strcmp(name, "..") == 0)
+			continue;
+
+		printf("%s\n", name);
+	}
 
 	closedir(dir);
 
