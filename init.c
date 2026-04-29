@@ -63,10 +63,14 @@ static int do_mount(const char *source, const char *target, const char *type)
 	int ret;
 
 	ret = mount(source, target, type, 0, NULL);
-	if (ret)
-		printf("mount(%s) failed: %d\n", target, ret);
+	if (ret) {
+		error("mount(%s) failed: %d\n", target, ret);
+		return ret;
+	}
 
-	return ret;
+	debug("mounted %s(%s) on %s\n", source, type, target);
+
+	return 0;
 }
 
 struct mountpoint {
