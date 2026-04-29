@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "config.h"
 #include "common.h"
 
 #define SHELL_PATH "/bin/sh"
@@ -32,7 +33,7 @@ static int mount_filesystems(void)
 {
 	int ret;
 
-	printf("mounting filesystems...\n");
+	debug("mounting filesystems...\n");
 
 	for (int i = 0; i < ARRAY_SIZE(fstab); i++) {
 		const struct mountpoint *mp = &fstab[i];
