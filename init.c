@@ -5,7 +5,7 @@
 
 #define GETTY_PATH "/sbin/getty"
 #define GETTY_NAME "getty"
-#define SHELL_PATH "/bin/sh"
+#define SHELL_PATH "/bin/smolsh"
 
 static const char cmdline_opt_prefix[] = "smolinit.";
 static const char cmdline_opt_getty[] = "getty=";

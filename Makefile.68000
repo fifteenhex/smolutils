@@ -62,7 +62,7 @@ m68k.erofs: init.68000.elf \
 	cp init.68000.elf m68kroot/sbin/init
 	cp getty.68000.elf m68kroot/sbin/getty
 
-	cp smolsh.68000.elf m68kroot/bin/sh
+	cp smolsh.68000.elf m68kroot/bin/smolsh
 	cp ls.68000.elf m68kroot/bin/ls
 
 	mkfs.erofs -zlz4 $@ m68kroot/
