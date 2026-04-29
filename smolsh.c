@@ -6,18 +6,7 @@
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16
 
-/* These aren't really builtin's, this just quicker lookup */
-struct fixed_path {
-	const char *cmd;
-	const char *path;
-};
-
-struct fixed_path fixed[] = {
-	{ "ls", "/bin/ls" },
-	{ "dmesg", "/bin/dmesg" },
-	{ "cat", "/bin/cat" },
-	{ "mkdir", "/bin/mkdir" },
-};
+static bool keeprocking = true;
 
 static void run_cmd(const char *bin, char * const *argv)
 {
@@ -36,7 +25,67 @@ static void run_cmd(const char *bin, char * const *argv)
 	}
 }
 
-static bool try_builtin(const char *cmd, char **path)
+/* Real builtins */
+struct builtin {
+	const char *cmd;
+	int (*handler)(int argc, char **argv);
+};
+
+static int cd_handler(int argc, char **argv)
+{
+	char *newdir = argv[1];
+
+	chdir(newdir);
+
+	return 0;
+}
+
+static int exit_handler(int argc, char **argv)
+{
+	keeprocking = false;
+
+	return 0;
+}
+
+struct builtin builtins[] = {
+	{ "cd", cd_handler },
+	{ "exit", exit_handler },
+};
+
+static bool try_builtin(char **tokens, unsigned num_tokens)
+{
+	const char *cmd = tokens[0];
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(builtins); i++) {
+		struct builtin *bi = &builtins[i];
+
+		if (strcmp(cmd, bi->cmd) == 0) {
+			bi->handler(num_tokens, tokens);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+ * These aren't really builtin's, we know where they are though
+ * so don't bother doing any look up nonsense
+ */
+struct fixed_path {
+	const char *cmd;
+	const char *path;
+};
+
+struct fixed_path fixed[] = {
+	{ "ls", "/bin/ls" },
+	{ "dmesg", "/bin/dmesg" },
+	{ "cat", "/bin/cat" },
+	{ "mkdir", "/bin/mkdir" },
+};
+
+static bool try_fixed(const char *cmd, char **path)
 {
 	int i;
 
@@ -93,18 +142,28 @@ static void toktoktok(char *str, size_t len, char** tokens, unsigned max_tokens,
 	*num_tokens = token_count;
 }
 
+static void do_prompt(void)
+{
+	char cwd[1024];
+
+	getcwd(cwd, ARRAY_SIZE(cwd));
+
+	printf("smolsh %s > ", cwd);
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	char line[MAX_CMDLINE];
 	char *tokens[MAX_TOKENS + 1];
 	unsigned num_tokens;
 
-	while (1) {
+	while (keeprocking) {
 		char *path;
 		char *cmd;
 		int len;
 
-		printf("smolsh> ");
+		do_prompt();
+
 		len = read(STDIN_FILENO, &line, ARRAY_SIZE(line) - 1);
 
 		/* Terminate the end of the string, this should be \n */
@@ -123,12 +182,17 @@ int main (int argc, char **argv, char **envp)
 		/* We'll use the tokens as the argv, so add the terminator */
 		tokens[num_tokens] = NULL;
 
-		if (try_builtin(cmd, &path)) {
+		if (try_builtin(tokens, num_tokens))
+			continue;
+
+		if (try_fixed(cmd, &path)) {
 			run_cmd(path, tokens);
 		}
 		else
 			printf("Sorry, don't know how to: \"%s\"\n", cmd);
 	}
+
+	debug("Exiting\n");
 
 	return 0;
 }
