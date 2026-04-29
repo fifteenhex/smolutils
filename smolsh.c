@@ -83,6 +83,7 @@ struct fixed_path fixed[] = {
 	{ "dmesg", "/bin/dmesg" },
 	{ "cat", "/bin/cat" },
 	{ "mkdir", "/bin/mkdir" },
+	{ "ps", "/bin/ps" },
 };
 
 static bool try_fixed(const char *cmd, char **path)
