@@ -121,9 +121,21 @@ int main (int argc, char **argv, char **envp)
 		}
 		/* We are the new process */
 		else {
+			const char *tty_path = gettys[0];
+			int tty_fd;
+
+			tty_fd = open(tty_path, O_RDWR);
+			if (tty_fd < 0)
+				break;
+
+			/* Wire up stdin, stdout, stderr */
+			dup2(STDIN_FILENO, tty_fd);
+			dup2(STDOUT_FILENO, tty_fd);
+			dup2(STDERR_FILENO, tty_fd);
+
 			char * const newargv[] = {
 				GETTY_NAME,
-				gettys[0],
+				tty_path,
 				SHELL_PATH,
 				NULL
 			};
