@@ -1,2 +1,20 @@
 # smolutils
-Like coreutils but smol
+
+Like coreutils but smol.
+
+
+## Why?!
+
+For very nommu targets even uclibc + busybox isn't very usable:
+
+- For nommu every process loads its own copy of everything because there
+  is no virtual addressing to allow sharing of common physical pages so
+  every process has its own copy of uclibc and busybox and even if that
+  is ~100K you will end up using a lot of memory just getting booted and
+  might not be able to allocate a big enough single block to run anything.
+  Maybe FDPIC solves this but that doesn't seem to be support on m68k.
+
+
+## What
+
+-- Table of programs and what they do will go here --
