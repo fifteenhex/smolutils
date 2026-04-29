@@ -5,6 +5,16 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof(_a[0]))
 
+/* Printing stuff */
+
+#ifdef CONFIG_DEBUG
+#define debug(...) printf(__VA_ARGS__)
+#else
+#define debug(...)
+#endif
+
+/* File stuff */
+
 off_t file_size(int fd) {
 	struct stat st;
 
