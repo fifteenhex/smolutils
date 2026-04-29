@@ -10,7 +10,12 @@
 static const char cmdline_opt_prefix[] = "smolinit.";
 static const char cmdline_opt_getty[] = "getty=";
 
-static const char *gettys[16] = { 0 };
+struct getty {
+	const char *tty_path;
+	pid_t getty_pid;
+};
+
+static struct getty gettys[16];
 static unsigned num_gettys = 0;
 
 static void parse_cmdline(int argc, char **argv)
@@ -25,18 +30,18 @@ static void parse_cmdline(int argc, char **argv)
 
 		debug("%s\n", arg);
 
-		if (strncmp(arg, cmdline_opt_prefix, STRLEN(cmdline_opt_prefix)) == 0) {
+		if (STARTS_WITH(arg, cmdline_opt_prefix)) {
 			const char *opt = arg + STRLEN(cmdline_opt_prefix);
 
-			if (strncmp(opt, cmdline_opt_getty, STRLEN(cmdline_opt_getty)) == 0) {
-				const char *getty = opt + STRLEN(cmdline_opt_getty);
+			if (STARTS_WITH(opt, cmdline_opt_getty)) {
+				const char *tty_path = opt + STRLEN(cmdline_opt_getty);
 
-				debug("Will start getty on %s\n", getty);
+				debug("Will start getty on TTY %s\n", tty_path);
 				/*
 				 * I guess its safe to just point the argv memory to avoid
 				 * wasting memory copying strings.
 				 */
-				gettys[num_gettys++] = getty;
+				gettys[num_gettys++].tty_path = tty_path;
 			}
 		}
 	}
@@ -106,8 +111,51 @@ err:
 	return ret;
 }
 
+static int spawn_getty(struct getty *getty)
+{
+	pid_t pid;
+
+	pid = vfork();
+
+	/* We are init */
+	if (pid) {
+		getty->getty_pid = pid;
+		return 0;
+	}
+	/* We are the new process */
+	else {
+		const char *tty_path = getty->tty_path;
+		int tty_fd;
+
+		tty_fd = open(tty_path, O_RDWR);
+		if (tty_fd < 0)
+			return -1;
+
+		/* Wire up stdin, stdout, stderr */
+		dup2(tty_fd, STDIN_FILENO);
+		dup2(tty_fd, STDOUT_FILENO);
+		dup2(tty_fd, STDERR_FILENO);
+		close(tty_fd);
+
+		char * const newargv[] = {
+			GETTY_NAME,
+			tty_path,
+			SHELL_PATH,
+			NULL
+		};
+		char *newenviron[] = { NULL };
+
+		execve(GETTY_PATH, newargv, newenviron);
+		printf("execve failed\n");
+
+		return -1;
+	}
+}
+
 int main (int argc, char **argv, char **envp)
 {
+	int i;
+
 	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
 
 	parse_cmdline(argc, argv);
@@ -116,38 +164,27 @@ int main (int argc, char **argv, char **envp)
 
 	mount_filesystems();
 
+	/* Spawn each of the configured gettys */
+	for (i = 0; i < num_gettys; i++) {
+		spawn_getty(&gettys[i]);
+	}
+
+	/* Now sit in wait for one of the gettys to exit */
 	while (true) {
-		pid_t pid = vfork();
+		pid_t pid;
+		int i;
 
-		/* We are init */
-		if (pid) {
-			wait(NULL);
-		}
-		/* We are the new process */
-		else {
-			const char *tty_path = gettys[0];
-			int tty_fd;
+		pid = wait(NULL);
 
-			tty_fd = open(tty_path, O_RDWR);
-			if (tty_fd < 0)
+		verbose("pid %d came home\n", (int) pid);
+
+		for (i = 0; i < num_gettys; i++) {
+			struct getty *getty = &gettys[i];
+
+			if (getty->getty_pid == pid) {
+				spawn_getty(getty);
 				break;
-
-			/* Wire up stdin, stdout, stderr */
-			dup2(STDIN_FILENO, tty_fd);
-			dup2(STDOUT_FILENO, tty_fd);
-			dup2(STDERR_FILENO, tty_fd);
-
-			char * const newargv[] = {
-				GETTY_NAME,
-				tty_path,
-				SHELL_PATH,
-				NULL
-			};
-			char *newenviron[] = { NULL };
-
-			execve(GETTY_PATH, newargv, newenviron);
-			printf("execve failed\n");
-			break;
+			}
 		}
 	}
 
