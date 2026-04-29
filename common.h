@@ -5,6 +5,8 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof(_a[0]))
 
+#define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
+
 /* Printing stuff */
 
 #ifdef CONFIG_DEBUG
