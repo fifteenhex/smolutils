@@ -5,6 +5,33 @@
 
 #define SHELL_PATH "/bin/sh"
 
+static void parse_cmdline(int argc, char **argv)
+{
+	int i;
+
+	debug("cmdline args:\n");
+
+	/* First arg will be the program name, skip that */
+	for (i = 1; i < argc; i++)
+		printf("%s\n", argv[i]);
+}
+
+static void parse_environment(char **envp)
+{
+	char *var;
+
+	debug("environment variables\n");
+
+	while (true) {
+		var = *envp++;
+
+		if (!var)
+			break;
+
+		debug("%s\n", var);
+	}
+}
+
 static int do_mount(const char *source, const char *target, const char *type)
 {
 	int ret;
@@ -52,6 +79,10 @@ err:
 int main (int argc, char **argv, char **envp)
 {
 	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
+
+	parse_cmdline(argc, argv);
+
+	parse_environment(envp);
 
 	mount_filesystems();
 
