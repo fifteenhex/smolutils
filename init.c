@@ -3,6 +3,8 @@
 #include "config.h"
 #include "common.h"
 
+#define GETTY_PATH "/sbin/getty"
+#define GETTY_NAME "getty"
 #define SHELL_PATH "/bin/sh"
 
 static const char cmdline_opt_prefix[] = "smolinit.";
@@ -119,10 +121,15 @@ int main (int argc, char **argv, char **envp)
 		}
 		/* We are the new process */
 		else {
-			static char *newargv[] = { "sh", NULL };
-			static char *newenviron[] = { NULL };
+			char * const newargv[] = {
+				GETTY_NAME,
+				gettys[0],
+				SHELL_PATH,
+				NULL
+			};
+			char *newenviron[] = { NULL };
 
-			execve(SHELL_PATH, newargv, newenviron);
+			execve(GETTY_PATH, newargv, newenviron);
 			printf("execve failed\n");
 			break;
 		}
