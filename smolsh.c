@@ -138,6 +138,33 @@ static bool try_absolute(const char *cmd, char **path)
 	return false;
 }
 
+static int try_search_cb(const char *name, void *priv)
+{
+	const char *cmd = (const char *) priv;
+
+	if (strcmp(name, priv) == 0)
+		return 1;
+
+	return 0;
+}
+
+static bool try_search(const char *cmd, char **path)
+{
+	/* this should be PATH_MAX I guess.. seems like a waste of 4K */
+	static char _path[1024];
+	int ret;
+
+	ret = iterate_dir("/bin", try_search_cb, cmd);
+
+	if (ret > 0) {
+		sprintf(_path, "/bin/%s", cmd);
+		*path = _path;
+		return true;
+	}
+
+	return false;
+}
+
 static int parse_handle_stdout_redirection(char *str,
 					   char **stdout_path,
 					   bool *append)
@@ -324,6 +351,11 @@ int main (int argc, char **argv, char **envp)
 		}
 
 		if (try_absolute(cmd, &path)) {
+			run_cmd(path, tokens);
+			continue;
+		}
+
+		if (try_search(cmd, &path)) {
 			run_cmd(path, tokens);
 			continue;
 		}
