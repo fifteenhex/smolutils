@@ -25,7 +25,8 @@ PROGS = init		\
 	sha256sum	\
 	xxd		\
 	man		\
-	less
+	less		\
+	uname
 
 COPTS= -ggdb \
 	-nostdlib \

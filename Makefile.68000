@@ -69,5 +69,6 @@ m68k.erofs: elfs
 	cp xxd.68000.elf m68kroot/bin/xxd
 	cp man.68000.elf m68kroot/bin/man
 	cp sha256sum.68000.elf m68kroot/bin/sha256sum
+	cp uname.68000.elf m68kroot/bin/uname
 
 	mkfs.erofs -zlz4 $@ m68kroot/
