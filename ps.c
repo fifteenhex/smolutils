@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "config.h"
+#include "common.h"
+
 static const char *proc_path = "/proc";
 
 static void print_process(const char *pid, const char *comm_path)
@@ -19,40 +22,30 @@ static void print_process(const char *pid, const char *comm_path)
 	close(fd);
 }
 
+static int cb(const char *name, void *priv)
+{
+	char tmp[1024];
+
+	if (strcmp(name, "self") == 0)
+		return 0;
+
+	if (strcmp(name, "thread-self") == 0)
+		return 0;
+
+	sprintf(tmp, "%s/%s/comm", proc_path, name);
+
+	/* If there isn't a comm file then this isn't a process? */
+	if (access(tmp, F_OK))
+		return 0;
+
+	print_process(name, tmp);
+}
+
 int main (int argc, char **argv, char **envp)
 {
-	struct dirent e, *result;
-	char tmp[1024];
-	DIR *dir;
-
-	dir = opendir(proc_path);
-	if (!dir)
-		return 1;
-
 	printf("PID\t\tCMD\n");
 
-	while ((readdir_r(dir, &e, &result) == 0) && result) {
-		const char *name = e.d_name;
-
-                if (strcmp(name, "self") == 0)
-                        continue;
-
-                if (strcmp(name, "thread-self") == 0)
-                        continue;
-
-		sprintf(tmp, "%s/%s/comm", proc_path, name);
-
-		/* If there isn't a comm file then this isn't a process? */
-		if (access(tmp, F_OK)) {
-			continue;
-		}
-
-		//printf("%s\n", tmp);
-
-		print_process(name, tmp);
-	}
-
-	closedir(dir);
+	iterate_dir(proc_path, cb, NULL);
 
 	return 0;
 }
