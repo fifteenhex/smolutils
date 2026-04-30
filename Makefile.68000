@@ -33,7 +33,7 @@ STATICPIE=-fpie -pie -Wl,--no-dynamic-linker
 # might care about if you have an MMU.
 COPTS += -Wl,-z,max-page-size=4
 
-%.68000.elf.dbg: %.c
+%.68000.elf.dbg: %.c common.h
 	$(CC) $(COPTS) \
 	$(STATICPIE) \
 	-o $@ $< -lgcc
