@@ -3,7 +3,14 @@
 #include "config.h"
 #include "common.h"
 
-static int cb(const char *name, void *priv)
+static int cb_short(const char *name, void *priv)
+{
+	printf("%s\t", name);
+
+	return 0;
+}
+
+static int cb_long(const char *name, void *priv)
 {
 	printf("%s\n", name);
 
@@ -12,12 +19,21 @@ static int cb(const char *name, void *priv)
 
 int main(int argc, char **argv, char **envp)
 {
-	char *path = ".";
+	bool long_format = false;
+	char *path;
+	char c;
 
-	if (argc == 2)
-		path = argv[1];
+	while ((c = getopt(argc, argv, "l")) != -1) {
+		switch (c) {
+		case 'l':
+			long_format = true;
+			break;
+		}
+	}
 
-	iterate_dir(path, cb, NULL);
+	path = (optind < argc) ? argv[optind] : ".";
+
+	iterate_dir(path, long_format ? cb_long : cb_short, NULL);
 
 	return 0;
 }
