@@ -30,7 +30,9 @@ PROGS = init		\
 	cp		\
 	mv		\
 	touch		\
-	ln
+	ln		\
+	chmod		\
+	chown
 
 COPTS= -ggdb \
 	-nostdlib \
