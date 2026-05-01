@@ -28,8 +28,8 @@ UAPI_$(1) = _build/headers_$(2)
 
 _build/.stamp.linux_headers_$(2): _build/.stamp.linux_cloned
 	make -C _build/linux/ ARCH=$(2) defconfig
-	mkdir $(UAPI_$(1))
-	make -C _build/linux/ ARCH=$(2) INSTALL_HDR_PATH=`realpath $(UAPI_$(1))` headers_install
+	mkdir $$(UAPI_$(1))
+	make -C _build/linux/ ARCH=$(2) INSTALL_HDR_PATH=`realpath $$(UAPI_$(1))` headers_install
 	touch $$@
 
 TOOLCHAINDEP += _build/.stamp.toolchain_$(2)_extracted
