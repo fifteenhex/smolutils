@@ -138,7 +138,7 @@ static bool try_absolute(const char *cmd, char **path)
 	return false;
 }
 
-static int try_search_cb(const char *name, void *priv)
+static int try_search_cb(const char *name, int dir, void *priv)
 {
 	const char *cmd = (const char *) priv;
 

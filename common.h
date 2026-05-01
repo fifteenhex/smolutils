@@ -59,14 +59,20 @@ static void cleanup_dir(DIR **_dir)
 
 #define __cleanup_dir __attribute__((cleanup(cleanup_dir)))
 
-static int iterate_dir(const char *path, int (*cb)(const char *name, void *priv), void *priv)
+static int iterate_dir(const char *path,
+		       int (*cb)(const char *name, int dir, void *priv), void *priv)
 {
-	struct dirent e, *result;
 	DIR __cleanup_dir *dir = NULL;
+	struct dirent e, *result;
+	int fd;
 
-        dir = opendir(path);
-        if (!dir)
-                return -1;
+	fd = open(path, O_RDONLY);
+	if (fd == -1)
+		return -1;
+
+	dir = fdopendir(fd);
+	if (!dir)
+		return -1;
 
         while ((readdir_r(dir, &e, &result) == 0) && result) {
                 const char *name = e.d_name;
@@ -78,7 +84,7 @@ static int iterate_dir(const char *path, int (*cb)(const char *name, void *priv)
                 if (strcmp(name, "..") == 0)
                         continue;
 
-		ret = cb(name, priv);
+		ret = cb(name, fd, priv);
 
 		/* done */
 		if (ret > 0)

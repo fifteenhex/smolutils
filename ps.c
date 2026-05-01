@@ -22,7 +22,7 @@ static void print_process(const char *pid, const char *comm_path)
 	close(fd);
 }
 
-static int cb(const char *name, void *priv)
+static int cb(const char *name, int dir, void *priv)
 {
 	char tmp[1024];
 
