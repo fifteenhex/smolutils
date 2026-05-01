@@ -26,7 +26,8 @@ PROGS = init		\
 	xxd		\
 	man		\
 	less		\
-	uname
+	uname		\
+	cp
 
 COPTS= -ggdb \
 	-nostdlib \
