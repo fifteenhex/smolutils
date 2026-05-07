@@ -32,7 +32,8 @@ PROGS = init		\
 	touch		\
 	ln		\
 	chmod		\
-	chown
+	chown		\
+	kill
 
 COPTS= -ggdb \
 	-nostdlib \

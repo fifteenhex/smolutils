@@ -76,5 +76,6 @@ m68k.erofs: elfs
 	cp touch.68000.elf m68kroot/bin/touch
 	cp chown.68000.elf m68kroot/bin/chown
 	cp chmod.68000.elf m68kroot/bin/chmod
+	cp kill.68000.elf m68kroot/bin/kill
 
 	mkfs.erofs -zlz4 $@ m68kroot/
