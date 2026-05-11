@@ -3,6 +3,8 @@
 #include "config.h"
 #include "common.h"
 
+#include "nolibc_extensions/signal.h"
+
 #define GETTY_PATH "/sbin/getty"
 #define GETTY_NAME "getty"
 #define SHELL_PATH "/bin/smolsh"
@@ -152,6 +154,24 @@ static int spawn_getty(struct getty *getty)
 	}
 }
 
+static void handle_sig(int sig)
+{
+	printf("got sig!\n");
+}
+
+static int setup_signals(void)
+{
+	struct sigaction act = {
+		.sa_flags   = SA_RESTART,
+		.sa_handler = handle_sig,
+	};
+	int ret;
+
+	ret = sigaction(SIGUSR1, &act, NULL);
+	if (ret)
+		printf("failed to setup signals: %d\n", errno);
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	int i;
@@ -163,6 +183,8 @@ int main (int argc, char **argv, char **envp)
 	parse_environment(envp);
 
 	mount_filesystems();
+
+	setup_signals();
 
 	/* Spawn each of the configured gettys */
 	for (i = 0; i < num_gettys; i++) {
