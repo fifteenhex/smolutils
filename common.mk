@@ -14,8 +14,10 @@ CC=$(CROSS_COMPILE)gcc
 BFDLD=$(CROSS_COMPILE)ld.bfd
 STRIP=$(CROSS_COMPILE)strip
 
-PROGS = init		\
-	getty		\
+PROGS_SYSTEM = init	\
+	       getty	\
+
+PROGS_USER =		\
 	smolsh		\
 	dmesg		\
 	ls		\
@@ -33,7 +35,10 @@ PROGS = init		\
 	ln		\
 	chmod		\
 	chown		\
-	kill
+	kill		\
+	df		\
+	mount		\
+	umount
 
 COPTS= -ggdb \
 	-nostdlib \
@@ -47,3 +52,11 @@ COPTS += -flto
 ifdef UAPIDIR
 	COPTS += -I$(UAPIDIR)
 endif
+
+rootskel:
+	mkdir -p rootskel/sys
+	mkdir -p rootskel/dev
+	mkdir -p rootskel/proc
+	mkdir -p rootskel/tmp
+	mkdir -p rootskel/bin
+	mkdir -p m68kroot/sbin

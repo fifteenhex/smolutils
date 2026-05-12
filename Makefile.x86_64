@@ -12,9 +12,24 @@ STATICPIE=-static-pie
 %.x86_64.elf: %.x86_64.elf.dbg
 	$(STRIP) $< -o $@
 
+SYSTEM_ELFS = $(addsuffix .x86_64.elf,$(PROGS_SYSTEM))
+USER_ELFS = $(addsuffix .x86_64.elf,$(PROGS_USER))
+
 .PHONY: elfs
-elfs: $(addsuffix .x86_64.elf,$(PROGS))
+elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+
+x86_64.tar: elfs
+	tar -cf $@ --mode=755 --owner=root:0 --group=root:0 -C rootskel .
+	tar -rf $@ --mode=500 --owner=root:0 --group=root:0 --transform 's|^|sbin/|' --transform 's|\.x86_64\.elf||' $(SYSTEM_ELFS)
+	tar -rf $@ --mode=555 --owner=root:0 --group=root:0 --transform 's|^|bin/|' --transform 's|\.x86_64\.elf||' $(USER_ELFS)
+
+
+.PHONY: x86_64.erofs
+x86_64.erofs: x86_64.tar
+	mkfs.erofs -Eforce-inode-compact \
+		   -Eztailpacking \
+		   -zlz4hc --tar $@ $<
 
 .PHONY: clean
 clean:
-	rm -f *.x86_64.elf *.x86_64.elf.dbg
+	rm -f *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs

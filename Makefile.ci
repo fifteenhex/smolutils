@@ -49,8 +49,8 @@ PEKEHACHIROKUOPTS = UAPIDIR=`realpath $(UAPI_X86_64)/include` \
 
 .PHONY: build
 build: $(TOOLCHAINDEP) $(HEADERDEP)
-	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) elfs
-	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) elfs
+	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
+	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
 .PHONY: clean
 clean:

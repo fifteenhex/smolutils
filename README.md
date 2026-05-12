@@ -12,7 +12,7 @@ For nommu targets even uclibc + busybox isn't very usable:
   every process has its own copy of uclibc and busybox and even if that
   is ~100K you will end up using a lot of memory just getting booted and
   might not be able to allocate a big enough single block to run anything.
-  Maybe FDPIC solves this but that doesn't seem to be support on m68k.
+  Maybe FDPIC solves this but that doesn't seem to be supported on m68k.
 
 
 ## What

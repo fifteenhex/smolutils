@@ -41,41 +41,24 @@ COPTS += -Wl,-z,max-page-size=4
 %.68000.elf: %.68000.elf.dbg
 	$(STRIP) $< -o $@
 
-.PHONY: elfs
-elfs: $(addsuffix .68000.elf,$(PROGS))
+.PHONY: system_elfs user_elfs
+SYSTEM_ELFS = $(addsuffix .68000.elf,$(PROGS_SYSTEM))
+USER_ELFS = $(addsuffix .68000.elf,$(PROGS_USER))
+
+elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+
+.PHONY: m68k.tar
+m68k.tar: rootskel elfs
+	tar -cf $@ --mode=755 --owner=root:0 --group=root:0 -C rootskel .
+	tar -rf $@ --mode=500 --owner=root:0 --group=root:0 --transform 's|^|sbin/|' --transform 's|\.68000\.elf||' $(SYSTEM_ELFS)
+	tar -rf $@ --mode=555 --owner=root:0 --group=root:0 --transform 's|^|bin/|' --transform 's|\.68000\.elf||' $(USER_ELFS)
+
+.PHONY: m68k.erofs
+m68k.erofs: m68k.tar
+	mkfs.erofs -Eforce-inode-compact \
+		   -Eztailpacking \
+		   -zlz4hc --tar $@ $<
 
 .PHONY: clean
 clean:
-	rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg
-
-.PHONY: m68k.erofs
-m68k.erofs: elfs
-	mkdir -p m68kroot/sys
-	mkdir -p m68kroot/dev
-	mkdir -p m68kroot/proc
-	mkdir -p m68kroot/tmp
-	mkdir -p m68kroot/bin
-	mkdir -p m68kroot/sbin
-
-	cp init.68000.elf m68kroot/sbin/init
-	cp getty.68000.elf m68kroot/sbin/getty
-
-	cp smolsh.68000.elf m68kroot/bin/smolsh
-	cp ls.68000.elf m68kroot/bin/ls
-	cp ps.68000.elf m68kroot/bin/ps
-	cp dmesg.68000.elf m68kroot/bin/dmesg
-	cp cat.68000.elf m68kroot/bin/cat
-	cp mkdir.68000.elf m68kroot/bin/mkdir
-	cp xxd.68000.elf m68kroot/bin/xxd
-	cp man.68000.elf m68kroot/bin/man
-	cp sha256sum.68000.elf m68kroot/bin/sha256sum
-	cp uname.68000.elf m68kroot/bin/uname
-	cp cp.68000.elf m68kroot/bin/cp
-	cp mv.68000.elf m68kroot/bin/mv
-	cp ln.68000.elf m68kroot/bin/ln
-	cp touch.68000.elf m68kroot/bin/touch
-	cp chown.68000.elf m68kroot/bin/chown
-	cp chmod.68000.elf m68kroot/bin/chmod
-	cp kill.68000.elf m68kroot/bin/kill
-
-	mkfs.erofs -Eztailpacking -zlz4hc $@ m68kroot/
+	rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
