@@ -40,6 +40,13 @@ static int cd_handler(int argc, char **argv, int stdout)
 	return 0;
 }
 
+static int clear_handler(int argc, char **argv, int stdout)
+{
+	printf("\033[3J\033[H\033[2J");
+
+	return 0;
+}
+
 static int echo_handler(int argc, char **argv, int stdout)
 {
 	char tmp[1024];
@@ -74,6 +81,7 @@ static int exit_handler(int argc, char **argv, int stdout)
 
 struct builtin builtins[] = {
 	{ "cd", cd_handler },
+	{ "clear", clear_handler },
 	{ "echo", echo_handler },
 	{ "pwd", pwd_handler },
 	{ "exit", exit_handler },
