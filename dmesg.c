@@ -16,12 +16,8 @@ static int readone(int fd, char *tmp, size_t sz, char **msg)
 	if (ret < 0)
 		return ret;
 
-	/* The message must end with a new line */
-	if (tmp[ret - 1] != '\n')
-		goto bad_record;
-
-	/* Terminate line */
-	tmp[ret - 1] = '\0';
+	/* Terminate line before we start using str functions */
+	tmp[ret] = '\0';
 
 	/*
 	 * There should be a newline at the end of
@@ -29,12 +25,18 @@ static int readone(int fd, char *tmp, size_t sz, char **msg)
 	 * are any.
 	 */
 	_msg_end = strchr(tmp, '\n');
-	if (_msg_end) {
-		/* Terminate the message part so we can print it */
-		*_msg_end = '\0';
-	}
+	if (!_msg_end)
+		goto bad_record;
 
+	/* Terminate the message part so we can print it */
+	*_msg_end = '\0';
+
+	/* Start of the message is indicated by ';' */
 	_msg = strchr(tmp, ';');
+	if (!_msg)
+		goto bad_record;
+
+	/* Terminate the flags and set the pointer to the message */
 	*_msg++ = '\0';
 	*msg = _msg;
 
