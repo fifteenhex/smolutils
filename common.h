@@ -104,4 +104,40 @@ static int iterate_dir(const char *path,
 #define STARTS_WITH(_string, _chararray) \
 	(strncmp(_string, _chararray, STRLEN(_chararray)) == 0)
 
+/* Process stuff */
+
+static int spawn_and_wait(char *name, const char *path)
+{
+	pid_t pid;
+
+	pid = vfork();
+
+	/* Did vfork fail? */
+	if (pid == -1)
+		return -1;
+
+	/* We are the original process, wait for return */
+	if (pid) {
+		pid_t p;
+		int stat;
+
+		p = waitpid(pid, &stat, 0);
+	}
+	/* We are the new process */
+	else {
+		char * const newargv[] = {
+			name,
+			NULL
+		};
+		char *newenviron[] = { NULL };
+
+		execve(path, newargv, newenviron);
+		error("execve failed: %d\n", errno);
+
+		_exit(1);
+	}
+
+	return 0;
+}
+
 #endif /* _SMOLUTILS_COMMON_H */
