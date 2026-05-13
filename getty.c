@@ -21,6 +21,9 @@ int main(int argc, char **argv, char **envp)
 
 	pid = vfork();
 
+	if (pid == -1)
+		return 1;
+
 	if (!pid) {
 		/* We are the new process */
 		char * const newargv[] = {
@@ -33,7 +36,9 @@ int main(int argc, char **argv, char **envp)
 				 SMOLUTILS_USERS_NORMAL_MIN);
 
 		execve(shell_path, newargv, newenviron);
-		printf("execve failed\n");
+		error("execve failed: %d\n", errno);
+
+		_exit(1);
 	}
 
 	/* We are still the getty, wait for the shell to exit */
