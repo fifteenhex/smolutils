@@ -33,8 +33,11 @@ int main(int argc, char **argv, char **envp)
 	close(tty_fd);
 
 	/* Change the user, this is what login would do... */
-	users_changeuser(SMOLUTILS_USERS_NORMAL_MIN,
-			 SMOLUTILS_USERS_NORMAL_MIN);
+	if (users_changeuser(SMOLUTILS_USERS_NORMAL_MIN,
+			     SMOLUTILS_USERS_NORMAL_MIN)) {
+		error("Failed to switch user\n");
+		return 1;
+	}
 
 	if (spawn_and_wait("sh", shell_path)) {
 		error("Failed to spawn shell\n");

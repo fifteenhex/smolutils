@@ -8,10 +8,12 @@
 static int users_changeuser(gid_t gid, uid_t uid)
 {
 	if (setgid(gid) < 0) {
+		verbose("setgid() failed: %d\n", errno);
 		return -1;
 	}
 
 	if (setuid(uid) < 0) {
+		verbose("setuid() failed: %d\n", errno);
 		return -1;
 	}
 
