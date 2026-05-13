@@ -3,7 +3,7 @@ include common.mk
 STATICPIE=-static-pie
 
 .SECONDARY:
-%.x86_64.elf.dbg: %.c
+%.x86_64.elf.dbg: %.c $(HEADERS)
 	$(CC) $(COPTS) \
 	$(STATICPIE) \
 	-D R_AMD64_RELATIVE=8 \
