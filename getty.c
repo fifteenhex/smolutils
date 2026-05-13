@@ -8,6 +8,7 @@ int main(int argc, char **argv, char **envp)
 {
 	const char *shell_path;
 	const char *tty_path;
+	int tty_fd;
 	pid_t pid;
 
 	if (argc != 3)
@@ -19,30 +20,26 @@ int main(int argc, char **argv, char **envp)
 	debug("Starting getty on %s with shell %s\n",
 		tty_path, shell_path);
 
-	pid = vfork();
-
-	if (pid == -1)
+	tty_fd = open(tty_path, O_RDWR);
+	if (tty_fd < 0) {
+		error("Failed to open TTY\n");
 		return 1;
-
-	if (!pid) {
-		/* We are the new process */
-		char * const newargv[] = {
-			"sh",
-			NULL
-		};
-		char *newenviron[] = { NULL };
-
-		users_changeuser(SMOLUTILS_USERS_NORMAL_MIN,
-				 SMOLUTILS_USERS_NORMAL_MIN);
-
-		execve(shell_path, newargv, newenviron);
-		error("execve failed: %d\n", errno);
-
-		_exit(1);
 	}
 
-	/* We are still the getty, wait for the shell to exit */
-	wait(NULL);
+	/* Wire up stdin, stdout, stderr */
+	dup2(tty_fd, STDIN_FILENO);
+	dup2(tty_fd, STDOUT_FILENO);
+	dup2(tty_fd, STDERR_FILENO);
+	close(tty_fd);
+
+	/* Change the user, this is what login would do... */
+	users_changeuser(SMOLUTILS_USERS_NORMAL_MIN,
+			 SMOLUTILS_USERS_NORMAL_MIN);
+
+	if (spawn_and_wait("sh", shell_path)) {
+		error("Failed to spawn shell\n");
+		return 1;
+	}
 
 	debug("%s exited\n", tty_path);
 
