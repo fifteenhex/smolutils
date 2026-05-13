@@ -106,36 +106,47 @@ static int iterate_dir(const char *path,
 
 /* Process stuff */
 
+
+/*
+ * Mininal wrapper around vfork() + execve() to avoid
+ * shitting up the parent's stack.
+ *
+ * returns a pid or -1 to the caller.
+ */
+static __attribute__((noinline)) int spawn(const char *path, char * const argv[], char **env)
+{
+        pid_t pid;
+
+        pid = vfork();
+
+        if (pid == -1)
+                return -1;
+
+        if (!pid) {
+		execve(path, argv, env);
+		_exit(1);
+        }
+
+	return pid;
+}
+
 static int spawn_and_wait(char *name, const char *path)
 {
-	pid_t pid;
-
-	pid = vfork();
-
-	/* Did vfork fail? */
-	if (pid == -1)
-		return -1;
-
-	/* We are the original process, wait for return */
-	if (pid) {
-		pid_t p;
-		int stat;
-
-		p = waitpid(pid, &stat, 0);
-	}
-	/* We are the new process */
-	else {
-		char * const newargv[] = {
+	char * const newargv[] = {
 			name,
 			NULL
-		};
-		char *newenviron[] = { NULL };
+	};
+	char *newenviron[] = { NULL };
+	int waitpid_stat;
+	pid_t pid;
+	pid_t p;
 
-		execve(path, newargv, newenviron);
-		error("execve failed: %d\n", errno);
+	pid = spawn(path, newargv, environ);
 
-		_exit(1);
-	}
+	if (pid < 0)
+		return -1;
+
+	waitpid(pid, &waitpid_stat, 0);
 
 	return 0;
 }
