@@ -16,6 +16,11 @@ int main (int argc, char **argv, char **envp)
 	path = argv[1];
 
 	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		error("Failed to open: %s\n", path);
+		return 1;
+	}
+
 	sz = file_size(fd);
 
 	for (i = 0; i < sz; i += 0x10) {
