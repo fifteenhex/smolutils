@@ -130,18 +130,12 @@ static __attribute__((noinline)) int spawn(const char *path, char * const argv[]
 	return pid;
 }
 
-static int spawn_and_wait(char *name, const char *path)
+static int spawn_and_wait_full(char const *name, const char *path, char **argv, char **env)
 {
-	char * const newargv[] = {
-			name,
-			NULL
-	};
-	char *newenviron[] = { NULL };
 	int waitpid_stat;
 	pid_t pid;
-	pid_t p;
 
-	pid = spawn(path, newargv, environ);
+	pid = spawn(path, argv, env);
 
 	if (pid < 0)
 		return -1;
@@ -149,6 +143,17 @@ static int spawn_and_wait(char *name, const char *path)
 	waitpid(pid, &waitpid_stat, 0);
 
 	return 0;
+}
+
+static int spawn_and_wait(char *name, const char *path)
+{
+	char * const newargv[] = {
+			name,
+			NULL
+	};
+	char *newenviron[] = { NULL };
+
+	return spawn_and_wait_full(name, path, newargv, newenviron);
 }
 
 #endif /* _SMOLUTILS_COMMON_H */
