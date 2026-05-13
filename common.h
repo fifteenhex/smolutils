@@ -115,17 +115,17 @@ static int iterate_dir(const char *path,
  */
 static __attribute__((noinline)) int spawn(const char *path, char * const argv[], char **env)
 {
-        pid_t pid;
+	pid_t pid;
 
-        pid = vfork();
+	pid = vfork();
 
-        if (pid == -1)
-                return -1;
+	if (pid == -1)
+		return -1;
 
-        if (!pid) {
+	if (!pid) {
 		execve(path, argv, env);
 		_exit(1);
-        }
+	}
 
 	return pid;
 }
