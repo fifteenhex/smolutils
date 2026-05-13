@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "users.h"
 
 static const char *proc_path = "/proc";
 
@@ -9,17 +10,17 @@ static void print_process(const char *pid, const char *comm_path)
 {
 	char tmp[1024];
 	int len;
-	int fd;
+	int __cleanup_fd fd;
 
 	fd = open(comm_path, O_RDONLY);
 
 	len = read(fd, tmp, sizeof(tmp));
+	if (len <= 0)
+		return;
 
 	tmp[len - 1] = '\0';
 
-	printf("%s\t\t%s\n", pid, tmp);
-
-	close(fd);
+	printf("%s\t%s\t%s\n", users_map_user(0 /* fixme */), pid, tmp);
 }
 
 static int cb(const char *name, int dir, void *priv)
@@ -45,7 +46,7 @@ static int cb(const char *name, int dir, void *priv)
 
 int main (int argc, char **argv, char **envp)
 {
-	printf("PID\t\tCMD\n");
+	printf("USER\t\tPID\t\tCMD\n");
 
 	iterate_dir(proc_path, cb, NULL);
 
