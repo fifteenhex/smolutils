@@ -113,7 +113,9 @@ static int iterate_dir(const char *path,
  *
  * returns a pid or -1 to the caller.
  */
-static __attribute__((noinline)) int spawn(const char *path, char * const argv[], char **env)
+static __attribute__((noinline)) int spawn(const char *path,
+					   char * const argv[],
+					   char * const envp[])
 {
 	pid_t pid;
 
@@ -123,19 +125,21 @@ static __attribute__((noinline)) int spawn(const char *path, char * const argv[]
 		return -1;
 
 	if (!pid) {
-		execve(path, argv, env);
+		execve(path, argv, envp);
 		_exit(1);
 	}
 
 	return pid;
 }
 
-static int spawn_and_wait_full(char const *name, const char *path, char **argv, char **env)
+static int spawn_and_wait_full(const char *path,
+			       char * const argv[],
+			       char * const envp[])
 {
 	int waitpid_stat;
 	pid_t pid;
 
-	pid = spawn(path, argv, env);
+	pid = spawn(path, argv, envp);
 
 	if (pid < 0)
 		return -1;
@@ -153,7 +157,7 @@ static int spawn_and_wait(char *name, const char *path)
 	};
 	char *newenviron[] = { NULL };
 
-	return spawn_and_wait_full(name, path, newargv, newenviron);
+	return spawn_and_wait_full(path, newargv, newenviron);
 }
 
 #endif /* _SMOLUTILS_COMMON_H */

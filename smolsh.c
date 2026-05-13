@@ -12,7 +12,7 @@ static void run_cmd(const char *bin, char * const *argv)
 {
 	char *newenviron[] = { NULL };
 
-	spawn_and_wait_full(bin, bin, argv, newenviron);
+	spawn_and_wait_full(bin, argv, newenviron);
 }
 
 /* Real builtins */
