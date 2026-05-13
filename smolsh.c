@@ -136,14 +136,19 @@ static bool try_fixed(const char *cmd, char **path)
 	return false;
 }
 
-static bool try_absolute(const char *cmd, char **path)
+static int try_absolute(const char *cmd, char **path)
 {
+	/* Check if we can execute it ... */
 	if (access(cmd, X_OK) == 0) {
 		*path = cmd;
-		return true;
+		return 1;
 	}
 
-	return false;
+	/* Path exists but we aren't allowed to execute */
+	if (errno == EACCES)
+		return -EPERM;
+
+	return 0;
 }
 
 static int try_search_cb(const char *name, int dir, void *priv)
@@ -358,8 +363,13 @@ int main (int argc, char **argv, char **envp)
 			continue;
 		}
 
-		if (try_absolute(cmd, &path)) {
-			run_cmd(path, tokens);
+		ret = try_absolute(cmd, &path);
+		if (ret) {
+			if (ret == 1)
+				run_cmd(path, tokens);
+			else
+				printf("ERROR xxx\n");
+
 			continue;
 		}
 
