@@ -16,6 +16,7 @@ STRIP=$(CROSS_COMPILE)strip
 
 PROGS_SYSTEM = init	\
 	       getty	\
+	       startup
 
 PROGS_USER =		\
 	smolsh		\
