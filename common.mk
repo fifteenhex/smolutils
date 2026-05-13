@@ -63,3 +63,5 @@ rootskel:
 	mkdir -p rootskel/tmp
 	mkdir -p rootskel/bin
 	mkdir -p m68kroot/sbin
+
+EROFS_CMD = mkfs.erofs -Eforce-inode-compact -Eztailpacking -zlz4hc --tar

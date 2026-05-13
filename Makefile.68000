@@ -55,9 +55,7 @@ m68k.tar: rootskel elfs
 
 .PHONY: m68k.erofs
 m68k.erofs: m68k.tar
-	mkfs.erofs -Eforce-inode-compact \
-		   -Eztailpacking \
-		   -zlz4hc --tar $@ $<
+	$(EROFS_CMD) $@ $<
 
 .PHONY: clean
 clean:
