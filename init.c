@@ -116,43 +116,25 @@ err:
 
 static int spawn_getty(struct getty *getty)
 {
+	const char *tty_path = getty->tty_path;
+	char *newenviron[] = { NULL };
+	char * const newargv[] = {
+		GETTY_NAME,
+		tty_path,
+		SHELL_PATH,
+		NULL
+	};
+	int tty_fd;
 	pid_t pid;
 
-	pid = vfork();
+	pid = spawn(GETTY_PATH, newargv, newenviron);
 
-	/* We are init */
-	if (pid) {
-		getty->getty_pid = pid;
-		return 0;
-	}
-	/* We are the new process */
-	else {
-		const char *tty_path = getty->tty_path;
-		int tty_fd;
-
-		tty_fd = open(tty_path, O_RDWR);
-		if (tty_fd < 0)
-			return -1;
-
-		/* Wire up stdin, stdout, stderr */
-		dup2(tty_fd, STDIN_FILENO);
-		dup2(tty_fd, STDOUT_FILENO);
-		dup2(tty_fd, STDERR_FILENO);
-		close(tty_fd);
-
-		char * const newargv[] = {
-			GETTY_NAME,
-			tty_path,
-			SHELL_PATH,
-			NULL
-		};
-		char *newenviron[] = { NULL };
-
-		execve(GETTY_PATH, newargv, newenviron);
-		printf("execve failed\n");
-
+	if (pid == -1)
 		return -1;
-	}
+
+	getty->getty_pid = pid;
+
+	return 0;
 }
 
 static void handle_sig(int sig)
@@ -171,11 +153,13 @@ static int setup_signals(void)
 	ret = sigaction(SIGUSR1, &act, NULL);
 	if (ret)
 		printf("failed to setup signals: %d\n", errno);
+
+	return 0;
 }
 
 int main (int argc, char **argv, char **envp)
 {
-	int i;
+	int ret, i;
 
 	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
 
@@ -193,7 +177,11 @@ int main (int argc, char **argv, char **envp)
 
 	/* Spawn each of the configured gettys */
 	for (i = 0; i < num_gettys; i++) {
-		spawn_getty(&gettys[i]);
+		ret = spawn_getty(&gettys[i]);
+		if (ret) {
+			error("Failed to spawn getty\n");
+			return 1; /* hmmm */
+		}
 	}
 
 	/* Now sit in wait for one of the gettys to exit */
