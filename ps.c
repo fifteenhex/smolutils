@@ -39,6 +39,8 @@ static int cb(const char *name, int dir, void *priv)
 		return 0;
 
 	print_process(name, tmp);
+
+	return 0;
 }
 
 int main (int argc, char **argv, char **envp)
