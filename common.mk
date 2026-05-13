@@ -66,4 +66,4 @@ rootskel:
 	mkdir -p rootskel/bin
 	mkdir -p m68kroot/sbin
 
-EROFS_CMD = mkfs.erofs -Eforce-inode-compact -Eztailpacking -zlz4hc --tar
+EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar
