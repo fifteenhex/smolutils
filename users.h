@@ -5,7 +5,7 @@
 
 #define SMOLUTILS_USERS_NORMAL_MIN	1024
 
-static inline int users_changeuser(gid_t gid, uid_t uid)
+static int users_changeuser(gid_t gid, uid_t uid)
 {
 	if (setgid(gid) < 0) {
 		return -1;
@@ -16,6 +16,14 @@ static inline int users_changeuser(gid_t gid, uid_t uid)
 	}
 
 	return 0;
+}
+
+static const char *users_map_user(uid_t uid)
+{
+	if (uid == 0)
+		return "root";
+
+	return "dunno";
 }
 
 #endif  /* _SMOLUTILS_USERS_H */
