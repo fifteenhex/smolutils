@@ -94,7 +94,7 @@ static int process_line(char *line)
 		return -1;
 	}
 
-	printf("%s\t%d\t%d\t%d\t%d\t%s\n",
+	printf("%-20s %12d %12d %12d %4d%% %s\n",
 		mount.type, 0, 0, 0, 0, mount.mountpoint);
 
 	return 0;
@@ -112,7 +112,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	printf("Filesystem\t1K-blocks\tUsed\tAvailable\tUse%\tMounted on\n");
+	printf("%-20s %12s %12s %12s %5s %s\n",
+		"Filesystem", "1K-blocks", "Used", "Available", "Use%", "Mounted on");
 
 	while (true) {
 		ret = read(fd, &linebuf[pos], 1);
