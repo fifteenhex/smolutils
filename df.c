@@ -80,8 +80,12 @@ static int parse_mount(char *line, struct mount *mount)
 
 static int process_line(char *line)
 {
-	struct statfs buf;
+	long long total = 0;
+	long long avail = 0;
+	long long used = 0;
 	struct mount mount;
+	struct statfs buf;
+	int usepercent;
 	int ret;
 
 	ret = parse_mount(line, &mount);
@@ -94,8 +98,15 @@ static int process_line(char *line)
 		return -1;
 	}
 
-	printf("%-20s %12d %12d %12d %4d%% %s\n",
-		mount.type, 0, 0, 0, 0, mount.mountpoint);
+	if (buf.f_bsize) {
+		total = ((long long)buf.f_blocks * buf.f_bsize) / 1024;
+		avail = ((long long)buf.f_bavail * buf.f_bsize) / 1024;
+		used  = ((long long)(buf.f_blocks - buf.f_bfree) * buf.f_bsize) / 1024;
+		usepercent = total ? (int)(used * 100 / total) : 0;
+	}
+
+	printf("%-20s %12lld %12lld %12lld %4d%% %s\n",
+		mount.type, total, used, avail, usepercent, mount.mountpoint);
 
 	return 0;
 }
