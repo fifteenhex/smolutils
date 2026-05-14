@@ -41,17 +41,14 @@ PROGS_USER =		\
 	mount		\
 	umount
 
-COPTS= -ggdb \
-	-nostdlib \
-	-std=c99 \
-	-Os \
-	-include $(NOLIBCDIR)/nolibc.h \
-	-Wl,--hash-style=gnu
-
 # Make some warnings into errors because I am bad at the programming
-COPTS += -Werror=return-type
+_COPTS = -Werror=return-type
+_COPTS += -flto
+_COPTS += -ggdb -nostdlib -std=c99 -Os
 
-COPTS += -flto
+COPTS= -include $(NOLIBCDIR)/nolibc.h \
+	-Wl,--hash-style=gnu \
+	$(_COPTS)
 
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER))
 
