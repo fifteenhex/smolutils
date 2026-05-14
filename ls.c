@@ -72,11 +72,17 @@ static int cb_long(const char *name, int dir, void *priv)
 		    !!(st.st_mode & S_IWOTH),
 		    !!(st.st_mode & S_IXOTH));
 
+	/* hard links */
+	printf(" %5lu", (unsigned long)st.st_nlink);
+
 	/* user */
 	print_user(st.st_uid);
 
 	/* gid */
 	print_group(st.st_gid);
+
+	/* size */
+	printf(" %10lld", (long long)st.st_size);
 
 	printf(" %s\n", name);
 
