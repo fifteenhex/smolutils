@@ -48,6 +48,9 @@ COPTS= -ggdb \
 	-include $(NOLIBCDIR)/nolibc.h \
 	-Wl,--hash-style=gnu
 
+# Make some warnings into errors because I am bad at the programming
+COPTS += -Werror=return-type
+
 COPTS += -flto
 
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER))
