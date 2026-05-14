@@ -12,6 +12,8 @@ static int read_block(unsigned char* in)
 	int len = read(fd, in, LSHA256BLKSIZE);
 	if (len < 0)
 		return 1;
+
+	return 0;
 }
 
 int main (int argc, char **argv, char **envp)
