@@ -4,6 +4,17 @@ STATICPIE=-static-pie
 
 COPTS += -D R_AMD64_RELATIVE=8
 
+lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h
+	$(CC) \
+	$(_COPTS) \
+	-DLZ4_USER_MEMORY_FUNCTIONS \
+	-c -o $@ $<
+
+lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
+	$(CC) $(COPTS) \
+	$(STATICPIE) \
+	-o $@ $< lz4.x86_64.o
+
 .SECONDARY:
 %.x86_64.elf.dbg: %.c $(HEADERS)
 	$(CC) $(COPTS) \
@@ -17,12 +28,13 @@ SYSTEM_ELFS = $(addsuffix .x86_64.elf,$(PROGS_SYSTEM))
 USER_ELFS = $(addsuffix .x86_64.elf,$(PROGS_USER))
 
 .PHONY: elfs
-elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.x86_64.elf
 
+.PHONY: x86_64.tar
 x86_64.tar: elfs
 	tar -cf $@ --mode=755 --owner=root:0 --group=root:0 -C rootskel .
 	tar -rf $@ --mode=500 --owner=root:0 --group=root:0 --transform 's|^|sbin/|' --transform 's|\.x86_64\.elf||' $(SYSTEM_ELFS)
-	tar -rf $@ --mode=555 --owner=root:0 --group=root:0 --transform 's|^|bin/|' --transform 's|\.x86_64\.elf||' $(USER_ELFS)
+	tar -rf $@ --mode=555 --owner=root:0 --group=root:0 --transform 's|^|bin/|' --transform 's|\.x86_64\.elf||' $(USER_ELFS) lz4.x86_64.elf
 
 
 .PHONY: x86_64.erofs
