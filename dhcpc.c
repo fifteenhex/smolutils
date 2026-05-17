@@ -86,10 +86,23 @@ static int build_discover(struct dhcp_packet *p,
 
 static int send_discover(struct context *cntx)
 {
+	struct sockaddr_in dst = {
+		.sin_family = AF_INET,
+		.sin_port = htons(SERVER_PORT),
+		.sin_addr.s_addr = INADDR_BROADCAST,
+	};
 	struct dhcp_packet p;
 	int len;
+	int ret;
 
 	len = build_discover(&p, cntx->xid, cntx->mac);
+
+	ret = sendto(cntx->sock, &p, len, 0, (struct sockaddr *)&dst, sizeof(dst));
+
+	if (ret) {
+		error("Failed to send discover: %d\n", errno);
+		return -1;
+	}
 
 	return 0;
 }
@@ -211,6 +224,8 @@ int main(int argc, char **argv, char **envp)
 	ret = setup_socket(&cntx);
 	if (ret)
 		return 1;
+
+	ret = send_discover(&cntx);
 
 	return 0;
 }
