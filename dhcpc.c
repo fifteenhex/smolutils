@@ -28,11 +28,19 @@
 #define OPT_PARAM_REQ   55
 #define OPT_END         255
 
+struct config {
+	uint32_t address;
+	uint32_t subnet;
+	uint32_t serverid;
+};
+
 struct context {
 	const char* interface;
 	uint32_t xid;
 	uint8_t mac[6];
 	int sock;
+
+	struct config config;
 };
 
 struct dhcp_packet {
@@ -374,7 +382,7 @@ static int find_opt_u32(struct dhcp_packet *p, uint8_t code, uint32_t *opt)
 	if (ret)
 		return ret;
 
-	if (len != 1)
+	if (len != 4)
 		return -EINVAL;
 
 	memcpy(&tmp, _opt, sizeof(tmp));
@@ -401,8 +409,11 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 	return 0;
 }
 
+#define IPPRINT "%d.%d.%d.%d"
+
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
+	uint32_t addr, subnet, serverid;
 	uint8_t msgtype;
 	int ret;
 
@@ -434,13 +445,32 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	if (msgtype != DHCPOFFER)
 		return -EINVAL;
 
-	uint32_t addr = ntohl(p->yiaddr);
-	verbose("Got offer for %d.%d.%d.%d\n",
+	ret = find_opt_u32(p, OPT_SUBNET, &subnet);
+	if (ret) {
+		verbose("Failed to find subnet\n");
+		return ret;
+	}
+
+	subnet = ntohl(subnet);
+
+	ret = find_opt_u32(p, OPT_SERVER_ID, &serverid);
+
+	addr = ntohl(p->yiaddr);
+	verbose("Got offer for " IPPRINT "(" IPPRINT ")\n",
 		(addr >> 24) & 0xff,
 		(addr >> 16) & 0xff,
 		(addr >> 8) & 0xff,
-		 addr & 0xff
+		 addr & 0xff,
+		(subnet >> 24) & 0xff,
+		(subnet >> 16) & 0xff,
+		(subnet >> 8) & 0xff,
+		 subnet & 0xff
+
 	);
+
+	cntx->config.serverid = serverid;
+	cntx->config.address = addr;
+	cntx->config.subnet = subnet;
 
 	return 0;
 }
