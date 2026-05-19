@@ -43,7 +43,9 @@ COPTS += -Wl,-z,max-page-size=4
 
 .PHONY: system_elfs user_elfs
 SYSTEM_ELFS = $(addsuffix .68000.elf,$(PROGS_SYSTEM))
+SYSTEM_ELFS += $(addsuffix .68000.elf,$(PROGS_NET_SYSTEM))
 USER_ELFS = $(addsuffix .68000.elf,$(PROGS_USER))
+USER_ELFS += $(addsuffix .68000.elf,$(PROGS_NET_USER))
 
 elfs: $(SYSTEM_ELFS) $(USER_ELFS)
 
