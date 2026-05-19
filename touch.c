@@ -14,8 +14,13 @@ int main (int argc, char **argv, char **envp)
 	path = argv[1];
 
 	/* File doesn't exist, try to create it */
-	if (access(path, F_OK))
+	if (access(path, F_OK)) {
 		fd = creat(path, 0644);
+		if (fd < 0) {
+			error("Failed to create file\n");
+			return 1;
+		}
+	}
 	/* File exists, update timestamp(s) */
 	else {
 		// TODO
