@@ -51,9 +51,20 @@ err:
 	return ret;
 }
 
+static int setup_network(void)
+{
+	debug("configuring network\n");
+
+	spawn_and_wait("dhcpc", "/sbin/dhcpc");
+
+	return 0;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	mount_filesystems();
+
+	setup_network();
 
 	return 0;
 }
