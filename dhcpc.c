@@ -28,9 +28,11 @@
 #define OPT_PARAM_REQ   55
 #define OPT_END         255
 
+#define IPPRINT "%d.%d.%d.%d"
+
 struct config {
 	uint32_t address;
-	uint32_t subnet;
+	uint32_t subnet_mask;
 	uint32_t serverid;
 };
 
@@ -255,6 +257,8 @@ struct ifreq {
 	#define IFF_RUNNING (1 << 6)
 	#define ifr_name ifr_ifrn.ifrn_name
 	#define ifr_hwaddr ifr_ifru.ifru_hwaddr
+	#define	ifr_addr ifr_ifru.ifru_addr
+	#define	ifr_netmask ifr_ifru.ifru_netmask
 	#define	ifr_flags ifr_ifru.ifru_flags
 union
 	{
@@ -262,10 +266,10 @@ union
 	} ifr_ifrn;
 
 	union {
-//		struct sockaddr ifru_addr;
+		struct sockaddr ifru_addr;
 //		struct sockaddr ifru_dstaddr;
 //		struct sockaddr ifru_broadaddr;
-//		struct sockaddr ifru_netmask;
+		struct sockaddr ifru_netmask;
 		struct sockaddr ifru_hwaddr;
 		short ifru_flags;
 //		int ifru_ivalue;
@@ -299,6 +303,62 @@ static int ifup(const char *iface)
 	ret = ioctl(sock, SIOCSIFFLAGS, &ifr);
 	if (ret < 0)
 		return -1;
+
+	return 0;
+}
+
+static void print_address(uint32_t addr)
+{
+	verbose(IPPRINT,
+		(addr >> 24) & 0xff,
+		(addr >> 16) & 0xff,
+		(addr >> 8) & 0xff,
+		 addr & 0xff);
+}
+
+static int ifcfg(const char *iface, uint32_t addr, uint32_t mask)
+{
+	int __cleanup_fd sock = -1;
+	struct ifreq ifr = { 0 };
+	struct sockaddr_in *sin;
+	int ret;
+
+	verbose("Configuring %s\n", iface);
+	verbose("Address: ");
+	print_address(addr);
+	verbose(" subnet mask: ");
+	print_address(mask);
+	verbose("\n");
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return -1;
+
+	strncpy(ifr.ifr_name, iface, IFNAMSIZ - 1);
+
+	sin = (struct sockaddr_in *)&ifr.ifr_addr;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = htonl(addr);
+
+	ret = ioctl(sock, SIOCSIFADDR, &ifr);
+	if (ret < 0) {
+		verbose("Failed to set address\n");
+		return -1;
+	}
+
+	/*
+	 * This is really the same thing as above because of the union
+	 * but go through the motions.
+	 */
+	sin = (struct sockaddr_in *)&ifr.ifr_netmask;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = htonl(mask);
+
+        ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
+	if (ret < 0) {
+		verbose("Failed to set subnet mask\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -409,8 +469,6 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 	return 0;
 }
 
-#define IPPRINT "%d.%d.%d.%d"
-
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
 	uint32_t addr, subnet, serverid;
@@ -470,7 +528,7 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 
 	cntx->config.serverid = serverid;
 	cntx->config.address = addr;
-	cntx->config.subnet = subnet;
+	cntx->config.subnet_mask = subnet;
 
 	return 0;
 }
@@ -546,6 +604,8 @@ int main(int argc, char **argv, char **envp)
 			ret = do_request(&cntx, &p);
 			break;
 	}
+
+	ifcfg(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
 
 	return 0;
 }
