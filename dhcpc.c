@@ -32,6 +32,7 @@
 struct config {
 	uint32_t address;
 	uint32_t subnet_mask;
+	uint32_t router;
 	uint32_t serverid;
 };
 
@@ -307,7 +308,7 @@ static void print_address(uint32_t addr)
 		 addr & 0xff);
 }
 
-static int ifcfg(const char *iface, uint32_t addr, uint32_t mask)
+static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask)
 {
 	int __cleanup_fd sock = -1;
 	struct ifreq ifr = { 0 };
@@ -348,6 +349,64 @@ static int ifcfg(const char *iface, uint32_t addr, uint32_t mask)
         ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
 	if (ret < 0) {
 		verbose("Failed to set subnet mask\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+struct rtentry {
+	unsigned long	rt_pad1;
+	struct sockaddr	rt_dst;
+	struct sockaddr	rt_gateway;
+	struct sockaddr	rt_genmask;
+	unsigned short	rt_flags;
+	short		rt_pad2;
+	unsigned long	rt_pad3;
+	void		*rt_pad4;
+	short		rt_metric;
+	char		*rt_dev;
+	unsigned long	rt_mtu;
+	unsigned long	rt_window;
+	unsigned short	rt_irtt;
+};
+
+#define	RTF_UP		0x0001
+#define	RTF_GATEWAY	0x0002
+
+static int interface_set_default_route(const char *iface, uint32_t gateway)
+{
+	int __cleanup_fd sock = -1;
+	struct rtentry rt = { 0 };
+	struct sockaddr_in *sin;
+	int ret;
+
+	verbose("Default route via ");
+	print_address(gateway);
+	verbose("\n");
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return -1;
+
+	sin = (struct sockaddr_in *)&rt.rt_dst;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = INADDR_ANY;
+
+	sin = (struct sockaddr_in *)&rt.rt_genmask;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = INADDR_ANY;
+
+	sin = (struct sockaddr_in *)&rt.rt_gateway;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = htonl(gateway);
+
+	rt.rt_flags = RTF_UP | RTF_GATEWAY;
+	rt.rt_dev = (char *)iface;
+
+	ret = ioctl(sock, SIOCADDRT, &rt);
+	if (ret < 0) {
+	verbose("Failed to set default route\n");
 		return -1;
 	}
 
@@ -437,7 +496,7 @@ static int find_opt_u32(struct dhcp_packet *p, uint8_t code, uint32_t *opt)
 		return -EINVAL;
 
 	memcpy(&tmp, _opt, sizeof(tmp));
-	*opt = tmp;
+	*opt = ntohl(tmp);
 
 	return 0;
 }
@@ -462,7 +521,7 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
-	uint32_t addr, subnet, serverid;
+	uint32_t addr, subnet, router, serverid;
 	uint8_t msgtype;
 	int ret;
 
@@ -500,12 +559,12 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 		return ret;
 	}
 
-	subnet = ntohl(subnet);
-
 	ret = find_opt_u32(p, OPT_SERVER_ID, &serverid);
+	ret = find_opt_u32(p, OPT_ROUTER, &router);
 
 	addr = ntohl(p->yiaddr);
-	verbose("Got offer for " IPPRINT "(" IPPRINT ")\n",
+
+	verbose("Got offer for " IPPRINT "(" IPPRINT "), router " IPPRINT "\n",
 		(addr >> 24) & 0xff,
 		(addr >> 16) & 0xff,
 		(addr >> 8) & 0xff,
@@ -513,13 +572,17 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 		(subnet >> 24) & 0xff,
 		(subnet >> 16) & 0xff,
 		(subnet >> 8) & 0xff,
-		 subnet & 0xff
-
+		 subnet & 0xff,
+		(router >> 24) & 0xff,
+		(router >> 16) & 0xff,
+		(router >> 8) & 0xff,
+		 router & 0xff
 	);
 
 	cntx->config.serverid = serverid;
 	cntx->config.address = addr;
 	cntx->config.subnet_mask = subnet;
+	cntx->config.router = router;
 
 	return 0;
 }
@@ -596,7 +659,8 @@ int main(int argc, char **argv, char **envp)
 			break;
 	}
 
-	ifcfg(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
+	interface_set_address(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
+	interface_set_default_route(cntx.interface, cntx.config.router);
 
 	return 0;
 }
