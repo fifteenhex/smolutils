@@ -17,4 +17,31 @@ For nommu targets even uclibc + busybox isn't very usable:
 
 ## What
 
--- Table of programs and what they do will go here --
+| name      | progress   | binary name (if multicall) | notes |
+|-----------|------------|----------------------------|-------|
+| cat       |            |                            |       |
+| chmod     | stub       |                            |       |
+| cp        |            |                            |       |
+| df        |            |                            |       |
+| dhcpc     |            |                            |       |
+| dmesg     |            |                            |       |
+| getty     |            |                            |       |
+| init      |            |                            |       |
+| kill      |            |                            |       |
+| less      |            |                            |       |
+| ln        |            |                            |       |
+| lz4       |            |                            |       |
+| man       |            |                            |       |
+| mkdir     |            |                            |       |
+| mount     |            |                            |       |
+| mv        |            |                            |       |
+| ping      |            |                            |       |
+| ps        |            |                            |       |
+| sha256sum |            |                            |       |
+| smolsh    |            |                            |       |
+| sntp      |            |                            |       |
+| startup   |            |                            |       |
+| touch     |            |                            |       |
+| umount    |            |                            |       |
+| uname     |            |                            |       |
+| xxd       |            |                            |       |
