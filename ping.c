@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "net.h"
 
 int inet_aton(const char *cp, struct in_addr *inp) {
 	const char *start = cp;
@@ -122,7 +123,6 @@ static int wait_for_response(int sock)
 
 int main (int argc, char **argv, char **envp)
 {
-	struct timeval tv = { .tv_sec = TIMEOUT};
 	int __cleanup_fd sock = -1;
 	struct timeval t0, t1;
 	int ret;
@@ -145,11 +145,9 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	ret = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	if (ret) {
-		verbose("Failed to set socket timeout\n");
+	ret = smolutils_net_setsockrxtimeout(sock, TIMEOUT);
+	if (ret)
 		return 1;
-	}
 
 	for (i = 0; i < 10; i++)
 	{
