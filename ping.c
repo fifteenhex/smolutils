@@ -4,38 +4,6 @@
 #include "common.h"
 #include "net.h"
 
-int inet_aton(const char *cp, struct in_addr *inp) {
-	const char *start = cp;
-	uint32_t tmp;
-	char *end;
-	int i;
-
-	for (i = 0; i < 4; i++) {
-		unsigned long val = strtoul(start, &end, 10);
-
-		if (end == start || val > 255)
-			return 0;
-
-		tmp = (tmp << 8) | val;
-
-		if (i < 3) {
-			const char *dot = strchr(start, '.');
-
-			if (!dot || dot != end)
-				return 0;
-			start = dot + 1;
-		}
-	}
-
-	if (*end != '\0')
-		return 0;
-
-	if (inp)
-		inp->s_addr = htonl(tmp);
-
-	return 1;
-}
-
 #define TIMEOUT 2
 #define ICMP_ECHO 8
 struct icmphdr {
