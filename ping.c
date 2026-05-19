@@ -167,6 +167,7 @@ int main (int argc, char **argv, char **envp)
 		gettimeofday(&t1, NULL);
 
 		printf("Got reply\n");
+		sleep(2);
 	}
 
 	return 0;
