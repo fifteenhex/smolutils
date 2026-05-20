@@ -46,7 +46,8 @@ PROGS_NET_SYSTEM =	\
 	dhcpc
 
 PROGS_NET_USER =	\
-	ping
+	ping		\
+	resolv
 
 # Make some warnings into errors because I am bad at the programming
 _COPTS = -Werror=return-type
