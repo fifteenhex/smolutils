@@ -33,10 +33,10 @@ STATICPIE=-fpie -pie -Wl,--no-dynamic-linker
 # might care about if you have an MMU.
 COPTS += -Wl,-z,max-page-size=4
 
-%.68000.elf.dbg: %.c $(HEADERS)
+%.68000.elf.dbg: %.c $(HEADERS) libgcc_68000.a
 	$(CC) $(COPTS) \
 	$(STATICPIE) \
-	-o $@ $< -lgcc
+	-o $@ $< libgcc_68000.a
 
 %.68000.elf: %.68000.elf.dbg
 	$(STRIP) $< -o $@
