@@ -226,7 +226,7 @@ static int setup_socket(struct context *cntx)
 		return -1;
 	}
 
-	ret = smolutils_net_setsockrxtimeout(sock, 10);
+	ret = smolutils_net_setsockrxtimeout(sock, 3);
 	if (ret)
 		return -1;
 
@@ -274,13 +274,13 @@ union
 	} ifr_ifru;
 };
 
-static int ifup(const char *iface)
+static int interface_set_up(const char *iface)
 {
 	int __cleanup_fd sock = -1;
 	struct ifreq ifr = { 0 };
 	int ret;
 
-	sock  = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0)
 		return -1;
 
@@ -629,11 +629,12 @@ int main(int argc, char **argv, char **envp)
 	struct context cntx = {
 		.interface = DEFAULT_INTERFACE,
 	};
+	bool have_address = false;
 	struct dhcp_packet p;
-	int ret, sock;
+	int ret, sock, tries;
 
 	verbose("Bringing %s up\n", cntx.interface);
-	ret = ifup(cntx.interface);
+	ret = interface_set_up(cntx.interface);
 	if (ret)
 		return 1;
 
@@ -647,16 +648,27 @@ int main(int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	while (true) {
-			ret = do_discover(&cntx, &p);
-			if (ret) {
-				sleep(10);
-				continue;
-			}
+	for (tries = 0; tries < 10; tries++) {
+			/*
+			 * Note: the socket timeouts control how long
+			 * this loop sleeps between tries.
+			 */
 
+			ret = do_discover(&cntx, &p);
+			if (ret)
+				continue;
 
 			ret = do_request(&cntx, &p);
+			if (ret)
+				continue;
+
+			have_address = true;
 			break;
+	}
+
+	if (!have_address) {
+		error("Giving up..\n");
+		return 1;
 	}
 
 	interface_set_address(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
