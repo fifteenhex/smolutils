@@ -65,7 +65,7 @@ int main (int argc, char **argv, char **envp)
 	char c;
 	char *netif = NULL;
 
-        while ((c = getopt(argc, argv, "n")) != -1) {
+        while ((c = getopt(argc, argv, "n:")) != -1) {
                 switch (c) {
                 case 'n':
                         netif = optarg;

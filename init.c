@@ -12,6 +12,7 @@
 
 static const char cmdline_opt_prefix[] = "smolinit.";
 static const char cmdline_opt_getty[] = "getty=";
+static const char cmdline_opt_dhcpif[] = "dhcpif=";
 
 struct getty {
 	const char *tty_path;
@@ -20,6 +21,8 @@ struct getty {
 
 static struct getty gettys[16];
 static unsigned num_gettys = 0;
+
+static const char *dhcpif = NULL;
 
 static void parse_cmdline(int argc, char **argv)
 {
@@ -45,6 +48,13 @@ static void parse_cmdline(int argc, char **argv)
 				 * wasting memory copying strings.
 				 */
 				gettys[num_gettys++].tty_path = tty_path;
+			}
+
+			if (!dhcpif && STARTS_WITH(opt, cmdline_opt_dhcpif)) {
+				const char *intf = opt + STRLEN(cmdline_opt_dhcpif);
+
+				debug("Will configure %s via DHCP\n", intf);
+				dhcpif = intf;
 			}
 		}
 	}
@@ -112,6 +122,9 @@ static int setup_signals(void)
 int main (int argc, char **argv, char **envp)
 {
 	int ret, i;
+	char *startup_args[4] = {
+		"startup",
+	};
 
 	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
 
@@ -119,7 +132,12 @@ int main (int argc, char **argv, char **envp)
 
 	parse_environment(envp);
 
-	ret = spawn_and_wait("startup", STARTUP_PATH);
+	if (dhcpif) {
+		startup_args[1] = "-n";
+		startup_args[2] = dhcpif;
+	}
+
+	ret = spawn_and_wait_args(STARTUP_PATH, startup_args);
 	if (ret)
 		error("startup failed\n");
 
