@@ -166,15 +166,21 @@ static int spawn_and_wait_full(const char *path,
 	return 0;
 }
 
+static int spawn_and_wait_args(const char *path, char * const argv[])
+{
+	char *newenviron[] = { NULL };
+
+	return spawn_and_wait_full(path, argv, newenviron, NULL);
+}
+
 static int spawn_and_wait(char *name, const char *path)
 {
 	char * const newargv[] = {
 			name,
 			NULL
 	};
-	char *newenviron[] = { NULL };
 
-	return spawn_and_wait_full(path, newargv, newenviron, NULL);
+	return spawn_and_wait_args(path, newargv);
 }
 
 #endif /* _SMOLUTILS_COMMON_H */
