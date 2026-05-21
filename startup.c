@@ -51,7 +51,7 @@ err:
 	return ret;
 }
 
-static int setup_network(void)
+static int setup_network(const char *netif)
 {
 	debug("configuring network\n");
 
@@ -62,9 +62,21 @@ static int setup_network(void)
 
 int main (int argc, char **argv, char **envp)
 {
+	char c;
+	char *netif = NULL;
+
+        while ((c = getopt(argc, argv, "n")) != -1) {
+                switch (c) {
+                case 'n':
+                        netif = optarg;
+                        break;
+                }
+        }
+
 	mount_filesystems();
 
-	setup_network();
+	if (netif)
+		setup_network(netif);
 
 	return 0;
 }
