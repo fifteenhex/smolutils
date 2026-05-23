@@ -64,7 +64,11 @@ ifdef UAPIDIR
 	COPTS += -I$(UAPIDIR)
 endif
 
-HEADERS = common.h users.h net.h
+HEADERS = common.h \
+	  users.h \
+	  net.h \
+	  resolv.h \
+	  memfd.h
 
 rootskel:
 	mkdir -p rootskel/sys

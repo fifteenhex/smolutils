@@ -4,6 +4,8 @@
 #include "common.h"
 #include "net.h"
 
+#include "resolv.h"
+
 #define DNS_SERVER	"8.8.8.8"
 #define DNS_PORT	53
 #define DNS_TIMEOUT	5
@@ -77,7 +79,32 @@ static int skip_name(const uint8_t *buf, int buf_len, int off)
 	return -1;
 }
 
-static void parse_response(const uint8_t *buf, int len)
+static int parse_response_cb_stdout(uint32_t v4addr, void *priv)
+{
+	char ip[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &v4addr, ip, sizeof(ip));
+	printf("%s\n", ip);
+
+	return 0;
+}
+
+static int parse_response_cb_memfd(uint32_t v4addr, void *priv)
+{
+	struct resolv_buf *resolv_buf = (struct resolv_buf *) priv;
+	unsigned int num_results = resolv_buf->num_addr_v4;
+
+	if ((num_results + 1) >= RESOLV_MAX_RESULTS)
+		return 0;
+
+	resolv_buf->addr_v4[num_results].s_addr = v4addr;
+	resolv_buf->num_addr_v4++;
+
+	return 0;
+}
+
+static void parse_response(const uint8_t *buf, int len,
+			   int (*cb)(uint32_t v4addr, void *priv), void *priv)
 {
 	const struct dns_hdr *hdr = (const struct dns_hdr *)buf;
 	int ancount = ntohs(hdr->ancount);
@@ -92,7 +119,6 @@ static void parse_response(const uint8_t *buf, int len)
 
 	for (int i = 0; i < ancount && off < len; i++) {
 		uint16_t type, rdlen;
-		char ip[INET_ADDRSTRLEN];
 
 		off = skip_name(buf, len, off);
 		if (off < 0 || off + 10 > len)
@@ -104,15 +130,37 @@ static void parse_response(const uint8_t *buf, int len)
 		off += 2;
 		/* ttl   */
 		off += 4;
-		rdlen = ntohs(*(uint16_t *)(buf + off));      off += 2;
+		rdlen = ntohs(*(uint16_t *)(buf + off));
+		off += 2;
 
 		if (type == 1 && rdlen == 4) {
-			inet_ntop(AF_INET, buf + off, ip, sizeof(ip));
-			printf("%s\n", ip);
+			uint32_t v4addr;
+
+			memcpy(&v4addr, buf + off, sizeof(v4addr));
+			cb(v4addr, priv);
 		}
 
 		off += rdlen;
 	}
+}
+
+static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
+{
+	size_t mapsz = sizeof(struct resolv_buf);
+	unsigned long tmp;
+	char *endptr;
+	int memfd;
+
+	/* TODO: check that parsing actually worked */
+	tmp = strtoul(optarg, &endptr, 10);
+	memfd = tmp;
+
+	if (resolv_mapbuf(memfd, resolv_buf))
+		return -1;
+
+	memset(*resolv_buf, 0, mapsz);
+
+	return 0;
 }
 
 int main (int argc, char **argv, char **envp)
@@ -126,11 +174,27 @@ int main (int argc, char **argv, char **envp)
 	uint8_t buf[BUF_SZ];
 	int ret;
 	int len;
+	char c;
 
-	if (argc != 2)
+	bool memfd_mode = false;
+	struct resolv_buf *resolv_buf;
+
+	/* Fix this.. */
+	if (argc < 2)
 		return 1;
 
-	hostname = argv[1];
+        while ((c = getopt(argc, argv, "m:")) != -1) {
+                switch (c) {
+                case 'm':
+			ret = setup_memfd(optarg, &resolv_buf);
+			if (ret)
+				return 1;
+			memfd_mode = true;
+                        break;
+                }
+        }
+
+        hostname = (optind < argc) ? argv[optind] : ".";
 
 	inet_pton(AF_INET, DNS_SERVER, &srv.sin_addr);
 
@@ -151,7 +215,10 @@ int main (int argc, char **argv, char **envp)
 	if (len < 1)
 		return 1;
 
-	parse_response(buf, len);
+	if (memfd_mode)
+		parse_response(buf, len, parse_response_cb_memfd, resolv_buf);
+	else
+		parse_response(buf, len, parse_response_cb_stdout, NULL);
 
 	return 0;
 }
