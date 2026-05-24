@@ -3,6 +3,7 @@
 #include "config.h"
 #include "common.h"
 #include "net.h"
+#include "resolv.h"
 
 #define TIMEOUT 2
 #define ICMP_ECHO 8
@@ -89,22 +90,52 @@ static int wait_for_response(int sock)
 	return 1;
 }
 
+static int try_to_lookup_host(const char *host, struct in_addr *result)
+{
+	struct resolv_buf addresses;
+	int ret;
+
+	ret = resolv_doit(host, &addresses);
+	if (ret)
+		return ret;
+
+	memcpy(result, &addresses.addr_v4[0], sizeof(*result));
+
+	return 0;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd sock = -1;
 	struct timeval t0, t1;
-	int ret;
 	struct sockaddr_in dst = {
 		.sin_family = AF_INET,
 	};
+	const char *host;
+	int ret;
 	int i;
 
 	if (argc != 2)
 		return 1;
 
-	if (!inet_aton(argv[1], &dst.sin_addr)) {
-		error("Failed to parse address\n");
-		return 1;
+	host = argv[1];
+
+	ret = inet_aton(argv[1], &dst.sin_addr);
+	if (ret) {
+
+
+	}
+	else {
+		char ip[INET_ADDRSTRLEN];
+
+		ret = try_to_lookup_host(host, &dst.sin_addr);
+		if (ret) {
+			verbose("Failed to resolv host\n");
+			return 1;
+		}
+
+		inet_ntop(AF_INET, &dst.sin_addr, ip, sizeof(ip));
+		printf("Resolved %s to %s\n", host, ip);
 	}
 
 	sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
