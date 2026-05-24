@@ -26,7 +26,7 @@ int resolv_mapbuf(int memfd, struct resolv_buf **buf)
 	return 0;
 }
 
-int resolv_doit(const char *hostname)
+int resolv_doit(const char *hostname, struct resolv_buf *result)
 {
 	char memfd_str[16] = { 0 };
 	char * const newargv[] = {
@@ -36,7 +36,7 @@ int resolv_doit(const char *hostname)
 		hostname,
 		NULL
 	};
-	struct resolv_buf result;
+	struct resolv_buf *mapped;
 	int memfd;
 	int ret;
 
@@ -53,8 +53,9 @@ int resolv_doit(const char *hostname)
 		return ret;
 	}
 #else
-	ret = write(memfd, &result, sizeof(result));
-	if (ret != sizeof(result)) {
+	memset(result, 0, sizeof(*result));
+	ret = write(memfd, result, sizeof(*result));
+	if (ret != sizeof(*result)) {
 		verbose("failed to write tmp into memfd");
 	}
 	lseek(memfd, 0, SEEK_SET);
@@ -68,12 +69,13 @@ int resolv_doit(const char *hostname)
 		return -1;
 	}
 
-	struct resolv_buf *xx;
-	ret = resolv_mapbuf(memfd, &xx);
+	ret = resolv_mapbuf(memfd, &mapped);
 	if (ret)
 		return -1;
 
-	printf("got %d results from resolv\n", xx->num_addr_v4);
+	memcpy(result, mapped, sizeof(*result));
+
+	verbose("got %d results from resolv\n", result->num_addr_v4);
 
 	return 0;
 }
