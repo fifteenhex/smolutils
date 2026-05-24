@@ -35,6 +35,7 @@ struct config {
 	uint32_t router;
 	uint32_t serverid;
 	uint32_t dns[4];
+	uint8_t num_dns;
 };
 
 struct context {
@@ -450,9 +451,9 @@ static bool check_packet(struct context *cntx, struct dhcp_packet *p, unsigned i
 	return true;
 }
 
-static int find_opt(struct dhcp_packet *p, uint8_t code, uint8_t **opt, unsigned int *len)
+static int _find_opt(struct dhcp_packet *p, uint8_t *from, uint8_t code, uint8_t **opt, unsigned int *len)
 {
-	uint8_t *_opt = p->options;
+	uint8_t *_opt = from ? from : p->options;
 	uint8_t *opt_end = p->options + sizeof(p->options);
 
 	while (_opt < opt_end) {
@@ -482,24 +483,37 @@ out:
     return -ENOENT;
 }
 
-static int find_opt_u32(struct dhcp_packet *p, uint8_t code, uint32_t *opt)
+static int find_opt(struct dhcp_packet *p, uint8_t code, uint8_t **opt, unsigned int *len)
+{
+	return _find_opt(p, NULL, code, opt, len);
+}
+
+static int _find_opt_u32(struct dhcp_packet *p, uint8_t *from, uint8_t **pos, uint8_t code, uint32_t *opt)
 {
 	unsigned int len;
 	uint8_t *_opt;
 	uint32_t tmp;
 	int ret;
 
-	ret = find_opt(p, code, &_opt, &len);
+	ret = _find_opt(p, from, code, &_opt, &len);
 	if (ret)
 		return ret;
 
 	if (len != 4)
 		return -EINVAL;
 
+	if (pos)
+		*pos = opt;
 	memcpy(&tmp, _opt, sizeof(tmp));
 	*opt = ntohl(tmp);
 
 	return 0;
+}
+
+
+static int find_opt_u32(struct dhcp_packet *p, uint8_t code, uint32_t *opt)
+{
+	return _find_opt_u32(p, NULL, NULL, code, opt);
 }
 
 static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
@@ -529,6 +543,7 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	char dns_str[INET_ADDRSTRLEN];
 	uint8_t msgtype;
 	int ret;
+	int i;
 
 	verbose("Sending discover\n");
 	ret = send_discover(cntx, p);
@@ -581,9 +596,21 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	cntx->config.subnet_mask = subnet;
 	cntx->config.router = router;
 
-	ret = find_opt_u32(p, OPT_DNS, &dns[0]);
-	inet_ntop(AF_INET, &dns[0], dns_str, sizeof(dns_str));
-	verbose("DNS server: %s\n", dns_str);
+	cntx->config.num_dns = 0;
+	for (i = 0; i < ARRAY_SIZE(cntx->config.dns); i++) {
+		static uint8_t *optpos = NULL;
+
+		ret = _find_opt_u32(p, optpos, &optpos, OPT_DNS, &dns[0]);
+
+		if (ret == -ENOENT)
+			break;
+		else if(ret)
+			return ret;
+
+		inet_ntop(AF_INET, &dns[0], dns_str, sizeof(dns_str));
+		verbose("DNS server: %s\n", dns_str);
+		cntx->config.num_dns++;
+	}
 
 	return 0;
 }
