@@ -50,7 +50,8 @@ PROGS_NET_USER =	\
 	resolv
 
 # Make some warnings into errors because I am bad at the programming
-_COPTS = -Werror=return-type
+_COPTS =  -Werror=return-type
+_COPTS += -Werror=implicit-function-declaration
 _COPTS += -flto
 _COPTS += -ggdb -nostdlib -std=c99 -Os
 
