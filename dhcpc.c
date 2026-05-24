@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "config.h"
-#define VERBOSE
 #include "common.h"
 #include "net.h"
 
@@ -185,13 +184,16 @@ static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 	socklen_t addr_len = sizeof(addr);
 	ssize_t recvd;
 
+	verbose("Waiting for packet ...\n");
+
+
 	recvd  = recvfrom(cntx->sock, p, sizeof(*p), 0, (struct sockaddr *)&addr, &addr_len);
 	if (recvd < 0) {
 		error("Timed out waiting for packet\n");
 		return 1;
 	}
 
-	debug("got packet\n");
+	verbose("Got packet\n");
 
 	return 0;
 }
@@ -317,7 +319,7 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	struct sockaddr_in *sin;
 	int ret;
 
-	verbose("Configuring %s\n", iface);
+	verbose("Configuring address for %s\n", iface);
 	verbose("Address: ");
 	print_address(addr);
 	verbose(" subnet mask: ");
