@@ -28,16 +28,17 @@ int resolv_mapbuf(int memfd, struct resolv_buf **buf)
 
 int resolv_doit(const char *hostname, struct resolv_buf *result)
 {
+	size_t mapsz = sizeof(*result);
 	char memfd_str[16] = { 0 };
 	char * const newargv[] = {
 		"resolv",
 		"-m", /* memfd mode */
-		&memfd_str, /* memfd as a string */
-		hostname,
+		memfd_str, /* memfd as a string */
+		(char *) hostname,
 		NULL
 	};
+	int __cleanup_fd memfd = -1;
 	struct resolv_buf *mapped;
-	int memfd;
 	int ret;
 
 	ret = memfd_create_and_size("resolv_buf", &memfd);
@@ -47,15 +48,15 @@ int resolv_doit(const char *hostname, struct resolv_buf *result)
 	}
 
 #if 0 /* Until nolibc ftruncate appears .. */
-	ret = ftruncate(memfd, sizeof(*result));
+	ret = ftruncate(memfd, mapsz);
 	if (ret) {
 		verbose("failed to expand memfd to size of result\n");
 		return ret;
 	}
 #else
-	memset(result, 0, sizeof(*result));
-	ret = write(memfd, result, sizeof(*result));
-	if (ret != sizeof(*result)) {
+	memset(result, 0, mapsz);
+	ret = write(memfd, result, mapsz);
+	if (ret != mapsz) {
 		verbose("failed to write tmp into memfd");
 	}
 	lseek(memfd, 0, SEEK_SET);
@@ -73,7 +74,9 @@ int resolv_doit(const char *hostname, struct resolv_buf *result)
 	if (ret)
 		return -1;
 
-	memcpy(result, mapped, sizeof(*result));
+	memcpy(result, mapped, mapsz);
+
+	munmap(mapped, mapsz);
 
 	verbose("got %d results from resolv\n", result->num_addr_v4);
 
