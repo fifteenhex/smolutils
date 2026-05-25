@@ -49,6 +49,22 @@ For nommu targets even uclibc + busybox isn't very usable:
 
 ## Design
 
+### No config files
+
+The system is configured using the kernel command line, for example:
+
+```
+console=ttyGF0 root=/dev/vda -- smolinit.getty=/dev/ttyGF0 smolinit.hostname=tripleO smolinit.dhcpif=eth0
+```
+
+The first part is setting the kernel's console and root parameters,
+the `--` tells the kernel to pass the remining junk to init.
+
+Currently these parameters are implemented:
+- `smolinit.getty=<tty device>` - This causes a getty to be spawned on that tty, this can be specified multiple times
+- `smolinit.hostname=<string>` - Set the hostname, only the first instance is used.
+- `smolinit.dhcpif=<network interface>` - Causes DHCP to be used to configure this interface, for now only the first instance is used
+
 ### DNS resolver
 
 Since nolibc has no DNS resolver and I don't want something massive like
