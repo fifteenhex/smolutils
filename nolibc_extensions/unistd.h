@@ -21,5 +21,14 @@ static long setuid(uid_t uid)
         return __sysret(_sys_setuid(uid));
 }
 
-#endif /* __NOLIBC_EXT_UNISTD_H */
+static long _sys_sethostname(const char *name, size_t size)
+{
+	return __nolibc_syscall2(__NR_sethostname, name, size);
+}
 
+static long sethostname(const char *name, size_t size)
+{
+        return __sysret(_sys_sethostname(name, size));
+}
+
+#endif /* __NOLIBC_EXT_UNISTD_H */
