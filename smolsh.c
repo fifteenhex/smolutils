@@ -175,7 +175,7 @@ static int try_search_cb(const char *name, int dir, void *priv)
 {
 	const char *cmd = (const char *) priv;
 
-	if (strcmp(name, priv) == 0)
+	if (strcmp(name, cmd) == 0)
 		return 1;
 
 	return 0;
