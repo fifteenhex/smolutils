@@ -505,7 +505,7 @@ static int _find_opt_u32(struct dhcp_packet *p, uint8_t *from, uint8_t **pos, ui
 		return -EINVAL;
 
 	if (pos)
-		*pos = opt;
+		*pos = _opt;
 	memcpy(&tmp, _opt, sizeof(tmp));
 	*opt = ntohl(tmp);
 
