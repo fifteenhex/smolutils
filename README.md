@@ -29,10 +29,10 @@ For nommu targets even uclibc + busybox isn't very usable:
 | init      |            |                            |       |
 | kill      |            |                            |       |
 | less      |            |                            |       |
-| ln        |            |                            |       |
+| ln        |            | probably touch later?      |       |
 | lz4       |            |                            |       |
 | man       |            |                            |       |
-| mkdir     |            |                            |       |
+| mkdir     |            | probably touch later?      |       |
 | mount     |            |                            |       |
 | mv        |            |                            |       |
 | ping      |            |                            |       |
@@ -42,7 +42,7 @@ For nommu targets even uclibc + busybox isn't very usable:
 | sntp      |            |                            |       |
 | startup   |            |                            |       |
 | touch     |            |                            |       |
-| umount    |            |                            |       |
+| umount    |            | mount                      |       |
 | uname     |            |                            |       |
 | xxd       |            |                            |       |
 

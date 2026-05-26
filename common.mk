@@ -38,8 +38,7 @@ PROGS_USER =		\
 	chown		\
 	kill		\
 	df		\
-	mount		\
-	umount
+	mount
 
 PROGS_NET_SYSTEM =	\
 	sntp		\
@@ -78,7 +77,9 @@ rootskel:
 	mkdir -p rootskel/proc
 	mkdir -p rootskel/tmp
 	mkdir -p rootskel/run
+
 	mkdir -p rootskel/bin
-	mkdir -p m68kroot/sbin
+	ln -s mount rootskel/bin/umount
+	mkdir -p rootskel/sbin
 
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar

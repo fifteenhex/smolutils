@@ -3,7 +3,7 @@
 #include "config.h"
 #include "common.h"
 
-int main (int argc, char **argv, char **envp)
+static int multicall_mount(int argc, char **argv, char **envp)
 {
 	int ret;
 	char *source = NULL;
@@ -37,4 +37,28 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	return 0;
+}
+
+static int multicall_umount(int argc, char **argv, char **envp)
+{
+	char *target;
+
+	if (argc != 2)
+		return 1;
+
+	target = argv[1];
+
+	umount2(target, 0);
+
+	return 0;
+}
+
+int main (int argc, char **argv, char **envp)
+{
+	if (strcmp(argv[0], "mount") == 0)
+		return multicall_mount(argc, argv, envp);
+	else if (strcmp(argv[0], "umount") == 0)
+		return multicall_umount(argc, argv, envp);
+
+	return 1;
 }
