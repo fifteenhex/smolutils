@@ -38,6 +38,33 @@ static int prog_touch(int argc, char **argv, char **envp)
 
 static int prog_ln(int argc, char **argv, char **envp)
 {
+	const char *target, *linkpath;
+	bool symbolic = false;
+	int ret;
+	char c;
+
+	while ((c = getopt(argc, argv, "s")) != -1) {
+		switch (c) {
+                case 's':
+			symbolic = true;
+                        break;
+                }
+        }
+
+	target = (optind < argc) ? argv[optind++] : NULL;
+	if (!target)
+		return 1;
+
+	linkpath = (optind < argc) ? argv[optind++] : NULL;
+	if (!linkpath)
+		return 1;
+
+	ret = symbolic ? symlink(target, linkpath) : link(target, linkpath);
+	if (ret) {
+		error("ln() failed: %d\n", errno);
+		return 1;
+	}
+
 	return 0;
 }
 
