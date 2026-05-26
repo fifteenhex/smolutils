@@ -29,12 +29,12 @@ For nommu targets even uclibc + busybox isn't very usable:
 | init      |            |                            |       |
 | kill      |            |                            |       |
 | less      |            |                            |       |
-| ln        |            | probably touch later?      |       |
+| ln        | stub       | touch                      |       |
 | lz4       |            |                            |       |
 | man       |            |                            |       |
 | mkdir     |            | probably touch later?      |       |
 | mount     |            |                            |       |
-| mv        |            |                            |       |
+| mv        | stub       | touch                      |       |
 | ping      |            |                            |       |
 | ps        |            |                            |       |
 | sha256sum |            |                            |       |

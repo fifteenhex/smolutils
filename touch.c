@@ -3,7 +3,9 @@
 #include "config.h"
 #include "common.h"
 
-int main (int argc, char **argv, char **envp)
+#include "multicall.h"
+
+static int prog_touch(int argc, char **argv, char **envp)
 {
 	const char *path;
 	int __cleanup_fd fd = -1;
@@ -27,4 +29,47 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	return 0;
+}
+
+static int prog_ln(int argc, char **argv, char **envp)
+{
+	return 0;
+}
+
+static int prog_mv(int argc, char **argv, char **envp)
+{
+	return 0;
+}
+
+static int prog_mkdir(int argc, char **argv, char **envp)
+{
+	const char *path;
+	int ret;
+
+	if (argc != 2)
+		return 1;
+
+	path = argv[1];
+
+	ret = mkdir(path, 0755);
+	if (ret) {
+		error("mkdir() failed: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
+static const struct mutlicall_prog progs[] = {
+	{ "touch", prog_touch },
+	{ "ln", prog_ln },
+	{ "mv", prog_mv },
+	{ "mkdir", prog_mkdir },
+};
+
+int main (int argc, char **argv, char **envp)
+{
+	MULTICALL_DISPATCH(argv[0], progs);
+
+	return 1;
 }

@@ -24,16 +24,13 @@ PROGS_USER =		\
 	ls		\
 	ps		\
 	cat		\
-	mkdir		\
 	sha256sum	\
 	xxd		\
 	man		\
 	less		\
 	uname		\
 	cp		\
-	mv		\
 	touch		\
-	ln		\
 	chmod		\
 	chown		\
 	kill		\
@@ -80,7 +77,9 @@ rootskel:
 	mkdir -p rootskel/run
 
 	mkdir -p rootskel/bin
+	ln -s touch rootskel/bin/mkdir
 	ln -s mount rootskel/bin/umount
+	ln -s touch rootskel/bin/ln
 	mkdir -p rootskel/sbin
 
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar
