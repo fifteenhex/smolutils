@@ -25,7 +25,12 @@ static int prog_touch(int argc, char **argv, char **envp)
 	}
 	/* File exists, update timestamp(s) */
 	else {
-		// TODO
+#if 0 // utime/utimes is missing?
+		if (utime(path, NULL)) {
+			error("Failed to update timestamps\n");
+			return 1;
+		}
+#endif
 	}
 
 	return 0;
