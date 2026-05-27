@@ -95,6 +95,20 @@ static int prog_rm(int argc, char **argv, char **envp)
 
 static int prog_rmdir(int argc, char **argv, char **envp)
 {
+	const char *path;
+	int ret;
+
+	if (argc != 2)
+		return 1;
+
+	path = argv[1];
+
+	ret = rmdir(path);
+	if (ret) {
+		error("rmdir() failed: %d\n", errno);
+		return 1;
+	}
+
 	return 0;
 }
 
