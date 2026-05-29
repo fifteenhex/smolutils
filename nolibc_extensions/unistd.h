@@ -3,7 +3,7 @@
 
 static long _sys_setgid(gid_t gid)
 {
-	return __nolibc_syscall1(__NR_setgid, gid);
+	return __nolibc_syscall1(__NR_setgid32, gid);
 }
 
 static long setgid(gid_t gid)
@@ -13,7 +13,7 @@ static long setgid(gid_t gid)
 
 static long _sys_setuid(uid_t uid)
 {
-	return __nolibc_syscall1(__NR_setuid, uid);
+	return __nolibc_syscall1(__NR_setuid32, uid);
 }
 
 static long setuid(uid_t uid)
