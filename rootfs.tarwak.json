@@ -1,4 +1,8 @@
 {
+	"defaults": {
+		"user": "root",
+		"group": "root"
+	},
 	"root": {
 		"entries": {
                 	"dev" : {
@@ -6,6 +10,7 @@
 			},
 			"bin" : {
                         	"type": "dir",
+				"mode": "0555",
 				"defaults": {
 					"mode": "0555"
 				},
