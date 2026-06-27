@@ -6,8 +6,20 @@ jobs:
   build:
     runs-on: ubuntu-26.04
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout TarWak
+        uses: actions/checkout@v4
+        with:
+          repository: 'fifteenhex/tarwak'
+          path: 'tarwak'
+
+      - name: Update apt
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils
 
       - name: build
         run: make -f Makefile.ci build

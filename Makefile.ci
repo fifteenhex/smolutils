@@ -39,16 +39,24 @@ endef
 $(eval $(call toolchain_targets,M68K,m68k))
 $(eval $(call toolchain_targets,X86_64,x86_64))
 
+TARWAK=tarwak/build/tarwak
+$(TARWAK):
+	cd tarwak && meson setup build
+	cd tarwak/build && meson compile
+
 SIXEIGHTOPTS = UAPIDIR=`realpath $(UAPI_M68K)/include` \
 		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
-		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
+		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-` \
+		TARWAK=`realpath $(TARWAK)`
+
 
 PEKEHACHIROKUOPTS = UAPIDIR=`realpath $(UAPI_X86_64)/include` \
 		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
-		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-`
+		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-` \
+		TARWAK=`realpath $(TARWAK)`
 
 .PHONY: build
-build: $(TOOLCHAINDEP) $(HEADERDEP)
+build: $(TOOLCHAINDEP) $(HEADERDEP) $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
