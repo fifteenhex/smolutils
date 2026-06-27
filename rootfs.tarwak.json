@@ -22,7 +22,6 @@
 					"df": { },
 					"dmesg": { },
 					"smolsh": { },
-					"sntp": { },
 					"xxd": { },
 					"man": { },
 					"less": { },
@@ -32,10 +31,15 @@
 					"ls": { },
 					"ps": { },
 					"sha256sum": { },
-					"resolv": { },
-					"tftp": { },
+					"resolv": {
+						"feature": "net"
+					},
+					"tftp": {
+						"feature": "net"
+					},
 					"uname": { },
 					"ping": {
+						"feature": "net",
 						"xattrs": {
 							"security.capability": "cap_net_raw+ep"
 						}
@@ -77,8 +81,12 @@
 				"entities": {
 					"getty": { },
 					"startup": { },
-					"sntp": { },
-					"dhcpc": { },
+					"sntp": {
+						"feature": "net"
+					},
+					"dhcpc": {
+						"feature": "net"
+					},
 					"init": { }
 				}
 			},

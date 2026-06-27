@@ -54,10 +54,18 @@ elfs: $(SYSTEM_ELFS) $(USER_ELFS)
 
 .PHONY: m68k.tar
 m68k.tar: rootfs.tarwak.json elfs
-	$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.68000.elf"
+	$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.68000.elf" -f net
 
 .PHONY: m68k.erofs
 m68k.erofs: m68k.tar
+	$(EROFS_CMD) $@ $<
+
+.PHONY: m68k.nonet.tar
+m68k.nonet.tar: rootfs.tarwak.json elfs
+	$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.68000.elf"
+
+.PHONY: m68k.nonet.erofs
+m68k.nonet.erofs: m68k.nonet.tar
 	$(EROFS_CMD) $@ $<
 
 .PHONY: clean
