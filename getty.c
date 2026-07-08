@@ -32,12 +32,33 @@ int main(int argc, char **argv, char **envp)
 	dup2(tty_fd, STDERR_FILENO);
 	close(tty_fd);
 
+	/* Create a per-session seat directory owned by the target user */
+	{
+		char seat_path[64];
+
+		snprintf(seat_path, sizeof(seat_path), "/run/seat-%d-%d",
+			 (int)getpid(), SMOLUTILS_USERS_NORMAL_MIN);
+
+		if (mkdir(seat_path, 0755) < 0 && errno != EEXIST) {
+			error("Failed to create seat directory\n");
+			return 1;
+		}
+
+		if (chown(seat_path, SMOLUTILS_USERS_NORMAL_MIN,
+			  SMOLUTILS_USERS_NORMAL_MIN) < 0) {
+			error("Failed to chown seat directory\n");
+			return 1;
+		}
+	}
+
+#if 1
 	/* Change the user, this is what login would do... */
 	if (users_changeuser(SMOLUTILS_USERS_NORMAL_MIN,
 			     SMOLUTILS_USERS_NORMAL_MIN)) {
 		error("Failed to switch user\n");
 		return 1;
 	}
+#endif
 
 	if (spawn_and_wait("sh", shell_path)) {
 		error("Failed to spawn shell\n");
