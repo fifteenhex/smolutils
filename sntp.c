@@ -37,6 +37,7 @@ static int do_sntp(int sock, struct sockaddr_in *addr)
 	struct ntp_packet pkt = {
 		.li_vn_mode = (NTP_VERSION << 3) | NTP_MODE_CLIENT,
 	};
+	struct timespec ts = { 0 };
 	uint32_t ntp_frac;
 	uint32_t ntp_sec;
 	int ret;
@@ -58,10 +59,24 @@ static int do_sntp(int sock, struct sockaddr_in *addr)
 		return -1;
 	}
 
+	if (!pkt.stratum)
+		return -1;
+
 	ntp_sec  = ntohl(pkt.tx_ts_sec);
 	ntp_frac = ntohl(pkt.tx_ts_frac);
 
 	debug("NTP time %u.%u\n", (unsigned int) ntp_sec, (unsigned int) ntp_frac);
+
+	if (ntp_sec < NTP_UNIX_DELTA)
+		return -1;
+
+	ts.tv_sec = ntp_sec - NTP_UNIX_DELTA;
+	ts.tv_nsec = ((uint64_t) ntp_frac * 1000000000ULL) >> 32;
+
+	if (clock_settime(CLOCK_REALTIME, &ts)) {
+		error("Failed to set the time: %d\n", errno);
+		return -1;
+	}
 
 	return 0;
 }
@@ -95,8 +110,10 @@ int main (int argc, char **argv, char **envp)
 
 		/* success */
 		if (!ret)
-			break;
+			return 0;
 	}
 
-	return 0;
+	error("No server had the time for us\n");
+
+	return 1;
 }
