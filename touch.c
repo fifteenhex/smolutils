@@ -131,7 +131,7 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	return 0;
 }
 
-static const struct mutlicall_prog progs[] = {
+static const struct multicall_prog progs[] = {
 	{ "touch", prog_touch },
 	{ "ln", prog_ln },
 	{ "mv", prog_mv },

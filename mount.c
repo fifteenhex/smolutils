@@ -55,7 +55,7 @@ static int prog_umount(int argc, char **argv, char **envp)
 	return 0;
 }
 
-static const struct mutlicall_prog progs[] = {
+static const struct multicall_prog progs[] = {
 	{ "mount", prog_mount },
 	{ "umount", prog_umount },
 };
