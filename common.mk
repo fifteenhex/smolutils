@@ -56,8 +56,8 @@ fcomma := ,
 
 DISABLE_LIST := $(subst $(fcomma),$(fspace),$(FEATURE_DISABLE))
 
-ifeq ($(filter net,$(DISABLE_LIST)),)
-_COPTS += -DCONFIG_NET=n
+ifneq ($(filter net,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_NETWORK=n
 else
 PROGS_NET_SYSTEM =	\
 	sntp		\

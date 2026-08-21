@@ -80,7 +80,7 @@ int main (int argc, char **argv, char **envp)
                 }
         }
 
-	if (is_enabled(CONFIG_NETWORK) && hostname)
+	if (hostname)
 		sethostname(hostname, strlen(hostname));
 
 	mount_filesystems();
