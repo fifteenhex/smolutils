@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#ifndef __NOLIBC_EXT_SIGNAL_H
+#define __NOLIBC_EXT_SIGNAL_H
+
 #define SIGSETSZ 8
 
 static int _sys_sigaction(int sig,
@@ -17,3 +22,5 @@ static int sigaction(int sig,
 {
 	return __sysret(_sys_sigaction(sig, act, oldact));
 }
+
+#endif /* __NOLIBC_EXT_SIGNAL_H */

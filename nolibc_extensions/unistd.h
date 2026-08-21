@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef __NOLIBC_EXT_UNISTD_H
 #define __NOLIBC_EXT_UNISTD_H
 
