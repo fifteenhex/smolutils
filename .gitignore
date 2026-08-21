@@ -4,3 +4,7 @@
 *.elf.dbg
 *.tar
 *.erofs
+
+# Makefile.ci stuff
+_build/
+tarwak/

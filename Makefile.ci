@@ -2,6 +2,7 @@ _build:
 	mkdir $@
 
 NOLIBCBRANCH=nolibc-staticpie-20260427
+NOLIBCREPO=https://github.com/fifteenhex/linux.git
 
 TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
 TOOLCHAIN_M68K=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
@@ -12,8 +13,10 @@ TOOLCHAIN_DIR=gcc-15.2.0-nolibc
 
 TOOLCHAIN_X86_64=x86_64-gcc-15.2.0-nolibc-x86_64-linux.tar.gz
 
-_build/.stamp.linux_cloned:
-	git -C _build clone --depth 1 --branch $(NOLIBCBRANCH) https://github.com/fifteenhex/linux.git
+_build/.stamp.linux_cloned: | _build
+	git -C _build clone --depth 1 --branch $(NOLIBCBRANCH) \
+		--filter=blob:none --sparse $(NOLIBCREPO)
+	git -C _build/linux sparse-checkout set tools/include/nolibc
 	touch $@
 
 define toolchain_targets
@@ -24,39 +27,35 @@ _build/.stamp.toolchain_$(2)_extracted: _build/$(TOOLCHAIN_$(1))
 	tar -C _build/ -xaf _build/$(TOOLCHAIN_$(1))
 	touch $$@
 
-UAPI_$(1) = _build/headers_$(2)
-
-_build/.stamp.linux_headers_$(2): _build/.stamp.linux_cloned
-	make -C _build/linux/ ARCH=$(2) defconfig
-	mkdir $$(UAPI_$(1))
-	make -C _build/linux/ ARCH=$(2) INSTALL_HDR_PATH=`realpath $$(UAPI_$(1))` headers_install
-	touch $$@
-
 TOOLCHAINDEP += _build/.stamp.toolchain_$(2)_extracted
-HEADERDEP += _build/.stamp.linux_headers_$(2)
 endef
 
 $(eval $(call toolchain_targets,M68K,m68k))
 $(eval $(call toolchain_targets,X86_64,x86_64))
+
+UAPI_M68K = /usr/m68k-linux-gnu/include
+UAPI_X86_64 = /usr/include /usr/include/x86_64-linux-gnu
+
+NOLIBCPATH = `realpath _build/linux/tools/include/nolibc/`
 
 TARWAK=tarwak/build/tarwak
 $(TARWAK):
 	cd tarwak && meson setup build
 	cd tarwak/build && meson compile
 
-SIXEIGHTOPTS = UAPIDIR=`realpath $(UAPI_M68K)/include` \
-		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
+SIXEIGHTOPTS = UAPIDIR="$(UAPI_M68K)" \
+		NOLIBCDIR=$(NOLIBCPATH) \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-` \
 		TARWAK=`realpath $(TARWAK)`
 
 
-PEKEHACHIROKUOPTS = UAPIDIR=`realpath $(UAPI_X86_64)/include` \
-		NOLIBCDIR=`realpath _build/linux/tools/include/nolibc/` \
+PEKEHACHIROKUOPTS = UAPIDIR="$(UAPI_X86_64)" \
+		NOLIBCDIR=$(NOLIBCPATH) \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-` \
 		TARWAK=`realpath $(TARWAK)`
 
 .PHONY: build
-build: $(TOOLCHAINDEP) $(HEADERDEP) $(TARWAK)
+build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 

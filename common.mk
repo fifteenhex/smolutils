@@ -76,8 +76,9 @@ COPTS= -include $(NOLIBCDIR)/nolibc.h \
 
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER))
 
+# UAPIDIR may be a space separated list of directories
 ifdef UAPIDIR
-	COPTS += -I$(UAPIDIR)
+	COPTS += $(addprefix -I,$(UAPIDIR))
 endif
 
 HEADERS = common.h \
