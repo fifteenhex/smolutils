@@ -21,5 +21,11 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils linux-libc-dev-m68k-cross
 
+      - name: Cache toolchains
+        uses: actions/cache@v4
+        with:
+          path: _build/*.tar.*
+          key: toolchains-${{ runner.os }}-${{ hashFiles('Makefile.ci') }}
+
       - name: build
         run: make -f Makefile.ci build
