@@ -1,6 +1,6 @@
 include common.mk
 
-STATICPIE=-static-pie
+STATICPIE=-fpie -static-pie
 
 COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 
