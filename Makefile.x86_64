@@ -42,7 +42,7 @@ x86_64.erofs: x86_64.tar
 
 .PHONY: clean
 clean:
-	rm -f *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs
+	rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs
 
 .PHONY: clang-tidy
 clang-tidy:
