@@ -54,6 +54,16 @@ PEKEHACHIROKUOPTS = UAPIDIR="$(UAPI_X86_64)" \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-` \
 		TARWAK=`realpath $(TARWAK)`
 
+# Let clang-tidy work without all the other jank
+TIDYOPTS = UAPIDIR="$(UAPI_X86_64)" \
+		NOLIBCDIR=$(NOLIBCPATH) \
+		CROSS_COMPILE=none \
+		TARWAK=none
+
+.PHONY: clang-tidy
+clang-tidy: _build/.stamp.linux_cloned
+	$(MAKE) -f Makefile.x86_64 $(TIDYOPTS) clang-tidy
+
 .PHONY: build
 build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs

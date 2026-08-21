@@ -1,0 +1,26 @@
+Checks: >
+  -*,
+  bugprone-*,
+  clang-analyzer-*,
+  misc-*,
+  performance-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -misc-header-include-cycle,
+  -misc-include-cleaner,
+  -misc-unused-parameters,
+  -readability-braces-around-statements,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion,
+  -readability-isolate-declaration,
+  -readability-magic-numbers,
+  -readability-use-concise-preprocessor-directives,
+
+WarningsAsErrors: ''
+
+ExcludeHeaderFilterRegex: '.*/(_build|thirdparty)/.*'
+
+FormatStyle: none

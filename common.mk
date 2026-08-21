@@ -74,7 +74,8 @@ COPTS= -include $(NOLIBCDIR)/nolibc.h \
 	-Wl,--hash-style=gnu \
 	$(_COPTS)
 
-C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER))
+C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
+	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
 
 # UAPIDIR may be a space separated list of directories
 ifdef UAPIDIR

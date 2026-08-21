@@ -50,6 +50,7 @@ x86_64.erofs: x86_64.tar
 clean:
 	rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs
 
+# Only check our headers as nolibc upsets clang-tidy.
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy $(C_FILES) -- $(COPTS)
+	clang-tidy --header-filter='$(CURDIR)/.*\.h$$' $(C_FILES) -- $(COPTS)
