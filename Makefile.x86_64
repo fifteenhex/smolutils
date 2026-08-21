@@ -4,14 +4,20 @@ STATICPIE=-fpie -static-pie
 
 COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 
+# avoid LTO for lz4 for now as we have some header/symbol/linker fun issues
+LZ4OPTS = -nostdinc -I$(NOLIBCDIR) -fno-lto
+
 lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h
 	$(CC) \
-	$(_COPTS) \
+	$(LZ4OPTS) \
+	$(COPTS) \
+	$(STATICPIE) \
 	-DLZ4_USER_MEMORY_FUNCTIONS \
 	-c -o $@ $<
 
 lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
 	$(CC) $(COPTS) \
+	-fno-lto \
 	$(STATICPIE) \
 	-o $@ $< lz4.x86_64.o
 
