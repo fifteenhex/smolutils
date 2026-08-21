@@ -10,7 +10,7 @@
 
 int inet_aton(const char *cp, struct in_addr *inp) {
 	const char *start = cp;
-	uint32_t tmp;
+	uint32_t tmp = 0;
 	char *end;
 	int i;
 
