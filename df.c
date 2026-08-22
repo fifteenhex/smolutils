@@ -84,7 +84,7 @@ static int process_line(char *line)
 	long long used = 0;
 	struct mount mount;
 	struct statfs buf;
-	int usepercent;
+	int usepercent = 0;
 	int ret;
 
 	ret = parse_mount(line, &mount);
@@ -113,7 +113,7 @@ static int process_line(char *line)
 int main (int argc, char **argv, char **envp)
 {
 	unsigned int pos = 0;
-	int __cleanup_fd fd;
+	int __cleanup_fd fd = -1;
 	int ret;
 
 	fd = open(PROC_MOUNTS, O_RDONLY);
