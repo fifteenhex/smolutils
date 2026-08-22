@@ -186,10 +186,19 @@ static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 
 	verbose("Waiting for packet ...\n");
 
+	memset(p, 0, sizeof(*p));
 
 	recvd  = recvfrom(cntx->sock, p, sizeof(*p), 0, (struct sockaddr *)&addr, &addr_len);
 	if (recvd < 0) {
 		error("Timed out waiting for packet\n");
+		return 1;
+	}
+
+	if (recvd < (ssize_t) offsetof(struct dhcp_packet, options)) {
+		return 1;
+	}
+
+	if (ntohl(p->magic) != MAGIC_COOKIE) {
 		return 1;
 	}
 
@@ -468,7 +477,13 @@ static int _find_opt(struct dhcp_packet *p, uint8_t *from, uint8_t code, uint8_t
 		case OPT_END:
 			goto out;
 		default:
+			if (_opt == opt_end)
+				goto out;
+
 			_len = *_opt++;
+
+			if ((opt_end - _opt) < _len)
+				goto out;
 
 			if (_code == code) {
 				*opt = _opt;
