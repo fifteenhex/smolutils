@@ -24,7 +24,7 @@ int main (int argc, char **argv, char **envp)
 	sz = file_size(fd);
 
 	for (i = 0; i < sz; i += 0x10) {
-		uint8_t buf[0x10];
+		uint8_t buf[0x10] = { 0 };
 		int ret;
 
 		/* Read a row's worth of data */
@@ -41,7 +41,7 @@ int main (int argc, char **argv, char **envp)
 
 			if (remaining <= 0)
 				printf("     ");
-			else if (remaining == 0)
+			else if (remaining == 1)
 				printf("%02x   ", lsb);
 			else
 				printf("%02x%02x ", lsb, msb);
