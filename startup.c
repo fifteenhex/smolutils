@@ -11,7 +11,7 @@ static int do_mount(const char *source, const char *target, const char *type)
 
 	ret = mount(source, target, type, 0, NULL);
 	if (ret) {
-		error("mount(%s) failed: %d\n", target, ret);
+		error("mount(%s) failed: %d\n", target, errno);
 		return ret;
 	}
 

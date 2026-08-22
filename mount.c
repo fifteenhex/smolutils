@@ -34,7 +34,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 
 	ret = mount(source, target, type, 0, NULL);
 	if (ret) {
-		error("mount(%s) failed: %d\n", target, ret);
+		error("mount(%s) failed: %d\n", target, errno);
 		return 1;
 	}
 
@@ -50,7 +50,10 @@ static int prog_umount(int argc, char **argv, char **envp)
 
 	target = argv[1];
 
-	umount2(target, 0);
+	if (umount2(target, 0)) {
+		error("umount(%s) failed: %d\n", target, errno);
+		return 1;
+	}
 
 	return 0;
 }
