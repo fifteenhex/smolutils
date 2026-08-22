@@ -145,8 +145,10 @@ int main (int argc, char **argv, char **envp)
 
 			pos = 0;
 		}
-		else
-			pos++;
+		else if (++pos == ARRAY_SIZE(linebuf) - 1) {
+			verbose("Line too long\n");
+			return 1;
+		}
 	}
 
 	return 0;
