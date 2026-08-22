@@ -29,6 +29,15 @@
 #define error(...) printf(__VA_ARGS__)
 #define info(...) printf(__VA_ARGS__)
 
+/*
+ * Usage messages, CONFIG_USAGE=n removes them if you are really tight on space
+ */
+#if is_enabled(CONFIG_USAGE)
+#define usage(...) error(__VA_ARGS__)
+#else
+#define usage(...)
+#endif
+
 /* File stuff */
 
 static off_t file_size(int fd) {

@@ -10,6 +10,10 @@
 #define CONFIG_NETWORK	y
 #endif
 
+#ifndef CONFIG_USAGE
+#define CONFIG_USAGE	y
+#endif
+
 /* Magic */
 #define __ARG_PLACEHOLDER_y			0,
 #define __take_second_arg(__ignored, val, ...)	val
