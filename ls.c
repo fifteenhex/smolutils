@@ -52,8 +52,14 @@ static int cb_long(const char *name, int dir, void *priv)
                 return -1;
 
 	/* Type */
-	if (st.st_mode & S_IFDIR)
+	if (S_ISDIR(st.st_mode))
 		type = 'd';
+	else if (S_ISLNK(st.st_mode))
+		type = 'l';
+	else if (S_ISCHR(st.st_mode))
+		type = 'c';
+	else if (S_ISBLK(st.st_mode))
+		type = 'b';
 
 	printf("%c", type);
 
