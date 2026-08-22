@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "config.h"
 #include "common.h"
 
 #define MSG_MAX 2048
