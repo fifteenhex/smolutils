@@ -21,6 +21,7 @@ For nommu targets even uclibc + busybox isn't very usable:
 |-----------|------------|----------------------------|-------|
 | cat       |            |                            |       |
 | chmod     | stub       |                            |       |
+| chown     | stub       |                            |       |
 | cp        |            |                            |       |
 | df        |            |                            |       |
 | dhcpc     |            |                            |       |
@@ -28,25 +29,28 @@ For nommu targets even uclibc + busybox isn't very usable:
 | getty     |            |                            |       |
 | init      |            |                            |       |
 | kill      |            |                            |       |
-| less      |            |                            |       |
-| ln        | stub       | touch                      |       |
-| lz4       |            |                            |       |
-| man       |            |                            |       |
-| mkdir     |            | probably touch later?      |       |
+| less      | stub       |                            |       |
+| ln        |            | touch                      |       |
+| ls        |            |                            |       |
+| lz4       | stub       |                            |       |
+| man       | stub       |                            |       |
+| mkdir     |            | touch                      |       |
 | mount     |            |                            |       |
 | mv        | stub       | touch                      |       |
 | ping      |            |                            |       |
 | ps        |            |                            |       |
+| resolv    |            |                            |       |
+| rm        |            | touch                      |       |
+| rmdir     |            | touch                      |       |
 | sha256sum |            |                            |       |
 | smolsh    |            |                            |       |
 | sntp      |            |                            |       |
 | startup   |            |                            |       |
+| tftp      | stub       |                            |       |
 | touch     |            |                            |       |
 | umount    |            | mount                      |       |
 | uname     |            |                            |       |
 | xxd       |            |                            |       |
-| rm        |            | touch                      |       |
-| rmdir     |            | touch                      |       |
 
 ## Design
 
