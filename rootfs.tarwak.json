@@ -64,6 +64,10 @@
 					"rm": {
 						"type": "symlink",
 						"target": "/bin/touch"
+					},
+					"mv": {
+						"type": "symlink",
+						"target": "/bin/touch"
 					}
 				}
                 	},
