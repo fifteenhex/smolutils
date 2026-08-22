@@ -41,7 +41,7 @@ static int prog_ln(int argc, char **argv, char **envp)
 	const char *target, *linkpath;
 	bool symbolic = false;
 	int ret;
-	char c;
+	int c;
 
 	while ((c = getopt(argc, argv, "s")) != -1) {
 		switch (c) {

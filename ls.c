@@ -99,7 +99,7 @@ int main(int argc, char **argv, char **envp)
 {
 	bool long_format = false;
 	char *path;
-	char c;
+	int c;
 
 	while ((c = getopt(argc, argv, "l")) != -1) {
 		switch (c) {

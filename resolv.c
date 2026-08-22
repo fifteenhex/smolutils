@@ -174,7 +174,7 @@ int main (int argc, char **argv, char **envp)
 	uint8_t buf[BUF_SZ];
 	int ret;
 	int len;
-	char c;
+	int c;
 
 	bool memfd_mode = false;
 	struct resolv_buf *resolv_buf;

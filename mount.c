@@ -11,7 +11,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 	char *source = NULL;
 	char *target = NULL;
 	char *type = NULL;
-	char c;
+	int c;
 
         while ((c = getopt(argc, argv, "t:")) != -1) {
                 switch (c) {

@@ -88,7 +88,7 @@ static int setup_network(const char *netif)
 
 int main (int argc, char **argv, char **envp)
 {
-	char c;
+	int c;
 	char *hostname = NULL;
 	char *netif = NULL;
 
