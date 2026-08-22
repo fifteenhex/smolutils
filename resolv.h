@@ -12,7 +12,7 @@ struct resolv_buf {
 	unsigned int num_addr_v4;
 };
 
-int resolv_mapbuf(int memfd, struct resolv_buf **buf)
+static inline int resolv_mapbuf(int memfd, struct resolv_buf **buf)
 {
 	size_t mapsz = sizeof(struct resolv_buf);
 	void *mapped;
@@ -28,7 +28,7 @@ int resolv_mapbuf(int memfd, struct resolv_buf **buf)
 	return 0;
 }
 
-int resolv_doit(const char *hostname, struct resolv_buf *result)
+static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 {
 	size_t mapsz = sizeof(*result);
 	char memfd_str[16] = { 0 };

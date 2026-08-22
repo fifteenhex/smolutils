@@ -3,7 +3,7 @@
 #ifndef _SMOLUTILS_MEMFD_H
 #define _SMOLUTILS_MEMFD_H
 
-int memfd_create_and_size(const char *name, int *memfd)
+static inline int memfd_create_and_size(const char *name, int *memfd)
 {
 
 	int ret;

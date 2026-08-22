@@ -8,7 +8,7 @@
 #define INET_ADDRSTRLEN		16
 #define INET6_ADDRSTRLEN	48
 
-int inet_aton(const char *cp, struct in_addr *inp) {
+static inline int inet_aton(const char *cp, struct in_addr *inp) {
 	const char *start = cp;
 	uint32_t tmp = 0;
 	char *end;
@@ -40,7 +40,7 @@ int inet_aton(const char *cp, struct in_addr *inp) {
 	return 1;
 }
 
-int inet_pton(int af, const char *src, void *dst)
+static inline int inet_pton(int af, const char *src, void *dst)
 {
 	switch (af) {
 	case AF_INET:
@@ -53,7 +53,7 @@ int inet_pton(int af, const char *src, void *dst)
 
 #define IPPRINT "%d.%d.%d.%d"
 
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+static inline const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
 	uint32_t v4_addr;
 
@@ -73,7 +73,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 	return NULL;
 }
 
-static int smolutils_net_setsockbroadcast(int sock)
+static inline int smolutils_net_setsockbroadcast(int sock)
 {
 	int sock_opt = 1;
 	int ret;
@@ -88,7 +88,7 @@ static int smolutils_net_setsockbroadcast(int sock)
 	return 0;
 }
 
-static int smolutils_net_setsockrxtimeout(int sock, int timeout)
+static inline int smolutils_net_setsockrxtimeout(int sock, int timeout)
 {
 	struct timeval tv = { .tv_sec = timeout };
 	int ret;
