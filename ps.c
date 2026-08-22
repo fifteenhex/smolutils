@@ -6,26 +6,43 @@
 
 static const char *proc_path = "/proc";
 
-static void print_process(const char *pid, const char *comm_path)
+static void print_user(uid_t uid)
+{
+	const char *user = users_map_user(uid);
+
+	if (user)
+		printf("%s", user);
+	else
+		printf("%u", (unsigned int) uid);
+}
+
+static void print_process(const char *pid, const char *comm_path, uid_t uid)
 {
 	char tmp[1024];
 	int len;
 	int __cleanup_fd fd;
 
 	fd = open(comm_path, O_RDONLY);
+	if (fd < 0)
+		return;
 
-	len = read(fd, tmp, sizeof(tmp));
+	len = read(fd, tmp, sizeof(tmp) - 1);
 	if (len <= 0)
 		return;
 
-	tmp[len - 1] = '\0';
+	/* Drop the trailing newline */
+	if (tmp[len - 1] == '\n')
+		len--;
+	tmp[len] = '\0';
 
-	printf("%s\t\t%s\t\t%s\n", users_map_user(0 /* fixme */), pid, tmp);
+	print_user(uid);
+	printf("\t\t%s\t\t%s\n", pid, tmp);
 }
 
 static int cb(const char *name, int dir, void *priv)
 {
 	char tmp[1024];
+	struct stat st;
 
 	if (strcmp(name, "self") == 0)
 		return 0;
@@ -39,7 +56,10 @@ static int cb(const char *name, int dir, void *priv)
 	if (access(tmp, F_OK))
 		return 0;
 
-	print_process(name, tmp);
+	if (fstatat(dir, name, &st, 0))
+		return 0;
+
+	print_process(name, tmp, st.st_uid);
 
 	return 0;
 }
