@@ -30,7 +30,7 @@ static int copy_a_file(const char *src, const char *dst)
 		return -1;
 	}
 
-	debug("Calling sendfile() to copy %lld bytes\n", sz);
+	debug("Calling sendfile() to copy %lld bytes\n", (long long) sz);
 
 	ret = sendfile(dst_fd, src_fd, NULL, sz);
 	if (ret != sz) {
@@ -47,7 +47,8 @@ int main (int argc, char **argv, char **envp)
 	if (argc != 3)
 		return 1;
 
-	copy_a_file(argv[1], argv[2]);
+	if (copy_a_file(argv[1], argv[2]))
+		return 1;
 
 	return 0;
 }
