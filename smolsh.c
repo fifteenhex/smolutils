@@ -285,6 +285,10 @@ static int toktoktok(char *str, size_t len,
 			/* Was in a token, token is done */
 			if (token_len) {
 				verbose("Token ended at %d\n", i);
+
+				if (token_count >= max_tokens)
+					return -1;
+
 				/* Terminate token */
 				*str = '\0';
 				token_len = 0;
@@ -344,7 +348,7 @@ int main (int argc, char **argv, char **envp)
 		verbose("Got command line: \"%s\"\n", line);
 
 		ret = toktoktok(line, len,
-				tokens, ARRAY_SIZE(tokens), &num_tokens,
+				tokens, MAX_TOKENS, &num_tokens,
 				&stdout, &append);
 		if (ret) {
 			printf("Syntax error\n");
