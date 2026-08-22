@@ -20,7 +20,7 @@ static void print_process(const char *pid, const char *comm_path, uid_t uid)
 {
 	char tmp[1024];
 	int len;
-	int __cleanup_fd fd;
+	int __cleanup_fd fd = -1;
 
 	fd = open(comm_path, O_RDONLY);
 	if (fd < 0)
