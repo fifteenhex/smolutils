@@ -44,6 +44,11 @@ static void parse_cmdline(int argc, char **argv)
 			if (STARTS_WITH(opt, cmdline_opt_getty)) {
 				const char *tty_path = opt + STRLEN(cmdline_opt_getty);
 
+				if (num_gettys >= ARRAY_SIZE(gettys)) {
+					error("Too many gettys\n");
+					continue;
+				}
+
 				debug("Will start getty on TTY %s\n", tty_path);
 				/*
 				 * I guess its safe to just point the argv memory to avoid
