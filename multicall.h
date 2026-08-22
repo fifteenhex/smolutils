@@ -8,12 +8,21 @@ struct multicall_prog {
 	int (*progcb)(int argc, char **argv, char **envp);
 };
 
+/* multicall works on the basename but we might have been called by path */
+static const char *multicall_basename(const char *path)
+{
+	const char *slash = strrchr(path, '/');
+
+	return slash ? slash + 1 : path;
+}
+
 #define MULTICALL_DISPATCH(_progname, _progs)				\
 {									\
-	int i;								\
+	const char *_name = multicall_basename(_progname);		\
+	unsigned int i;							\
 									\
 	for (i = 0; i < ARRAY_SIZE(_progs); i++) {			\
-		if (strcmp(_progs[i].progname, _progname) == 0)		\
+		if (strcmp(_progs[i].progname, _name) == 0)		\
 			return _progs[i].progcb(argc, argv, envp);	\
 	}								\
 }
