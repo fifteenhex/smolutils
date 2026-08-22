@@ -437,7 +437,7 @@ static int get_mac(const char *iface, uint8_t *mac)
 
 	ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
 	if (ret) {
-		error("failed to get mac address");
+		error("failed to get mac address\n");
 		return -1;
 	}
 
