@@ -20,6 +20,23 @@ static int do_mount(const char *source, const char *target, const char *type)
 	return 0;
 }
 
+static bool already_mounted(const char *path)
+{
+	struct stat st, parent;
+	char tmp[64];
+
+	if (stat(path, &st))
+		return false;
+
+	if (snprintf(tmp, sizeof(tmp), "%s/..", path) >= (int) sizeof(tmp))
+		return false;
+
+	if (stat(tmp, &parent))
+		return false;
+
+	return st.st_dev != parent.st_dev;
+}
+
 struct mountpoint {
 	const char *source;
 	const char *target;
@@ -27,6 +44,7 @@ struct mountpoint {
 };
 
 static const struct mountpoint fstab[] = {
+	{"devtmpfs", "/dev", "devtmpfs"},
 	{"sysfs", "/sys", "sysfs"},
 	{"proc", "/proc", "proc"},
 	{"tmp", "/tmp", "tmpfs"},
@@ -42,6 +60,11 @@ static int mount_filesystems(void)
 
 	for (int i = 0; i < ARRAY_SIZE(fstab); i++) {
 		const struct mountpoint *mp = &fstab[i];
+
+		if (already_mounted(mp->target)) {
+			debug("%s is already mounted\n", mp->target);
+			continue;
+		}
 
 		ret = do_mount(mp->source, mp->target, mp->type);
 		if (ret)
