@@ -105,7 +105,7 @@ static int process_line(char *line)
 	}
 
 	printf("%-20s %12lld %12lld %12lld %4d%% %s\n",
-		mount.type, total, used, avail, usepercent, mount.mountpoint);
+		mount.dev, total, used, avail, usepercent, mount.mountpoint);
 
 	return 0;
 }
