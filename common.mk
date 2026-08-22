@@ -82,11 +82,14 @@ ifdef UAPIDIR
 	COPTS += $(addprefix -I,$(UAPIDIR))
 endif
 
-HEADERS = common.h \
+HEADERS = config.h \
+	  common.h \
 	  users.h \
 	  net.h \
 	  resolv.h \
 	  memfd.h \
-	  multicall.h
+	  multicall.h \
+	  nolibc_extensions/unistd.h \
+	  nolibc_extensions/signal.h
 
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar
