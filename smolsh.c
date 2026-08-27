@@ -8,13 +8,13 @@
 
 static bool keeprocking = true;
 
-static void run_cmd(const char *bin, char * const *argv)
+static void run_cmd(const char *bin, char * const *argv, int stdout)
 {
 	char *newenviron[] = { NULL };
 	bool killed = false;
 	int ret;
 
-	ret = spawn_and_wait_full(bin, argv, newenviron, &killed);
+	ret = spawn_and_wait_redirect(bin, argv, newenviron, &killed, stdout);
 	if (ret) {
 		if (killed)
 			error("Killed by signal: %d\n", ret);
@@ -34,10 +34,10 @@ static int cd_handler(int argc, char **argv, int stdout)
 	char *newdir;
 	int ret;
 
-	if (argc != 2)
+	if (argc > 2)
 		return 1;
 
-	newdir = argv[1];
+	newdir = (argc == 2) ? argv[1] : "/";
 
 	ret = chdir(newdir);
 	if (ret) {
@@ -64,16 +64,18 @@ static int clear_handler(int argc, char **argv, int stdout)
 
 static int echo_handler(int argc, char **argv, int stdout)
 {
-	char tmp[1024];
-	char *str;
-	int len;
+	char tmp[MAX_CMDLINE + 1];
+	int len = 0;
+	int i;
 
-	if (argc != 2)
-		return 1;
+	for (i = 1; i < argc; i++) {
+		if (i > 1)
+			tmp[len++] = ' ';
 
-	str = argv[1];
+		len += sprintf(tmp + len, "%s", argv[i]);
+	}
 
-	len = sprintf(tmp, "%s\n", str);
+	tmp[len++] = '\n';
 
 	write(stdout, tmp, len);
 
@@ -388,14 +390,14 @@ int main (int argc, char **argv, char **envp)
 			continue;
 
 		if (try_fixed(cmd, &path)) {
-			run_cmd(path, tokens);
+			run_cmd(path, tokens, _stdout);
 			continue;
 		}
 
 		ret = try_absolute(cmd, &path);
 		if (ret) {
 			if (ret == 1)
-				run_cmd(path, tokens);
+				run_cmd(path, tokens, _stdout);
 			else
 				printf("ERROR xxx\n");
 
@@ -403,7 +405,7 @@ int main (int argc, char **argv, char **envp)
 		}
 
 		if (try_search(cmd, &path)) {
-			run_cmd(path, tokens);
+			run_cmd(path, tokens, _stdout);
 			continue;
 		}
 
