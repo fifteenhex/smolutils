@@ -48,9 +48,14 @@ x86_64.tar: rootfs.tarwak.json elfs
 x86_64.erofs: x86_64.tar
 	$(EROFS_CMD) $@ $<
 
+# Convert the tar into a cpio to use for an initramfs
+.PHONY: x86_64.cpio.gz
+x86_64.cpio.gz: x86_64.tar
+	bsdtar --format=newc -cf - @$< | gzip -9 > $@
+
 .PHONY: clean
 clean:
-	rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs
+	rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
 
 # Only check our headers as nolibc upsets clang-tidy.
 .PHONY: clang-tidy

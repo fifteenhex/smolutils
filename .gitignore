@@ -8,3 +8,4 @@
 # Makefile.ci stuff
 _build/
 tarwak/
+*.cpio.gz
