@@ -111,7 +111,10 @@ int main(int argc, char **argv, char **envp)
 
 	path = (optind < argc) ? argv[optind] : ".";
 
-	iterate_dir(path, long_format ? cb_long : cb_short, NULL);
+	if (iterate_dir(path, long_format ? cb_long : cb_short, NULL) < 0) {
+		error("Failed to list %s: %d\n", path, errno);
+		return 1;
+	}
 
 	if (!long_format)
 		printf("\n");
