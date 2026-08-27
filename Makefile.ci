@@ -69,6 +69,27 @@ build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
+# Boot using whatever kernel is in /boot/,.. The globbing is probably
+# going to break this if you have more than one kernel? revist.
+BOOT_TIMEOUT ?= 30
+
+.PHONY: boot
+boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
+	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
+	kernel=`ls -1 /boot/vmlinuz-* | sort -V | tail -1`; \
+	echo "booting with $$kernel"; \
+	timeout --foreground $(BOOT_TIMEOUT) qemu-system-x86_64 \
+		-nographic -no-reboot -m 128 -nic none \
+		-kernel $$kernel \
+		-initrd x86_64.cpio.gz \
+		-append "console=ttyS0 rdinit=/sbin/init -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6"; \
+	ret=$$?; \
+	if [ $$ret -eq 124 ]; then \
+		echo "still running after $(BOOT_TIMEOUT)s"; \
+	else \
+		echo "qemu exited with $$ret"; exit $$ret; \
+	fi
+
 .PHONY: clean
 clean:
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) clean
