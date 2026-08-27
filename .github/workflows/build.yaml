@@ -34,5 +34,22 @@ jobs:
       - name: build
         run: make -f Makefile.ci build
 
+      # Magic to find a kernel image we can actually read
+      - name: pick a kernel
+        run: |
+          kernel=
+          for k in $(ls -1 /boot/vmlinuz-* | sort -V -r); do
+            if [ -r "$k" ]; then kernel=$k; break; fi
+          done
+          if [ -z "$kernel" ]; then
+            newest=$(ls -1 /boot/vmlinuz-* | sort -V | tail -1)
+            echo "no readable kernel, taking a copy of $newest"
+            mkdir -p _build
+            sudo cat "$newest" > _build/vmlinuz
+            kernel=_build/vmlinuz
+          fi
+          echo "using $kernel"
+          echo "KERNEL=$kernel" >> "$GITHUB_ENV"
+
       - name: boot
-        run: make -f Makefile.ci boot
+        run: make -f Makefile.ci boot KERNEL="$KERNEL"

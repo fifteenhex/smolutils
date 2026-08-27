@@ -73,10 +73,16 @@ build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 # going to break this if you have more than one kernel? revist.
 BOOT_TIMEOUT ?= 30
 
+# By default use whatever the newest installed kernel is
+KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
+
 .PHONY: boot
 boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
-	kernel=`ls -1 /boot/vmlinuz-* | sort -V | tail -1`; \
+	kernel="$(KERNEL)"; \
+	if [ ! -r "$$kernel" ]; then \
+		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
+	fi; \
 	echo "booting with $$kernel"; \
 	timeout --foreground $(BOOT_TIMEOUT) qemu-system-x86_64 \
 		-nographic -no-reboot -m 128 -nic none \
