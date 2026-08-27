@@ -7,10 +7,10 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout TarWak
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'fifteenhex/tarwak'
           path: 'tarwak'
@@ -21,11 +21,19 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils linux-libc-dev-m68k-cross clang-tidy libarchive-tools qemu-system-x86 linux-image-generic
 
+      # Only refresh the toolchains when they change. The makefile might change even if the toolchains don't
+      - name: Work out the toolchain key
+        id: toolchainkey
+        run: |
+          key=$(grep -E '^TOOLCHAIN_(URL|M68K|X86_64|DIR)=' Makefile.ci | sha256sum | cut -d' ' -f1)
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
       - name: Cache toolchains
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build/*.tar.*
-          key: toolchains-${{ runner.os }}-${{ hashFiles('Makefile.ci') }}
+          key: toolchains-${{ runner.os }}-${{ steps.toolchainkey.outputs.key }}
+          restore-keys: toolchains-${{ runner.os }}-
 
       - name: clang-tidy
         continue-on-error: true
