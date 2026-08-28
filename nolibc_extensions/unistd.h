@@ -32,6 +32,16 @@ static long setuid(uid_t uid)
         return __sysret(_sys_setuid(uid));
 }
 
+static long _sys_sync(void)
+{
+	return __nolibc_syscall0(__NR_sync);
+}
+
+static void sync(void)
+{
+	_sys_sync();
+}
+
 static long _sys_sethostname(const char *name, size_t size)
 {
 	return __nolibc_syscall2(__NR_sethostname, name, size);
