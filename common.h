@@ -172,7 +172,8 @@ static int spawn_and_wait_redirect(const char *path,
 	if (pid < 0)
 		return -1;
 
-	waitpid(pid, &waitpid_stat, 0);
+	if (waitpid(pid, &waitpid_stat, 0) < 0)
+		return -1;
 
 	if (WIFSIGNALED(waitpid_stat)) {
 		if (killed)
