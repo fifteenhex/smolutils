@@ -676,7 +676,7 @@ int main(int argc, char **argv, char **envp)
 	};
 	bool have_address = false;
 	struct dhcp_packet p;
-	int ret, sock, tries;
+	int ret, tries;
 
 	verbose("Bringing %s up\n", cntx.interface);
 	ret = interface_set_up(cntx.interface);

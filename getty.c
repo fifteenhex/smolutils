@@ -9,7 +9,6 @@ int main(int argc, char **argv, char **envp)
 	const char *shell_path;
 	const char *tty_path;
 	int tty_fd;
-	pid_t pid;
 
 	if (argc != 3)
 		return 1;

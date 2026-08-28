@@ -21,7 +21,6 @@ int main (int argc, char **argv, char **envp)
 {
 	unsigned char out[32] = {0};
 	char *path;
-	int len;
 	off_t filesz;
 
 	if (argc != 2)

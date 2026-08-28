@@ -53,7 +53,6 @@ static char tmp[MSG_MAX + 1];
 int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
-	int len;
 
 	fd = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
 	if (fd < 0)

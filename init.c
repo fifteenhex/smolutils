@@ -100,7 +100,6 @@ static int spawn_getty(struct getty *getty)
 		SHELL_PATH,
 		NULL
 	};
-	int tty_fd;
 	pid_t pid;
 
 	pid = spawn(GETTY_PATH, newargv, newenviron);
