@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "multicall.h"
+#include "nolibc_extensions/unistd.h"
 
 static int prog_touch(int argc, char **argv, char **envp)
 {
@@ -68,9 +69,76 @@ static int prog_ln(int argc, char **argv, char **envp)
 	return 0;
 }
 
+/* Cross filesystem move using sendfile() */
+static int move_across(const char *src, const char *dst)
+{
+	int __cleanup_fd src_fd = -1;
+	int __cleanup_fd dst_fd = -1;
+	struct stat st;
+	off_t left;
+
+	src_fd = open(src, O_RDONLY);
+	if (src_fd < 0) {
+		error("Failed to open %s: %d\n", src, errno);
+		return 1;
+	}
+
+	if (fstat(src_fd, &st)) {
+		error("Failed to stat %s: %d\n", src, errno);
+		return 1;
+	}
+
+	if (!S_ISREG(st.st_mode)) {
+		error("%s isn't a regular file\n", src);
+		return 1;
+	}
+
+	dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, st.st_mode & 07777);
+	if (dst_fd < 0) {
+		error("Failed to create %s: %d\n", dst, errno);
+		return 1;
+	}
+
+	for (left = st.st_size; left > 0; ) {
+		int done = sendfile(dst_fd, src_fd, NULL, left);
+
+		if (done <= 0) {
+			error("sendfile(%s) failed: %d\n", dst, errno);
+			return 1;
+		}
+
+		left -= done;
+	}
+
+	if (unlink(src)) {
+		error("unlink(%s) failed: %d\n", src, errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int prog_mv(int argc, char **argv, char **envp)
 {
-	return 0;
+	const char *src, *dst;
+
+	if (argc != 3) {
+		usage("usage: mv <source> <target>\n");
+		return 1;
+	}
+
+	src = argv[1];
+	dst = argv[2];
+
+	if (!rename(src, dst))
+		return 0;
+
+	if (errno != EXDEV) {
+		error("rename(%s) failed: %d\n", dst, errno);
+		return 1;
+	}
+
+	return move_across(src, dst);
 }
 
 /* no recursive support for now */
