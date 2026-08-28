@@ -86,9 +86,10 @@ static int pwd_handler(int argc, char **argv, int stdout)
 {
 	char cwd[1024];
 
-	getcwd(cwd, ARRAY_SIZE(cwd));
+	if (!getcwd(cwd, ARRAY_SIZE(cwd)))
+		return 1;
 
-	printf("%s\n", cwd);
+	dprintf(stdout, "%s\n", cwd);
 
 	return 0;
 }
