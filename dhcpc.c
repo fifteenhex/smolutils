@@ -162,12 +162,14 @@ static int send_request(struct context *cntx, struct dhcp_packet *p)
 	int len;
 	int ret;
 
-	len = build_request(p, cntx->xid, cntx->mac, 0, 0);
+	len = build_request(p, cntx->xid, cntx->mac,
+			    htonl(cntx->config.address),
+			    htonl(cntx->config.serverid));
 
 	ret = sendto(cntx->sock, p, len, 0, (struct sockaddr *)&dst, sizeof(dst));
 
 	if (ret != len) {
-		error("Failed to send discover: %d\n", errno);
+		error("Failed to send request: %d\n", errno);
 		return -1;
 	}
 
@@ -319,6 +321,13 @@ static void print_address(uint32_t addr)
 		(addr >> 16) & 0xff,
 		(addr >> 8) & 0xff,
 		 addr & 0xff);
+}
+
+static const char *addr_to_str(uint32_t addr, char *buf, socklen_t len)
+{
+	uint32_t tmp = htonl(addr);
+
+	return inet_ntop(AF_INET, &tmp, buf, len);
 }
 
 static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask)
@@ -553,12 +562,14 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
-	uint32_t addr, subnet, router, serverid, dns[4];
+	uint32_t addr, subnet, router, serverid;
 	char subnet_str[INET_ADDRSTRLEN];
 	char router_str[INET_ADDRSTRLEN];
 	char addr_str[INET_ADDRSTRLEN];
 	char dns_str[INET_ADDRSTRLEN];
+	unsigned int dns_len;
 	uint8_t msgtype;
+	uint8_t *dns;
 	int ret;
 	int i;
 
@@ -597,13 +608,19 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	}
 
 	ret = find_opt_u32(p, OPT_SERVER_ID, &serverid);
-	ret = find_opt_u32(p, OPT_ROUTER, &router);
+	if (ret) {
+		verbose("Failed to find server id\n");
+		return ret;
+	}
+
+	if (find_opt_u32(p, OPT_ROUTER, &router))
+		router = 0;
 
 	addr = ntohl(p->yiaddr);
 
-	inet_ntop(AF_INET, &addr, addr_str, sizeof(addr_str));
-	inet_ntop(AF_INET, &subnet, subnet_str, sizeof(subnet_str));
-	inet_ntop(AF_INET, &router, router_str, sizeof(router_str));
+	addr_to_str(addr, addr_str, sizeof(addr_str));
+	addr_to_str(subnet, subnet_str, sizeof(subnet_str));
+	addr_to_str(router, router_str, sizeof(router_str));
 
 	verbose("Got offer for %s (%s), router %s\n",
 		addr_str, subnet_str, router_str);
@@ -613,20 +630,21 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	cntx->config.subnet_mask = subnet;
 	cntx->config.router = router;
 
+	/* All of the DNS servers are in one option, 4 bytes each */
 	cntx->config.num_dns = 0;
-	for (i = 0; i < ARRAY_SIZE(cntx->config.dns); i++) {
-		static uint8_t *optpos = NULL;
+	if (!find_opt(p, OPT_DNS, &dns, &dns_len)) {
+		for (i = 0; (i + 4) <= dns_len; i += 4) {
+			uint32_t tmp;
 
-		ret = _find_opt_u32(p, optpos, &optpos, OPT_DNS, &dns[0]);
+			if (cntx->config.num_dns == ARRAY_SIZE(cntx->config.dns))
+				break;
 
-		if (ret == -ENOENT)
-			break;
-		else if(ret)
-			return ret;
+			memcpy(&tmp, dns + i, sizeof(tmp));
+			cntx->config.dns[cntx->config.num_dns++] = ntohl(tmp);
 
-		inet_ntop(AF_INET, &dns[0], dns_str, sizeof(dns_str));
-		verbose("DNS server: %s\n", dns_str);
-		cntx->config.num_dns++;
+			inet_ntop(AF_INET, &tmp, dns_str, sizeof(dns_str));
+			verbose("DNS server: %s\n", dns_str);
+		}
 	}
 
 	return 0;
@@ -678,6 +696,8 @@ int main(int argc, char **argv, char **envp)
 	struct dhcp_packet p;
 	int ret, tries;
 
+	cntx.xid = (uint32_t) time(NULL) ^ (uint32_t) getpid();
+
 	verbose("Bringing %s up\n", cntx.interface);
 	ret = interface_set_up(cntx.interface);
 	if (ret)
@@ -717,7 +737,9 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	interface_set_address(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
-	interface_set_default_route(cntx.interface, cntx.config.router);
+
+	if (cntx.config.router)
+		interface_set_default_route(cntx.interface, cntx.config.router);
 
 	return 0;
 }
