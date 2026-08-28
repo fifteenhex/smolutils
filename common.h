@@ -26,7 +26,7 @@
 #define verbose(...)
 #endif
 
-#define error(...) printf(__VA_ARGS__)
+#define error(...) fprintf(stderr, __VA_ARGS__)
 #define info(...) printf(__VA_ARGS__)
 
 /*
