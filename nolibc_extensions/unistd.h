@@ -32,6 +32,16 @@ static long setuid(uid_t uid)
         return __sysret(_sys_setuid(uid));
 }
 
+static long _sys_rename(const char *old, const char *new)
+{
+	return __nolibc_syscall2(__NR_rename, old, new);
+}
+
+static int rename(const char *old, const char *new)
+{
+	return __sysret(_sys_rename(old, new));
+}
+
 static long _sys_sync(void)
 {
 	return __nolibc_syscall0(__NR_sync);
