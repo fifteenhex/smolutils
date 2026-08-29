@@ -269,7 +269,7 @@ static int toktoktok(char *str, size_t len,
 			if (ret)
 				return ret;
 
-			printf("oh crap, redirection! %s\n", redirection_stdout);
+			verbose("redirecting stdout to %s\n", redirection_stdout);
 			break;
 		}
 
@@ -367,7 +367,7 @@ int main (int argc, char **argv, char **envp)
 
 			redirected_stdout = open(stdout, flags, 0644);
 			if (redirected_stdout < 0) {
-				printf("failed to open file for redirection: %d\n", _stdout);
+				printf("failed to open file for redirection: %d\n", errno);
 				continue;
 			}
 
