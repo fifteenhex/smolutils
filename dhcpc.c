@@ -695,6 +695,15 @@ int main(int argc, char **argv, char **envp)
 	bool have_address = false;
 	struct dhcp_packet p;
 	int ret, tries;
+	int c;
+
+	while ((c = getopt(argc, argv, "i:")) != -1) {
+		switch (c) {
+		case 'i':
+			cntx.interface = optarg;
+			break;
+		}
+	}
 
 	cntx.xid = (uint32_t) time(NULL) ^ (uint32_t) getpid();
 
