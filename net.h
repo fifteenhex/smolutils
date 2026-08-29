@@ -3,7 +3,67 @@
 #ifndef _SMOLUTILS_NET_H
 #define _SMOLUTILS_NET_H
 
+#include <linux/sockios.h>
+
 /* This is some libc stuff that might get moved.. */
+
+/* The uapi headers don't provide these, so here it is by hand */
+struct ifreq {
+	#define IFHWADDRLEN 6
+	#define	IFNAMSIZ 16
+	#define IFF_UP (1 << 0)
+	#define IFF_RUNNING (1 << 6)
+	#define ifr_name ifr_ifrn.ifrn_name
+	#define ifr_hwaddr ifr_ifru.ifru_hwaddr
+	#define	ifr_addr ifr_ifru.ifru_addr
+	#define	ifr_netmask ifr_ifru.ifru_netmask
+	#define	ifr_flags ifr_ifru.ifru_flags
+union
+	{
+		char ifrn_name[IFNAMSIZ];
+	} ifr_ifrn;
+
+	union {
+		struct sockaddr ifru_addr;
+//		struct sockaddr ifru_dstaddr;
+//		struct sockaddr ifru_broadaddr;
+		struct sockaddr ifru_netmask;
+		struct sockaddr ifru_hwaddr;
+		short ifru_flags;
+//		int ifru_ivalue;
+//		int ifru_mtu;
+//		struct ifmap ifru_map;
+//		char ifru_slave[IFNAMSIZ];
+//		char ifru_newname[IFNAMSIZ];
+//		void *ifru_data;
+//		struct if_settings ifru_settings;
+	} ifr_ifru;
+};
+
+static inline int smolutils_net_interface_set_up(const char *iface)
+{
+	int __cleanup_fd sock = -1;
+	struct ifreq ifr = { 0 };
+	int ret;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return -1;
+
+	strncpy(ifr.ifr_name, iface, IFNAMSIZ - 1);
+
+	ret = ioctl(sock, SIOCGIFFLAGS, &ifr);
+	if (ret < 0)
+		return -1;
+
+	ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+
+	ret = ioctl(sock, SIOCSIFFLAGS, &ifr);
+	if (ret < 0)
+		return -1;
+
+	return 0;
+}
 
 #define INET_ADDRSTRLEN		16
 #define INET6_ADDRSTRLEN	48
