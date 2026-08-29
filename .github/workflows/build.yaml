@@ -9,12 +9,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Checkout TarWak
-        uses: actions/checkout@v5
-        with:
-          repository: 'fifteenhex/tarwak'
-          path: 'tarwak'
-
       - name: Update apt
         run: sudo apt-get update
 

@@ -19,6 +19,13 @@ _build/.stamp.linux_cloned: | _build
 	git -C _build/linux sparse-checkout set tools/include/nolibc
 	touch $@
 
+TARWAKBRANCH=master
+TARWAKREPO=https://github.com/fifteenhex/tarwak.git
+
+_build/.stamp.tarwak_cloned: | _build
+	git -C _build clone --depth 1 --branch $(TARWAKBRANCH) $(TARWAKREPO)
+	touch $@
+
 define toolchain_targets
 _build/$(TOOLCHAIN_$(1)): | _build
 	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_$(1)) -O $$@
@@ -38,10 +45,10 @@ UAPI_X86_64 = /usr/include /usr/include/x86_64-linux-gnu
 
 NOLIBCPATH = `realpath _build/linux/tools/include/nolibc/`
 
-TARWAK=tarwak/build/tarwak
-$(TARWAK):
-	cd tarwak && meson setup build
-	cd tarwak/build && meson compile
+TARWAK=_build/tarwak/build/tarwak
+$(TARWAK): _build/.stamp.tarwak_cloned
+	cd _build/tarwak && meson setup build
+	cd _build/tarwak/build && meson compile
 
 SIXEIGHTOPTS = UAPIDIR="$(UAPI_M68K)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
