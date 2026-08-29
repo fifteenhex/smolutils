@@ -43,7 +43,7 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 	struct resolv_buf *mapped;
 	int ret;
 
-	ret = memfd_create_and_size("resolv_buf", &memfd);
+	ret = memfd_create_and_size("resolv_buf", &memfd, sizeof(*mapped));
 	if (ret) {
 		verbose("failed to create memfd to capture resolv result: %d:%d\n", ret, errno);
 		return ret;

@@ -3,7 +3,7 @@
 #ifndef _SMOLUTILS_MEMFD_H
 #define _SMOLUTILS_MEMFD_H
 
-static inline int memfd_create_and_size(const char *name, int *memfd)
+static inline int memfd_create_and_size(const char *name, int *memfd, size_t sz)
 {
 
 	int ret;
@@ -12,7 +12,8 @@ static inline int memfd_create_and_size(const char *name, int *memfd)
 	if (ret < 0)
 		return ret;
 
-	// TODO put the ftruncate or fallocate here.
+	if (sz != 0)
+		ftruncate(ret, sz);
 
 	*memfd = ret;
 
