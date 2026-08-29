@@ -5,6 +5,10 @@
 
 #include "nolibc_extensions/unistd.h"
 
+#if is_enabled(CONFIG_NETWORK)
+#include "net.h"
+#endif
+
 #include <linux/capability.h>
 
 /* tmpfs supports xattrs but apparently there is no way to embed them in a cpio? */
@@ -122,6 +126,15 @@ err:
 	return ret;
 }
 
+#if is_enabled(CONFIG_NETWORK)
+static void setup_loopback(void)
+{
+	debug("bringing up loopback\n");
+
+	if (smolutils_net_interface_set_up("lo"))
+		verbose("Failed to bring up lo: %d\n", errno);
+}
+
 static int setup_network(const char *netif)
 {
 	char * const dhcpc_args[] = {
@@ -137,6 +150,7 @@ static int setup_network(const char *netif)
 
 	return 0;
 }
+#endif
 
 int main (int argc, char **argv, char **envp)
 {
@@ -162,8 +176,12 @@ int main (int argc, char **argv, char **envp)
 
 	set_capabilities();
 
-	if (is_enabled(CONFIG_NETWORK) && netif)
+#if is_enabled(CONFIG_NETWORK)
+	setup_loopback();
+
+	if (netif)
 		setup_network(netif);
+#endif
 
 	return 0;
 }
