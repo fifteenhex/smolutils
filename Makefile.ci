@@ -1,7 +1,7 @@
 _build:
 	mkdir $@
 
-NOLIBCBRANCH=nolibc-staticpie-20260427
+NOLIBCBRANCH=nolibc-staticpie-20260829
 NOLIBCREPO=https://github.com/fifteenhex/linux.git
 
 TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
@@ -69,8 +69,6 @@ build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
-# Boot using whatever kernel is in /boot/,.. The globbing is probably
-# going to break this if you have more than one kernel? revist.
 BOOT_TIMEOUT ?= 30
 
 # By default use whatever the newest installed kernel is
