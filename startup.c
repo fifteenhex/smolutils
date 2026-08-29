@@ -79,9 +79,16 @@ err:
 
 static int setup_network(const char *netif)
 {
-	debug("configuring network\n");
+	char * const dhcpc_args[] = {
+		"dhcpc",
+		"-i",
+		(char *) netif,
+		NULL
+	};
 
-	spawn_and_wait("dhcpc", "/sbin/dhcpc");
+	debug("configuring network on %s\n", netif);
+
+	spawn_and_wait_args("/sbin/dhcpc", dhcpc_args);
 
 	return 0;
 }
