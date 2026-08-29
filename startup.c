@@ -9,6 +9,11 @@ static int do_mount(const char *source, const char *target, const char *type)
 {
 	int ret;
 
+	if (access(target, F_OK) && mkdir(target, 0755)) {
+		error("mkdir(%s) failed: %d\n", target, errno);
+		return -1;
+	}
+
 	ret = mount(source, target, type, 0, NULL);
 	if (ret) {
 		error("mount(%s) failed: %d\n", target, errno);
@@ -45,6 +50,7 @@ struct mountpoint {
 
 static const struct mountpoint fstab[] = {
 	{"devtmpfs", "/dev", "devtmpfs"},
+	{"devpts", "/dev/pts", "devpts"},
 	{"sysfs", "/sys", "sysfs"},
 	{"proc", "/proc", "proc"},
 	{"tmp", "/tmp", "tmpfs"},
