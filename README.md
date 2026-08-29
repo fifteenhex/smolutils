@@ -46,6 +46,7 @@ For nommu targets even uclibc + busybox isn't very usable:
 | smolsh    |            |                            |       |
 | sntp      |            |                            |       |
 | startup   |            |                            |       |
+| su        |            |                            | no auth, dangerous! |
 | tftp      | stub       |                            |       |
 | touch     |            |                            |       |
 | umount    |            | mount                      |       |

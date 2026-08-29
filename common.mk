@@ -40,6 +40,7 @@ PROGS_USER =		\
 	chown		\
 	kill		\
 	df		\
+	su		\
 	mount
 
 # Make some warnings into errors because I am bad at the programming

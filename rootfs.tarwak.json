@@ -44,6 +44,11 @@
 							"security.capability": "cap_net_raw+ep"
 						}
 					},
+					"su": {
+						"xattrs": {
+							"security.capability": "cap_setuid,cap_setgid+ep"
+						}
+					},
 					"mount": { },
 					"umount": {
 						"type": "symlink",
