@@ -83,7 +83,10 @@ KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 
 .PHONY: boot
 
+QEMUNET = -netdev user,id=net0 -device e1000,netdev=net0
+
 QEMUCMD = qemu-system-x86_64 -nographic -no-reboot -m 128 -kernel $$kernel -initrd x86_64.cpio.gz \
+	$(QEMUNET) \
 	-append "console=ttyS0 rdinit=/sbin/init quiet -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6 smolinit.dhcpif=eth0"
 
 boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
