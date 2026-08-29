@@ -82,6 +82,10 @@ BOOT_TIMEOUT ?= 30
 KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 
 .PHONY: boot
+
+QEMUCMD = qemu-system-x86_64 -nographic -no-reboot -m 128 -kernel $$kernel -initrd x86_64.cpio.gz \
+	-append "console=ttyS0 rdinit=/sbin/init quiet -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6 smolinit.dhcpif=eth0"
+
 boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
 	kernel="$(KERNEL)"; \
@@ -89,11 +93,7 @@ boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
 	fi; \
 	echo "booting with $$kernel"; \
-	timeout --foreground $(BOOT_TIMEOUT) qemu-system-x86_64 \
-		-nographic -no-reboot -m 128 -nic none \
-		-kernel $$kernel \
-		-initrd x86_64.cpio.gz \
-		-append "console=ttyS0 rdinit=/sbin/init -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6"; \
+	timeout --foreground $(BOOT_TIMEOUT) $(QEMUCMD); \
 	ret=$$?; \
 	if [ $$ret -eq 124 ]; then \
 		echo "still running after $(BOOT_TIMEOUT)s"; \
