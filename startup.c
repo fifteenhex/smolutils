@@ -5,6 +5,45 @@
 
 #include "nolibc_extensions/unistd.h"
 
+#include <linux/capability.h>
+
+/* tmpfs supports xattrs but apparently there is no way to embed them in a cpio? */
+struct capability {
+	const char *path;
+	unsigned int caps;
+};
+
+static const struct capability capabilities[] = {
+	{"/bin/su", (1 << CAP_SETUID) | (1 << CAP_SETGID)},
+#if is_enabled(CONFIG_NETWORK)
+	{"/bin/ping", 1 << CAP_NET_RAW},
+#endif
+};
+
+static void set_capabilities(void)
+{
+	if (!is_enabled(CONFIG_INITRAMFS))
+		return;
+
+	debug("Adding caps\n");
+
+	for (int i = 0; i < ARRAY_SIZE(capabilities); i++) {
+		const struct capability *c = &capabilities[i];
+		struct vfs_cap_data data = {
+			.magic_etc = htole32(VFS_CAP_REVISION_2 |
+					     VFS_CAP_FLAGS_EFFECTIVE),
+			/* Ok for now ... */
+			.data[0].permitted = htole32(c->caps),
+		};
+
+		if (setxattr(c->path, "security.capability",
+			     &data, sizeof(data), 0))
+			debug("Failed to label %s: %d\n", c->path, errno);
+		else
+			debug("labelled %s\n", c->path);
+	}
+}
+
 static int do_mount(const char *source, const char *target, const char *type)
 {
 	int ret;
@@ -120,6 +159,8 @@ int main (int argc, char **argv, char **envp)
 		sethostname(hostname, strlen(hostname));
 
 	mount_filesystems();
+
+	set_capabilities();
 
 	if (is_enabled(CONFIG_NETWORK) && netif)
 		setup_network(netif);
