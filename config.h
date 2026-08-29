@@ -6,6 +6,9 @@
 /* This is like KConfig, but awful */
 #define CONFIG_DEBUG	y
 
+/* Support running in an initramfs */
+#define CONFIG_INITRAMFS y
+
 #ifndef CONFIG_NETWORK
 #define CONFIG_NETWORK	y
 #endif
