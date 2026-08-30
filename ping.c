@@ -7,6 +7,8 @@
 
 #define TIMEOUT 2
 #define ICMP_ECHO 8
+#define ICMP_ECHOREPLY 0
+#define IP_MIN_HDR_LEN 20
 struct icmphdr {
 	__u8	type;
 	__u8	code;
@@ -45,15 +47,16 @@ static uint16_t checksum(void *data, int len) {
 	return ~sum;
 }
 
-static int send_request(int sock, struct sockaddr_in *dst)
+static int send_request(int sock, struct sockaddr_in *dst,
+			uint16_t id, uint16_t seq)
 {
 	uint8_t buf[PACKET_LEN] = { 0 };
 	struct icmphdr *hdr = (struct icmphdr *)buf;
 	int ret;
 
 	hdr->type = ICMP_ECHO;
-	hdr->un.echo.id = (uint16_t)getpid();
-	hdr->un.echo.sequence = 1;
+	hdr->un.echo.id = id;
+	hdr->un.echo.sequence = seq;
 	memcpy(buf + sizeof(struct icmphdr), payload, sizeof(payload));
 	hdr->checksum = checksum(buf, PACKET_LEN);
 
@@ -66,26 +69,51 @@ static int send_request(int sock, struct sockaddr_in *dst)
 	return 0;
 }
 
-/* 0 - no error, no response, 1 - no error, response, >0 error */
-static int wait_for_response(int sock)
+/* 0 - no error, no response, 1 - no error, response, <0 error */
+static int wait_for_response(int sock, uint16_t id, uint16_t seq)
 {
 	struct sockaddr_in src;
 	socklen_t srclen = sizeof(src);
-	uint8_t resp[256];
+	struct icmphdr hdr;
+	uint8_t resp[256] = { 0 };
+	int iphdrlen;
 	ssize_t len;
 
-	len = recvfrom(sock, resp, sizeof(resp), 0, (struct sockaddr *)&src, &srclen);
+	/*
+	 * We might need to check multiple packets to find our response,
+	 * I think we could get stuck in this loop if someone dribbles icmp packets? revist
+	 */
+	while (true) {
+		len = recvfrom(sock, resp, sizeof(resp), 0,
+			       (struct sockaddr *)&src, &srclen);
 
-	if (len < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			printf("Timeout waiting for response\n");
-			return 0;
-		}
-		else
+		if (len < 0) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				error("Timeout waiting for response\n");
+				return 0;
+			}
+
 			return -1;
-	}
+		}
 
-	return 1;
+		/* We get the IP header too so len always has to be bigger */
+		if (len < IP_MIN_HDR_LEN)
+			continue;
+
+		iphdrlen = (resp[0] & 0xf) * 4;
+		if (len < (iphdrlen + (int) sizeof(hdr)))
+			continue;
+
+		memcpy(&hdr, resp + iphdrlen, sizeof(hdr));
+
+		if (hdr.type != ICMP_ECHOREPLY)
+			continue;
+
+		if (hdr.un.echo.id != id || hdr.un.echo.sequence != seq)
+			continue;
+
+		return 1;
+	}
 }
 
 static int try_to_lookup_host(const char *host, struct in_addr *result)
@@ -97,6 +125,9 @@ static int try_to_lookup_host(const char *host, struct in_addr *result)
 	if (ret)
 		return ret;
 
+	if (!addresses.num_addr_v4)
+		return -1;
+
 	memcpy(result, &addresses.addr_v4[0], sizeof(*result));
 
 	return 0;
@@ -104,12 +135,13 @@ static int try_to_lookup_host(const char *host, struct in_addr *result)
 
 int main (int argc, char **argv, char **envp)
 {
-	int __cleanup_fd sock = -1;
-	struct timeval t0, t1;
+	struct timeval t0 = { 0 }, t1 = { 0 };
 	struct sockaddr_in dst = {
 		.sin_family = AF_INET,
 	};
+	int __cleanup_fd sock = -1;
 	const char *host;
+	uint16_t id;
 	int ret;
 	int i;
 
@@ -118,27 +150,23 @@ int main (int argc, char **argv, char **envp)
 
 	host = argv[1];
 
-	ret = inet_aton(argv[1], &dst.sin_addr);
-	if (ret) {
-
-
-	}
-	else {
+	/* Do lookup if directly converting from an ipv4 address failed */
+	if (!inet_aton(host, &dst.sin_addr)) {
 		char ip[INET_ADDRSTRLEN];
 
 		ret = try_to_lookup_host(host, &dst.sin_addr);
 		if (ret) {
-			verbose("Failed to resolv host\n");
+			error("Failed to resolv host\n");
 			return 1;
 		}
 
 		inet_ntop(AF_INET, &dst.sin_addr, ip, sizeof(ip));
-		printf("Resolved %s to %s\n", host, ip);
+		verbose("Resolved %s to %s\n", host, ip);
 	}
 
 	sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (sock < 0) {
-		verbose("Failed to create socket\n");
+		error("Failed to create socket: %d\n", errno);
 		return 1;
 	}
 
@@ -146,15 +174,20 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
+	id = (uint16_t) getpid();
+
 	for (i = 0; i < 10; i++)
 	{
-		ret = send_request(sock, &dst);
+		uint16_t seq = i + 1;
+		long ms;
+
+		ret = send_request(sock, &dst, id, seq);
 		if (ret)
 			return 1;
 
 		gettimeofday(&t0, NULL);
 
-		ret = wait_for_response(sock);
+		ret = wait_for_response(sock, id, seq);
 		if (ret == 0)
 			continue;
 
@@ -163,7 +196,10 @@ int main (int argc, char **argv, char **envp)
 
 		gettimeofday(&t1, NULL);
 
-		printf("Got reply\n");
+		ms = ((t1.tv_sec - t0.tv_sec) * 1000) +
+		     ((t1.tv_usec - t0.tv_usec) / 1000);
+
+		printf("Reply from %s: seq=%d time=%ldms\n", host, seq, ms);
 		sleep(2);
 	}
 
