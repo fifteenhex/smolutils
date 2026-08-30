@@ -8,12 +8,15 @@
 #define STARTUP_PATH "/sbin/startup"
 #define GETTY_PATH "/sbin/getty"
 #define GETTY_NAME "getty"
+#define INSMOD_PATH "/sbin/insmod"
+#define INSMOD_NAME "insmod"
 #define SHELL_PATH "/bin/smolsh"
 
 static const char cmdline_opt_prefix[] = "smolinit.";
 static const char cmdline_opt_getty[] = "getty=";
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
+static const char cmdline_opt_insmod[] = "insmod=";
 
 struct getty {
 	const char *tty_path;
@@ -25,6 +28,9 @@ static unsigned num_gettys = 0;
 
 static const char *hostname = NULL;
 static const char *dhcpif = NULL;
+
+static const char *modules[8];
+static unsigned num_modules = 0;
 
 static void parse_cmdline(int argc, char **argv)
 {
@@ -62,6 +68,18 @@ static void parse_cmdline(int argc, char **argv)
 
 				debug("Hostname will be %s\n", name);
 				hostname = name;
+			}
+
+			else if (STARTS_WITH(opt, cmdline_opt_insmod)) {
+				const char *path = opt + STRLEN(cmdline_opt_insmod);
+
+				if (num_modules >= ARRAY_SIZE(modules)) {
+					error("Too many modules\n");
+					continue;
+				}
+
+				debug("Will load %s\n", path);
+				modules[num_modules++] = path;
 			}
 
 			else if (!dhcpif && STARTS_WITH(opt, cmdline_opt_dhcpif)) {
@@ -132,6 +150,23 @@ static int setup_signals(void)
 	return 0;
 }
 
+/* Load modules, order is important as there is no dependency checking */
+static void load_modules(void)
+{
+	unsigned i;
+
+	for (i = 0; i < num_modules; i++) {
+		char * const newargv[] = {
+			INSMOD_NAME,
+			(char *) modules[i],
+			NULL
+		};
+
+		if (spawn_and_wait_args(INSMOD_PATH, newargv))
+			error("Failed to load %s\n", modules[i]);
+	}
+}
+
 static inline int run_startup(void)
 {
 	char *startup_args[6] = {
@@ -167,6 +202,8 @@ int main (int argc, char **argv, char **envp)
 	parse_cmdline(argc, argv);
 
 	parse_environment(envp);
+
+	load_modules();
 
 	ret = run_startup();
 	if (ret)
