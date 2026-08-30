@@ -145,7 +145,7 @@ static int setup_signals(void)
 
 	ret = sigaction(SIGUSR1, &act, NULL);
 	if (ret)
-		printf("failed to setup signals: %d\n", errno);
+		verbose("failed to setup signals: %d\n", errno);
 
 	return 0;
 }
