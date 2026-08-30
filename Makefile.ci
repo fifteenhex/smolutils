@@ -85,15 +85,32 @@ KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 
 QEMUNET = -netdev user,id=net0 -device e1000,netdev=net0
 
-QEMUCMD = qemu-system-x86_64 -nographic -no-reboot -m 128 -kernel $$kernel -initrd x86_64.cpio.gz \
+QEMUCMD = qemu-system-x86_64 -nographic -no-reboot -m 128 -kernel $$kernel -initrd $$initrd \
 	$(QEMUNET) \
-	-append "console=ttyS0 rdinit=/sbin/init quiet -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6 smolinit.dhcpif=eth0"
+	-append "console=ttyS0 rdinit=/sbin/init quiet -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6 smolinit.dhcpif=eth0 $$insmod"
+
+BOOT_MODULE = e1000
 
 boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
 	kernel="$(KERNEL)"; \
 	if [ ! -r "$$kernel" ]; then \
 		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
+	fi; \
+	initrd=x86_64.cpio.gz; insmod=; \
+	module=`find /lib/modules/$${kernel##*/vmlinuz-} -name '$(BOOT_MODULE).ko*' 2>/dev/null | head -1`; \
+	if [ -n "$$module" ]; then \
+		echo "packing $$module"; \
+		rm -rf _build/modules; \
+		mkdir -p _build/modules/lib/modules; \
+		cp $$module _build/modules/lib/modules/; \
+		( cd _build/modules && bsdtar --format=newc --uid 0 --gid 0 -cf - lib ) \
+			| gzip -9 > modules.cpio.gz; \
+		cat x86_64.cpio.gz modules.cpio.gz > boot.cpio.gz; \
+		initrd=boot.cpio.gz; \
+		insmod="smolinit.insmod=/lib/modules/`basename $$module`"; \
+	else \
+		echo "no $(BOOT_MODULE) module for this kernel, booting without a network"; \
 	fi; \
 	echo "booting with $$kernel"; \
 	timeout --foreground $(BOOT_TIMEOUT) $(QEMUCMD); \
@@ -108,3 +125,4 @@ boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
 clean:
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) clean
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) clean
+	rm -rf modules.cpio.gz boot.cpio.gz _build/modules
