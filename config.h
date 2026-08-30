@@ -13,6 +13,10 @@
 #define CONFIG_NETWORK	y
 #endif
 
+#ifndef CONFIG_MODULES
+#define CONFIG_MODULES	y
+#endif
+
 #ifndef CONFIG_USAGE
 #define CONFIG_USAGE	y
 #endif

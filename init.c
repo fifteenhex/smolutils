@@ -155,6 +155,9 @@ static void load_modules(void)
 {
 	unsigned i;
 
+	if (!is_enabled(CONFIG_MODULES))
+		return;
+
 	for (i = 0; i < num_modules; i++) {
 		char * const newargv[] = {
 			INSMOD_NAME,
