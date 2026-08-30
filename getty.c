@@ -87,7 +87,8 @@ int main(int argc, char **argv, char **envp)
 	}
 #endif
 
-	if (spawn_and_wait("sh", shell_path)) {
+	/* -1 == spawn failed, anything else is the return code from the shell */
+	if (spawn_and_wait("sh", shell_path) < 0) {
 		error("Failed to spawn shell\n");
 		return 1;
 	}
