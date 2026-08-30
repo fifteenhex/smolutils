@@ -3,10 +3,27 @@
 #include "config.h"
 #include "common.h"
 
+#include "nolibc_extensions/signal.h"
+
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16
 
 static bool keeprocking = true;
+
+/* Catch ctrl-c, don't restart syscall! */
+static void handle_sigint(int sig)
+{
+}
+
+static void setup_signals(void)
+{
+	struct sigaction act = {
+		.sa_handler = handle_sigint,
+	};
+
+	if (sigaction(SIGINT, &act, NULL))
+		verbose("Failed to setup signals: %d\n", errno);
+}
 
 static void run_cmd(const char *bin, char * const *argv, int stdout)
 {
@@ -330,6 +347,8 @@ int main (int argc, char **argv, char **envp)
 	unsigned num_tokens;
 	int ret;
 
+	setup_signals();
+
 	while (keeprocking) {
 		char *path;
 		char *cmd;
@@ -342,6 +361,13 @@ int main (int argc, char **argv, char **envp)
 		do_prompt();
 
 		len = read(STDIN_FILENO, &line, ARRAY_SIZE(line) - 1);
+
+		/* ctrl-c got bashed, newline and start over */
+		if (len < 0 && errno == EINTR) {
+			printf("\n");
+			continue;
+		}
+
 		if (len <= 0)
 			break;
 
