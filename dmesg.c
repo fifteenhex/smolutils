@@ -55,8 +55,10 @@ int main (int argc, char **argv, char **envp)
 	int __cleanup_fd fd = -1;
 
 	fd = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
-	if (fd < 0)
+	if (fd < 0) {
+		error("Failed to open /dev/kmsg: %d\n", errno);
 		return 1;
+	}
 
 	while (true) {
 		int ret;
