@@ -78,6 +78,12 @@ else
 _TARWAKFEATURES += -finitramfs
 endif
 
+ifneq ($(filter modules,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_MODULES=n
+else
+_TARWAKFEATURES += -fmodules
+endif
+
 COPTS= -include $(NOLIBCDIR)/nolibc.h \
 	-Wl,--hash-style=gnu \
 	$(_COPTS)

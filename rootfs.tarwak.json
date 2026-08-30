@@ -94,7 +94,9 @@
 				},
 				"entities": {
 					"getty": { },
-					"insmod": { },
+					"insmod": {
+						"feature": "modules"
+					},
 					"startup": { },
 					"sntp": {
 						"feature": "net"
