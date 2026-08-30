@@ -7,7 +7,9 @@
 #define CONFIG_DEBUG	y
 
 /* Support running in an initramfs */
+#ifndef CONFIG_INITRAMFS
 #define CONFIG_INITRAMFS y
+#endif
 
 #ifndef CONFIG_NETWORK
 #define CONFIG_NETWORK	y

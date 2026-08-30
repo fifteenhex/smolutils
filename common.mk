@@ -72,6 +72,12 @@ PROGS_NET_USER =	\
 _TARWAKFEATURES += -fnet
 endif
 
+ifneq ($(filter initramfs,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_INITRAMFS=n
+else
+_TARWAKFEATURES += -finitramfs
+endif
+
 COPTS= -include $(NOLIBCDIR)/nolibc.h \
 	-Wl,--hash-style=gnu \
 	$(_COPTS)

@@ -5,6 +5,11 @@
 	},
 	"root": {
 		"entities": {
+			"init": {
+				"type": "symlink",
+				"target": "/sbin/init",
+				"feature": "initramfs"
+			},
                 	"dev" : {
 				"type": "dir"
 			},
