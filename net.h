@@ -179,4 +179,35 @@ static inline int smolutils_net_setsockreuseaddr(int sock)
 	return 0;
 }
 
+static inline int smolutils_net_listen_tcp(int port, int backlog)
+{
+	struct sockaddr_in addr = {
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+	};
+	int sock;
+
+	sock = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	if (sock < 0) {
+		error("Failed to create socket: %d\n", errno);
+		return -1;
+	}
+
+	smolutils_net_setsockreuseaddr(sock);
+
+	if (bind(sock, (struct sockaddr *) &addr, sizeof(addr))) {
+		error("Failed to bind to port %d: %d\n", port, errno);
+		close(sock);
+		return -1;
+	}
+
+	if (listen(sock, backlog)) {
+		error("Failed to listen: %d\n", errno);
+		close(sock);
+		return -1;
+	}
+
+	return sock;
+}
+
 #endif /* _SMOLUTILS_NET_H */
