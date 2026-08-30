@@ -4,6 +4,24 @@
 #include "common.h"
 #include "users.h"
 
+#include "nolibc_extensions/signal.h"
+
+/* Don't get killed by SIGINT */
+static void handle_sigint(int sig)
+{
+}
+
+static void setup_signals(void)
+{
+	struct sigaction act = {
+		.sa_flags   = SA_RESTART,
+		.sa_handler = handle_sigint,
+	};
+
+	if (sigaction(SIGINT, &act, NULL))
+		verbose("Failed to setup signals: %d\n", errno);
+}
+
 int main(int argc, char **argv, char **envp)
 {
 	const char *shell_path;
@@ -24,6 +42,16 @@ int main(int argc, char **argv, char **envp)
 		error("Failed to open TTY\n");
 		return 1;
 	}
+
+	setup_signals();
+
+	/* Start a new session and make the tty the controlling tty so ctrl-c works */
+	if (setsid() < 0)
+		verbose("setsid() failed: %d\n", errno);
+
+	if (ioctl(tty_fd, TIOCSCTTY, 0) < 0)
+		verbose("Failed to take %s as the controlling tty: %d\n",
+		      tty_path, errno);
 
 	/* Wire up stdin, stdout, stderr */
 	dup2(tty_fd, STDIN_FILENO);
