@@ -21,6 +21,7 @@ STRIP=$(CROSS_COMPILE)strip
 
 PROGS_SYSTEM = init	\
 	       getty	\
+	       insmod	\
 	       startup
 
 PROGS_USER =		\

@@ -28,6 +28,7 @@ For nommu targets even uclibc + busybox isn't very usable:
 | dmesg     |            |                            |       |
 | getty     |            |                            |       |
 | init      |            |                            |       |
+| insmod    |            |                            |       |
 | kill      |            |                            |       |
 | less      | stub       |                            |       |
 | ln        |            | touch                      |       |
