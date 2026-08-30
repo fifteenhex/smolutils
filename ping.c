@@ -142,6 +142,7 @@ int main (int argc, char **argv, char **envp)
 	int __cleanup_fd sock = -1;
 	const char *host;
 	uint16_t id;
+	int replies;
 	int ret;
 	int i;
 
@@ -175,6 +176,7 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	id = (uint16_t) getpid();
+	replies = 0;
 
 	for (i = 0; i < 10; i++)
 	{
@@ -200,8 +202,9 @@ int main (int argc, char **argv, char **envp)
 		     ((t1.tv_usec - t0.tv_usec) / 1000);
 
 		printf("Reply from %s: seq=%d time=%ldms\n", host, seq, ms);
+		replies++;
 		sleep(2);
 	}
 
-	return 0;
+	return replies ? 0 : 1;
 }
