@@ -164,4 +164,19 @@ static inline int smolutils_net_setsockrxtimeout(int sock, int timeout)
 	return 0;
 }
 
+static inline int smolutils_net_setsockreuseaddr(int sock)
+{
+	int sock_opt = 1;
+	int ret;
+
+	ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+			 &sock_opt, sizeof(sock_opt));
+	if (ret < 0) {
+		error("Failed to set reuseaddr\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 #endif /* _SMOLUTILS_NET_H */
