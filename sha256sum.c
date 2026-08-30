@@ -33,7 +33,7 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	filesz = file_size(fd);
-	if (filesz <= 0)
+	if (filesz < 0)
 		return 1;
 
 	lonesha256_stream(out, read_block, filesz);
