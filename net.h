@@ -65,6 +65,8 @@ static inline int smolutils_net_interface_set_up(const char *iface)
 	return 0;
 }
 
+#define SOCK_CLOEXEC	O_CLOEXEC
+
 #define INET_ADDRSTRLEN		16
 #define INET6_ADDRSTRLEN	48
 
