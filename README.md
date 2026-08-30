@@ -52,6 +52,7 @@ Even for the mmu enjoyers out there:
 | startup   |            |                            |       |
 | su        |            |                            | no auth, dangerous! |
 | tftp      | stub       |                            |       |
+| telnetd   |            |                            |       |
 | touch     |            |                            |       |
 | umount    |            | mount                      |       |
 | uname     |            |                            |       |

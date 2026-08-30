@@ -60,6 +60,7 @@ DISABLE_LIST := $(subst $(fcomma),$(fspace),$(FEATURE_DISABLE))
 
 ifneq ($(filter net,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_NETWORK=n
+_COPTS += -DCONFIG_TELNETD=n
 else
 PROGS_NET_SYSTEM =	\
 	sntp		\
@@ -70,6 +71,13 @@ PROGS_NET_USER =	\
 	resolv		\
 	tftp
 _TARWAKFEATURES += -fnet
+
+ifneq ($(filter telnetd,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_TELNETD=n
+else
+PROGS_NET_SYSTEM += telnetd
+_TARWAKFEATURES += -ftelnetd
+endif
 endif
 
 ifneq ($(filter initramfs,$(DISABLE_LIST)),)

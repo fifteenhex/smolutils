@@ -104,6 +104,9 @@
 					"dhcpc": {
 						"feature": "net"
 					},
+					"telnetd": {
+						"feature": "telnetd"
+					},
 					"init": { }
 				}
 			},

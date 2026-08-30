@@ -23,6 +23,10 @@
 #define CONFIG_USAGE	y
 #endif
 
+#ifndef CONFIG_TELNETD
+#define CONFIG_TELNETD	y
+#endif
+
 /* Magic */
 #define __ARG_PLACEHOLDER_y			0,
 #define __take_second_arg(__ignored, val, ...)	val
