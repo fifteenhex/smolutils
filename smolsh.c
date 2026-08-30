@@ -111,6 +111,13 @@ static int pwd_handler(int argc, char **argv, int stdout)
 	return 0;
 }
 
+static int sleep_handler(int argc, char **argv, int stdout)
+{
+	// FIXME
+	sleep(10);
+
+	return 0;
+}
 
 static int exit_handler(int argc, char **argv, int stdout)
 {
@@ -124,6 +131,7 @@ struct builtin builtins[] = {
 	{ "clear", clear_handler },
 	{ "echo", echo_handler },
 	{ "pwd", pwd_handler },
+	{ "sleep", sleep_handler },
 	{ "exit", exit_handler },
 };
 
