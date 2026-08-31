@@ -435,7 +435,7 @@ int main (int argc, char **argv, char **envp)
 			if (ret == 1)
 				run_cmd(path, tokens, _stdout);
 			else
-				printf("ERROR xxx\n");
+				error("%s: not executable\n", cmd);
 
 			continue;
 		}
