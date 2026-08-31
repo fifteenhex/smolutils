@@ -10,6 +10,8 @@
 #define GETTY_NAME "getty"
 #define INSMOD_PATH "/sbin/insmod"
 #define INSMOD_NAME "insmod"
+#define TELNETD_PATH "/sbin/telnetd"
+#define TELNETD_NAME "telnetd"
 #define SHELL_PATH "/bin/smolsh"
 
 static const char cmdline_opt_prefix[] = "smolinit.";
@@ -17,6 +19,7 @@ static const char cmdline_opt_getty[] = "getty=";
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
 static const char cmdline_opt_insmod[] = "insmod=";
+static const char cmdline_opt_telnetd[] = "telnetd=";
 
 struct getty {
 	const char *tty_path;
@@ -31,6 +34,9 @@ static const char *dhcpif = NULL;
 
 static const char *modules[8];
 static unsigned num_modules = 0;
+
+static const char *telnetd_port = NULL;
+static pid_t telnetd_pid = -1;
 
 static void parse_cmdline(int argc, char **argv)
 {
@@ -88,6 +94,17 @@ static void parse_cmdline(int argc, char **argv)
 				debug("Will configure %s via DHCP\n", intf);
 				dhcpif = intf;
 			}
+
+			else if (is_enabled(CONFIG_TELNETD) &&
+				 (!telnetd_port && STARTS_WITH(opt, cmdline_opt_telnetd))) {
+				const char *port = opt + STRLEN(cmdline_opt_telnetd);
+
+				/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
+				telnetd_port = *port ? port : "23";
+
+				debug("Will start telnetd on port %s\n",
+				      telnetd_port);
+			}
 		}
 	}
 }
@@ -128,6 +145,23 @@ static int spawn_getty(struct getty *getty)
 	getty->getty_pid = pid;
 
 	return 0;
+}
+
+static int spawn_telnetd(void)
+{
+	char * const newargv[] = {
+		TELNETD_NAME,
+		"-p",
+		telnetd_port,
+		NULL
+	};
+
+	if (!is_enabled(CONFIG_TELNETD))
+		return 0;
+
+	telnetd_pid = spawn(TELNETD_PATH, newargv, environ);
+
+	return telnetd_pid < 0 ? -1 : 0;
 }
 
 static void handle_sig(int sig)
@@ -223,14 +257,31 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
+	if (telnetd_port && spawn_telnetd())
+		error("Failed to spawn telnetd\n");
+
 	/* Now sit in wait for one of the gettys to exit */
 	while (true) {
+		int status = 0;
 		pid_t pid;
 		int i;
 
-		pid = wait(NULL);
+		pid = wait(&status);
 
 		verbose("pid %d came home\n", (int) pid);
+
+		if (telnetd_port && pid == telnetd_pid) {
+			/*
+			 * It only returns non-zero when it couldn't start
+			 * at all, and starting it again won't fix that
+			 */
+			if (WIFEXITED(status) && WEXITSTATUS(status))
+				error("telnetd gave up, leaving it alone\n");
+			else
+				spawn_telnetd();
+
+			continue;
+		}
 
 		for (i = 0; i < num_gettys; i++) {
 			struct getty *getty = &gettys[i];
