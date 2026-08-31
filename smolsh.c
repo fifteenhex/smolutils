@@ -342,7 +342,8 @@ static void do_prompt(void)
 {
 	char cwd[1024];
 
-	getcwd(cwd, ARRAY_SIZE(cwd));
+	if (!getcwd(cwd, ARRAY_SIZE(cwd)))
+		strcpy(cwd, "?");
 
 	printf("smolsh %s > ", cwd);
 }
