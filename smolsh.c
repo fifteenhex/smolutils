@@ -392,6 +392,10 @@ int main (int argc, char **argv, char **envp)
 			continue;
 		}
 
+		/* No tokens? */
+		if (!num_tokens)
+			continue;
+
 		if (stdout) {
 			int flags = O_WRONLY | O_CREAT;
 
@@ -411,10 +415,6 @@ int main (int argc, char **argv, char **envp)
 
 			_stdout = redirected_stdout;
 		}
-
-		/* No tokens? */
-		if (!num_tokens)
-			continue;
 
 		cmd = tokens[0];
 
