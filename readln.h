@@ -23,7 +23,7 @@ static inline void _readln_consume(size_t howmuch)
  * read a line from stdin, buffer any left overs.
  * This uses a static buffer!
  *
- * >0 length of line, 0 no line yet, <0 an error.
+ * >0 length of line, 0 an empty one, <0 the end of the input or an error.
  */
 static inline int readln(char *out, size_t max)
 {
@@ -72,7 +72,7 @@ static inline int readln(char *out, size_t max)
 
 		/* Did we get interrupted? */
 		if (ret < 0)
-			return (errno == EINTR) ? READLN_INTERRUPTED : 0;
+			return (errno == EINTR) ? READLN_INTERRUPTED : READLN_DONE;
 
 		/* End of the input, anything left is the last line */
 		if (!ret)

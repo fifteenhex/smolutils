@@ -382,8 +382,8 @@ int main (int argc, char **argv, char **envp)
 			continue;
 		}
 
-		/* Didn't read a whole line yet */
-		if (len <= 0)
+		/* Nothing left to read or some other error */
+		if (len < 0)
 			break;
 
 		verbose("Got command line: \"%s\"\n", line);
