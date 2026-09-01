@@ -10,6 +10,7 @@
 #define MAX_TOKENS 16
 
 static bool keeprocking = true;
+static int exit_status;
 
 /* Catch ctrl-c, don't restart syscall! */
 static void handle_sigint(int sig)
@@ -122,6 +123,9 @@ static int sleep_handler(int argc, char **argv, int stdout)
 
 static int exit_handler(int argc, char **argv, int stdout)
 {
+	if (argc > 1)
+		exit_status = atoi(argv[1]);
+
 	keeprocking = false;
 
 	return 0;
@@ -449,5 +453,5 @@ int main (int argc, char **argv, char **envp)
 
 	debug("Exiting\n");
 
-	return 0;
+	return exit_status;
 }
