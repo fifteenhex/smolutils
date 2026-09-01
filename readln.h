@@ -28,26 +28,38 @@ static inline void _readln_consume(size_t howmuch)
 static inline int readln(char *out, size_t max)
 {
 	while (true) {
-		size_t len;
-		char *nl;
+		size_t consume_len;
+		size_t copy_len;
+		char *sharp;
+		char *newline;
 		int ret;
 
-		nl = memchr(readln_buf, '\n', readln_pending);
+		newline = memchr(readln_buf, '\n', readln_pending);
 
 		/* Buffer contains a newline? */
-		if (nl)
+		if (newline)
 		{
-			len = nl - readln_buf;
-			memcpy(out, readln_buf, len);
+			sharp = memchr(readln_buf, '#', readln_pending);
+			consume_len = newline - readln_buf;
+
+			/* Is there a sharp in the buffer and is it before the new line? */
+			if (sharp && sharp < newline)
+				/* Yes, copy up to the sharp into the buffer */
+				copy_len = sharp - readln_buf;
+			else
+				/* No, copy all the way up to the new line */
+				copy_len = consume_len;
+
+			memcpy(out, readln_buf, copy_len);
 
 			/* Replace the newline for a null */
-			out[len] = '\0';
+			out[copy_len] = '\0';
 
 			/* Consume the string and the newline */
-			len++;
-			_readln_consume(len);
+			consume_len++;
+			_readln_consume(consume_len);
 
-			return len;
+			return copy_len;
 		}
 
 		/* Buffer is full ? */

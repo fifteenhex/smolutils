@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "readln.h"
 
 #include "nolibc_extensions/signal.h"
 
@@ -363,25 +364,23 @@ int main (int argc, char **argv, char **envp)
 		char *cmd;
 		int len;
 		/* For redirection */
-		int _stdout = STDOUT_FILENO;
 		int redirected_stdout __cleanup_fd = -1;
+		int _stdout = STDOUT_FILENO;
 		bool append;
 
 		do_prompt();
 
-		len = read(STDIN_FILENO, &line, ARRAY_SIZE(line) - 1);
+		len = readln(line, ARRAY_SIZE(line) - 1);
 
 		/* ctrl-c got bashed, newline and start over */
-		if (len < 0 && errno == EINTR) {
+		if (len == READLN_INTERRUPTED) {
 			printf("\n");
 			continue;
 		}
 
+		/* Didn't read a whole line yet */
 		if (len <= 0)
 			break;
-
-		/* Terminate the end of the string, this should be \n */
-		line[len - 1] = '\0';
 
 		verbose("Got command line: \"%s\"\n", line);
 

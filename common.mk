@@ -108,6 +108,7 @@ HEADERS = config.h \
 	  common.h \
 	  users.h \
 	  net.h \
+	  readln.h \
 	  resolv.h \
 	  memfd.h \
 	  multicall.h \
