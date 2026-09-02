@@ -204,31 +204,20 @@ static int try_absolute(const char *cmd, char **path)
 	return 0;
 }
 
-static int try_search_cb(const char *name, int dir, void *priv)
-{
-	const char *cmd = (const char *) priv;
-
-	if (strcmp(name, cmd) == 0)
-		return 1;
-
-	return 0;
-}
-
 static bool try_search(const char *cmd, char **path)
 {
 	/* this should be PATH_MAX I guess.. seems like a waste of 4K */
 	static char _path[1024];
-	int ret;
 
-	ret = iterate_dir("/bin", try_search_cb, (void *) cmd);
+	if (snprintf(_path, sizeof(_path), "/bin/%s", cmd) >= (int) sizeof(_path))
+		return false;
 
-	if (ret > 0) {
-		sprintf(_path, "/bin/%s", cmd);
-		*path = _path;
-		return true;
-	}
+	if (access(_path, X_OK))
+		return false;
 
-	return false;
+	*path = _path;
+
+	return true;
 }
 
 static int parse_handle_stdout_redirection(char *str,
