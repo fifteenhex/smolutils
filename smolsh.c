@@ -280,7 +280,15 @@ static int toktoktok(char *str, size_t len,
 		if (ch == '>') {
 			int ret;
 
-			// FIXME terminate previous token if needed because there wasn't white space
+			if (token_len) {
+				if (token_count >= max_tokens)
+					return -1;
+
+				tokens[token_count] = token_start;
+				token_count++;
+				token_len = 0;
+			}
+
 			*str = '\0';
 
 			verbose("Redirection started at %d\n", i);
