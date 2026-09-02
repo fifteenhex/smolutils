@@ -388,7 +388,7 @@ int main (int argc, char **argv, char **envp)
 
 		verbose("Got command line: \"%s\"\n", line);
 
-		ret = toktoktok(line, len,
+		ret = toktoktok(line, len + 1,
 				tokens, MAX_TOKENS, &num_tokens,
 				&stdout, &append);
 		if (ret) {
