@@ -251,6 +251,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 
 	while (true) {
 		char *word = NULL;
+		bool to_stderr = false;
 		bool dbl = false;
 		char op;
 
@@ -292,6 +293,11 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 			p += dbl ? 2 : 1;
 		}
 
+		if (word && op == '>' && strcmp(word, "2") == 0) {
+			to_stderr = true;
+			word = NULL;
+		}
+
 		if (word) {
 			if (want_path >= 0) {
 				cmd->redir[want_path] = word;
@@ -311,7 +317,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 			want_path = STDIN_FILENO;
 
 		if (op == '>') {
-			want_path = STDOUT_FILENO;
+			want_path = to_stderr ? STDERR_FILENO : STDOUT_FILENO;
 			cmd->append[want_path] = dbl;
 		}
 	}
