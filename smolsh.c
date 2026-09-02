@@ -374,7 +374,7 @@ int main (int argc, char **argv, char **envp)
 
 		do_prompt();
 
-		len = readln(line, ARRAY_SIZE(line) - 1);
+		len = readln_shell(line, ARRAY_SIZE(line) - 1);
 
 		/* ctrl-c got bashed, newline and start over */
 		if (len == READLN_INTERRUPTED) {
