@@ -219,124 +219,180 @@ static bool try_search(const char *cmd, char **path)
 	return true;
 }
 
-static int parse_handle_stdout_redirection(char *str,
-					   char **stdout_path,
-					   bool *append)
+/* One command and where its input and output should go */
+struct command {
+	char *argv[MAX_TOKENS + 1];
+	unsigned argc;
+	char *redir[3];
+	bool append[3];
+};
+
+/* What ended a command */
+enum sep {
+	SEP_END,
+	SEP_BAD,
+};
+
+static bool is_special(char ch)
 {
-	char next;
+	return ch == '<' || ch == '>' || ch == '|';
+}
 
-	*append = false;
+/*
+ * Pick one command out of the line, chopping it up where it sits, and
+ * leave *pos on whatever came after it.
+ */
+static enum sep parse_cmd(char **pos, struct command *cmd)
+{
+	int want_path = -1;
+	char *p = *pos;
 
-	/* terminate the string just in case */
-	*str = '\0';
+	memset(cmd, 0, sizeof(*cmd));
 
-	/* str pointed at the first > which we just killed */
-	str++;
+	while (true) {
+		char *word = NULL;
+		bool dbl = false;
+		char op;
 
-	next = *str;
+		while (*p == ' ')
+			p++;
 
-	if (next == '>') {
-		verbose("redirection is appending\n");
-		*append = true;
-		str++;
+		if (*p == '<' || *p == '|')
+			return SEP_BAD;
+
+		/* The end of the line */
+		if (!*p) {
+			*pos = p;
+
+			/* A > with nothing after it isn't a command */
+			return want_path < 0 ? SEP_END : SEP_BAD;
+		}
+
+		if (!is_special(*p)) {
+			word = p;
+
+			while (*p && *p != ' ' && !is_special(*p)) {
+				/* Don't support this crazy stuff */
+				if (*p == '\\' || *p == '$')
+					return SEP_BAD;
+
+				p++;
+			}
+		}
+
+		/*
+		 * Whatever stopped the word gets read now, because
+		 * terminating the word lands on top of it
+		 */
+		op = is_special(*p) ? *p : '\0';
+		dbl = op == '>' && p[1] == '>';
+
+		if (*p) {
+			*p = '\0';
+			p += dbl ? 2 : 1;
+		}
+
+		if (word) {
+			if (want_path >= 0) {
+				cmd->redir[want_path] = word;
+				want_path = -1;
+			} else {
+				if (cmd->argc >= MAX_TOKENS)
+					return SEP_BAD;
+
+				cmd->argv[cmd->argc++] = word;
+			}
+		} else if (want_path >= 0) {
+			/* Two redirections in a row, nothing to open */
+			return SEP_BAD;
+		}
+
+		if (op == '>') {
+			want_path = STDOUT_FILENO;
+			cmd->append[want_path] = dbl;
+		}
 	}
+}
 
-	/* fix me, this is just skipping spaces */
-	while (*str == ' ') {
-		verbose("skipping whitespace\n");
-		str++;
+/*
+ * Point the command's fds at whatever it asked for. Anything that ends
+ * up different to the fd it replaces is ours to close afterwards.
+ */
+static int open_redirects(struct command *cmd, int *fds)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		int flags = O_WRONLY | O_CREAT;
+		int fd;
+
+		if (!cmd->redir[i])
+			continue;
+
+		if (i == STDIN_FILENO)
+			flags = O_RDONLY;
+		else
+			flags |= cmd->append[i] ? O_APPEND : O_TRUNC;
+
+		fd = open(cmd->redir[i], flags, 0644);
+		if (fd < 0) {
+			error("Failed to open %s: %d\n", cmd->redir[i], errno);
+			return -1;
+		}
+
+		fds[i] = fd;
 	}
-
-	verbose("str should now be the start of the path\n");
-
-	*stdout_path = str;
 
 	return 0;
 }
 
-static int toktoktok(char *str, size_t len,
-		     char** tokens, unsigned max_tokens, unsigned *num_tokens,
-		     char** stdout, bool *append)
+static void run_command(struct command *cmd)
 {
-	char *redirection_stdout = NULL;
-	unsigned int token_count = 0;
-	unsigned int token_len = 0;
-	char *token_start;
+	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
+	char *path;
+	int ret;
 	int i;
 
-	for (i = 0; i < len; i++) {
-		char ch = *str;
+	/* Nothing to run, so nothing to open either */
+	if (!cmd->argc)
+		return;
 
-		/* Don't support this crazy stuff */
-		if (ch == ';' ||
-		    ch == '<' ||
-		    ch == '\\' ||
-		    ch == '$' ) {
-			return -1;
-		}
+	if (open_redirects(cmd, fds))
+		goto out;
 
-		/* Barely, just, support redirectly stdout */
-		if (ch == '>') {
-			int ret;
+	/* We'll use the words as the argv, so add the terminator */
+	cmd->argv[cmd->argc] = NULL;
 
-			if (token_len) {
-				if (token_count >= max_tokens)
-					return -1;
+	if (try_builtin(cmd->argv, cmd->argc, fds[STDOUT_FILENO]))
+		goto out;
 
-				tokens[token_count] = token_start;
-				token_count++;
-				token_len = 0;
-			}
-
-			*str = '\0';
-
-			verbose("Redirection started at %d\n", i);
-			ret = parse_handle_stdout_redirection(str, &redirection_stdout, append);
-			if (ret)
-				return ret;
-
-			verbose("redirecting stdout to %s\n", redirection_stdout);
-			break;
-		}
-
-		/* Normal part */
-		if (ch != ' ' && ch != '\0') {
-			/* Start of a new token */
-			if (token_len == 0) {
-				verbose("Token started at %d\n", i);
-				token_start = str;
-			}
-
-			/* This char is part of the current token */
-			token_len++;
-		}
-		else {
-			/* Was in a token, token is done */
-			if (token_len) {
-				verbose("Token ended at %d\n", i);
-
-				if (token_count >= max_tokens)
-					return -1;
-
-				/* Terminate token */
-				*str = '\0';
-				token_len = 0;
-
-				tokens[token_count] = token_start;
-				token_count++;
-
-				verbose("Token: %s\n", token_start);
-			}
-			// Junk white space?
-		}
-
-		str++;
+	if (try_fixed(cmd->argv[0], &path)) {
+		run_cmd(path, cmd->argv, fds);
+		goto out;
 	}
 
-	*stdout = redirection_stdout;
-	*num_tokens = token_count;
+	ret = try_absolute(cmd->argv[0], &path);
+	if (ret) {
+		if (ret == 1)
+			run_cmd(path, cmd->argv, fds);
+		else
+			error("%s: not executable\n", cmd->argv[0]);
 
-	return 0;
+		goto out;
+	}
+
+	if (try_search(cmd->argv[0], &path)) {
+		run_cmd(path, cmd->argv, fds);
+		goto out;
+	}
+
+	printf("Sorry, don't know how to: \"%s\"\n", cmd->argv[0]);
+
+out:
+	for (i = 0; i < 3; i++) {
+		if (fds[i] != i)
+			close(fds[i]);
+	}
 }
 
 static void do_prompt(void)
@@ -352,22 +408,13 @@ static void do_prompt(void)
 int main (int argc, char **argv, char **envp)
 {
 	char line[MAX_CMDLINE];
-	char *tokens[MAX_TOKENS + 1];
-	char *stdout;
-	unsigned num_tokens;
-	int ret;
 
 	setup_signals();
 
 	while (keeprocking) {
-		char *path;
-		char *cmd;
+		struct command cmd;
+		char *pos = line;
 		int len;
-		/* For redirection */
-		int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
-		int redirected_stdout __cleanup_fd = -1;
-		int _stdout = STDOUT_FILENO;
-		bool append;
 
 		do_prompt();
 
@@ -385,67 +432,12 @@ int main (int argc, char **argv, char **envp)
 
 		verbose("Got command line: \"%s\"\n", line);
 
-		ret = toktoktok(line, len + 1,
-				tokens, MAX_TOKENS, &num_tokens,
-				&stdout, &append);
-		if (ret) {
+		if (parse_cmd(&pos, &cmd) == SEP_BAD) {
 			printf("Syntax error\n");
 			continue;
 		}
 
-		/* No tokens? */
-		if (!num_tokens)
-			continue;
-
-		if (stdout) {
-			int flags = O_WRONLY | O_CREAT;
-
-			/* If not appending, truncate any existing file */
-			if (!append)
-				flags |= O_TRUNC;
-
-			redirected_stdout = open(stdout, flags, 0644);
-			if (redirected_stdout < 0) {
-				printf("failed to open file for redirection: %d\n", errno);
-				continue;
-			}
-
-			/* If appending, wind the file to end so we append */
-			if (append)
-				lseek(redirected_stdout, 0, SEEK_END);
-
-			fds[STDOUT_FILENO] = redirected_stdout;
-		}
-
-		cmd = tokens[0];
-
-		/* We'll use the tokens as the argv, so add the terminator */
-		tokens[num_tokens] = NULL;
-
-		if (try_builtin(tokens, num_tokens, fds[STDOUT_FILENO]))
-			continue;
-
-		if (try_fixed(cmd, &path)) {
-			run_cmd(path, tokens, fds);
-			continue;
-		}
-
-		ret = try_absolute(cmd, &path);
-		if (ret) {
-			if (ret == 1)
-				run_cmd(path, tokens, fds);
-			else
-				error("%s: not executable\n", cmd);
-
-			continue;
-		}
-
-		if (try_search(cmd, &path)) {
-			run_cmd(path, tokens, fds);
-			continue;
-		}
-
-		printf("Sorry, don't know how to: \"%s\"\n", cmd);
+		run_command(&cmd);
 	}
 
 	debug("Exiting\n");
