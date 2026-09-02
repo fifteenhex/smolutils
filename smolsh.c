@@ -27,12 +27,12 @@ static void setup_signals(void)
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
-static void run_cmd(const char *bin, char * const *argv, int stdout)
+static void run_cmd(const char *bin, char * const *argv, const int *fds)
 {
 	bool killed = false;
 	int ret;
 
-	ret = spawn_and_wait_redirect(bin, argv, environ, &killed, stdout);
+	ret = spawn_and_wait_redirect(bin, argv, environ, &killed, fds);
 	if (ret) {
 		if (killed)
 			error("Killed by signal: %d\n", ret);
@@ -364,6 +364,7 @@ int main (int argc, char **argv, char **envp)
 		char *cmd;
 		int len;
 		/* For redirection */
+		int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 		int redirected_stdout __cleanup_fd = -1;
 		int _stdout = STDOUT_FILENO;
 		bool append;
@@ -413,7 +414,7 @@ int main (int argc, char **argv, char **envp)
 			if (append)
 				lseek(redirected_stdout, 0, SEEK_END);
 
-			_stdout = redirected_stdout;
+			fds[STDOUT_FILENO] = redirected_stdout;
 		}
 
 		cmd = tokens[0];
@@ -421,18 +422,18 @@ int main (int argc, char **argv, char **envp)
 		/* We'll use the tokens as the argv, so add the terminator */
 		tokens[num_tokens] = NULL;
 
-		if (try_builtin(tokens, num_tokens, _stdout))
+		if (try_builtin(tokens, num_tokens, fds[STDOUT_FILENO]))
 			continue;
 
 		if (try_fixed(cmd, &path)) {
-			run_cmd(path, tokens, _stdout);
+			run_cmd(path, tokens, fds);
 			continue;
 		}
 
 		ret = try_absolute(cmd, &path);
 		if (ret) {
 			if (ret == 1)
-				run_cmd(path, tokens, _stdout);
+				run_cmd(path, tokens, fds);
 			else
 				error("%s: not executable\n", cmd);
 
@@ -440,7 +441,7 @@ int main (int argc, char **argv, char **envp)
 		}
 
 		if (try_search(cmd, &path)) {
-			run_cmd(path, tokens, _stdout);
+			run_cmd(path, tokens, fds);
 			continue;
 		}
 

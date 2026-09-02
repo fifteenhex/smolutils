@@ -162,15 +162,15 @@ static int iterate_dir(const char *path,
  * Mininal wrapper around vfork() + execve() to avoid
  * shitting up the parent's stack.
  *
- * stdout_fd is what the child should use as its stdout, or -1 to
- * just inherit ours.
+ * fds is what the child should use for stdin, stdout and stderr,
+ * -1 == inherit. NULL means inherit everything.
  *
  * returns a pid or -1 to the caller.
  */
 static __attribute__((noinline)) int spawn_redirect(const char *path,
 						    char * const argv[],
 						    char * const envp[],
-						    int stdout_fd)
+						    const int *fds)
 {
 	volatile pid_t pid;
 
@@ -180,8 +180,13 @@ static __attribute__((noinline)) int spawn_redirect(const char *path,
 		return -1;
 
 	if (!pid) {
-		if (stdout_fd >= 0 && stdout_fd != STDOUT_FILENO)
-			dup2(stdout_fd, STDOUT_FILENO);
+		int i;
+
+		for (i = 0; fds && i < 3; i++) {
+			if (fds[i] >= 0 && fds[i] != i)
+				dup2(fds[i], i);
+		}
+
 		execve(path, argv, envp);
 		_exit(1);
 	}
@@ -191,19 +196,19 @@ static __attribute__((noinline)) int spawn_redirect(const char *path,
 
 static int spawn(const char *path, char * const argv[], char * const envp[])
 {
-	return spawn_redirect(path, argv, envp, -1);
+	return spawn_redirect(path, argv, envp, NULL);
 }
 
 static int spawn_and_wait_redirect(const char *path,
 				   char * const argv[],
 				   char * const envp[],
 				   bool *killed,
-				   int stdout_fd)
+				   const int *fds)
 {
 	int waitpid_stat;
 	pid_t pid;
 
-	pid = spawn_redirect(path, argv, envp, stdout_fd);
+	pid = spawn_redirect(path, argv, envp, fds);
 
 	if (pid < 0)
 		return -1;
@@ -229,7 +234,7 @@ static int spawn_and_wait_full(const char *path,
 			       char * const envp[],
 			       bool *killed)
 {
-	return spawn_and_wait_redirect(path, argv, envp, killed, -1);
+	return spawn_and_wait_redirect(path, argv, envp, killed, NULL);
 }
 
 static int spawn_and_wait_args(const char *path, char * const argv[])
