@@ -50,6 +50,11 @@ static inline int readln(char *out, size_t max)
 				/* No, copy all the way up to the new line */
 				copy_len = consume_len;
 
+			if (copy_len > max) {
+				_readln_consume(consume_len + 1);
+				return READLN_OVERFLOW;
+			}
+
 			memcpy(out, readln_buf, copy_len);
 
 			/* Replace the newline for a null */
