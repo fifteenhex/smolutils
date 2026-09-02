@@ -234,9 +234,7 @@ static int spawn_and_wait_full(const char *path,
 
 static int spawn_and_wait_args(const char *path, char * const argv[])
 {
-	char *newenviron[] = { NULL };
-
-	return spawn_and_wait_full(path, argv, newenviron, NULL);
+	return spawn_and_wait_full(path, argv, environ, NULL);
 }
 
 static int spawn_and_wait(char *name, const char *path)

@@ -29,11 +29,10 @@ static void setup_signals(void)
 
 static void run_cmd(const char *bin, char * const *argv, int stdout)
 {
-	char *newenviron[] = { NULL };
 	bool killed = false;
 	int ret;
 
-	ret = spawn_and_wait_redirect(bin, argv, newenviron, &killed, stdout);
+	ret = spawn_and_wait_redirect(bin, argv, environ, &killed, stdout);
 	if (ret) {
 		if (killed)
 			error("Killed by signal: %d\n", ret);

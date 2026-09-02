@@ -128,7 +128,6 @@ static void parse_environment(char **envp)
 static int spawn_getty(struct getty *getty)
 {
 	const char *tty_path = getty->tty_path;
-	char *newenviron[] = { NULL };
 	char * const newargv[] = {
 		GETTY_NAME,
 		tty_path,
@@ -137,7 +136,7 @@ static int spawn_getty(struct getty *getty)
 	};
 	pid_t pid;
 
-	pid = spawn(GETTY_PATH, newargv, newenviron);
+	pid = spawn(GETTY_PATH, newargv, environ);
 
 	if (pid == -1)
 		return -1;
