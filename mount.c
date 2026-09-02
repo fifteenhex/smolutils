@@ -21,16 +21,13 @@ static int prog_mount(int argc, char **argv, char **envp)
                 }
         }
 
-	if (!type)
-		return 1;
-
 	source = (optind < argc) ? argv[optind++] : NULL;
-	if (!source)
-		return 1;
-
 	target = (optind < argc) ? argv[optind++] : NULL;
-	if (!target)
+
+	if (!type || !source || !target) {
+		usage("usage: mount -t <type> <source> <target>\n");
 		return 1;
+	}
 
 	ret = mount(source, target, type, 0, NULL);
 	if (ret) {
