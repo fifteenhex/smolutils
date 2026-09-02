@@ -257,14 +257,14 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 		while (*p == ' ')
 			p++;
 
-		if (*p == '<' || *p == '|')
+		if (*p == '|')
 			return SEP_BAD;
 
 		/* The end of the line */
 		if (!*p) {
 			*pos = p;
 
-			/* A > with nothing after it isn't a command */
+			/* A < or > with nothing after it isn't a command */
 			return want_path < 0 ? SEP_END : SEP_BAD;
 		}
 
@@ -306,6 +306,9 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 			/* Two redirections in a row, nothing to open */
 			return SEP_BAD;
 		}
+
+		if (op == '<')
+			want_path = STDIN_FILENO;
 
 		if (op == '>') {
 			want_path = STDOUT_FILENO;
