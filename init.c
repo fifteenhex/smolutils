@@ -233,6 +233,12 @@ int main (int argc, char **argv, char **envp)
 {
 	int ret, i;
 
+	/* init will be multicall later, so when running as init check the pid is 1 */
+	if (getpid() != 1) {
+		verbose("init is already running\n");
+		return 1;
+	}
+
 	printf("smolutils init (%s, %s)\n", __DATE__, __TIME__);
 
 	parse_cmdline(argc, argv);
