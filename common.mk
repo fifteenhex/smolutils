@@ -115,6 +115,7 @@ HEADERS = config.h \
 	  memfd.h \
 	  multicall.h \
 	  nolibc_extensions/unistd.h \
+	  nolibc_extensions/xattr.h \
 	  nolibc_extensions/signal.h
 
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar

@@ -52,18 +52,6 @@ static void sync(void)
 	_sys_sync();
 }
 
-static long _sys_setxattr(const char *path, const char *name,
-			  const void *value, size_t size, int flags)
-{
-	return __nolibc_syscall5(__NR_setxattr, path, name, value, size, flags);
-}
-
-static int setxattr(const char *path, const char *name,
-		    const void *value, size_t size, int flags)
-{
-	return __sysret(_sys_setxattr(path, name, value, size, flags));
-}
-
 static long _sys_sethostname(const char *name, size_t size)
 {
 	return __nolibc_syscall2(__NR_sethostname, name, size);

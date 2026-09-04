@@ -7,6 +7,7 @@
 #include "common.h"
 
 #include "nolibc_extensions/unistd.h"
+#include "nolibc_extensions/xattr.h"
 
 #if is_enabled(CONFIG_NETWORK)
 #include "net.h"
