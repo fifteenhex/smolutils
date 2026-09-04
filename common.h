@@ -9,8 +9,18 @@
 
 /* Printing stuff */
 
+/*
+ * #define TAG "something" before including this
+ * to get tagged log lines
+ */
+#ifdef TAG
+#define TAG_PREFIX	TAG ": "
+#else
+#define TAG_PREFIX	""
+#endif
+
 #ifdef CONFIG_DEBUG
-#define debug(...) printf(__VA_ARGS__)
+#define debug(fmt, ...) printf(TAG_PREFIX fmt, ##__VA_ARGS__)
 #else
 #define debug(...)
 #endif
@@ -26,14 +36,15 @@
 #define verbose(...)
 #endif
 
-#define error(...) fprintf(stderr, __VA_ARGS__)
+#define error(fmt, ...) fprintf(stderr, TAG_PREFIX fmt, ##__VA_ARGS__)
+
 #define info(...) printf(__VA_ARGS__)
 
 /*
- * Usage messages, CONFIG_USAGE=n removes them if you are really tight on space
+ * Usage messages, CONFIG_USAGE=n removes them if you are really tight on space.
  */
 #if is_enabled(CONFIG_USAGE)
-#define usage(...) error(__VA_ARGS__)
+#define usage(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define usage(...)
 #endif

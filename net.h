@@ -114,6 +114,11 @@ static inline int inet_pton(int af, const char *src, void *dst)
 }
 
 #define IPPRINT "%d.%d.%d.%d"
+#define IPARGS(_a)			\
+	(int) (((_a) >> 24) & 0xff),	\
+	(int) (((_a) >> 16) & 0xff),	\
+	(int) (((_a) >> 8) & 0xff),	\
+	(int) ((_a) & 0xff)
 
 static inline const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "config.h"
+
+#define TAG "dhcpc"
+
 #include "common.h"
 #include "net.h"
 
@@ -257,15 +260,6 @@ static int setup_socket(struct context *cntx)
 }
 
 
-static void print_address(uint32_t addr)
-{
-	verbose(IPPRINT,
-		(addr >> 24) & 0xff,
-		(addr >> 16) & 0xff,
-		(addr >> 8) & 0xff,
-		 addr & 0xff);
-}
-
 static const char *addr_to_str(uint32_t addr, char *buf, socklen_t len)
 {
 	uint32_t tmp = htonl(addr);
@@ -280,12 +274,8 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	struct sockaddr_in *sin;
 	int ret;
 
-	verbose("Configuring address for %s\n", iface);
-	verbose("Address: ");
-	print_address(addr);
-	verbose(" subnet mask: ");
-	print_address(mask);
-	verbose("\n");
+	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
+		iface, IPARGS(addr), IPARGS(mask));
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0)
@@ -346,9 +336,7 @@ static int interface_set_default_route(const char *iface, uint32_t gateway)
 	struct sockaddr_in *sin;
 	int ret;
 
-	verbose("Default route via ");
-	print_address(gateway);
-	verbose("\n");
+	verbose("Default route via " IPPRINT "\n", IPARGS(gateway));
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0)
