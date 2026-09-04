@@ -2,11 +2,44 @@
 
 #include "config.h"
 #include "common.h"
+#include "colour.h"
 #include "users.h"
+
+static const char *colour_for(const struct stat *st)
+{
+	if (S_ISDIR(st->st_mode))
+		return COLOUR_BLUE;
+
+	if (S_ISLNK(st->st_mode))
+		return COLOUR_CYAN;
+
+	if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+		return COLOUR_YELLOW;
+
+	if (st->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+		return COLOUR_GREEN;
+
+	return "";
+}
+
+static const char *colour_of(int dir, const char *name)
+{
+	struct stat st;
+
+	if (!colour_on())
+		return "";
+
+	if (fstatat(dir, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
+		return "";
+
+	return colour_for(&st);
+}
 
 static int cb_short(const char *name, int dir, void *priv)
 {
-	printf("%s\t", name);
+	const char *with = colour_of(dir, name);
+
+	printf("%s%s%s\t", with, name, colour_end(with));
 
 	return 0;
 }
@@ -45,11 +78,12 @@ static void print_group(uid_t gid)
 
 static int cb_long(const char *name, int dir, void *priv)
 {
+	const char *with;
 	char type = '-';
-        struct stat st;
+	struct stat st;
 
-        if (fstatat(dir, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
-                return -1;
+	if (fstatat(dir, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
+		return -1;
 
 	/* Type */
 	if (S_ISDIR(st.st_mode))
@@ -90,7 +124,8 @@ static int cb_long(const char *name, int dir, void *priv)
 	/* size */
 	printf(" %10lld", (long long)st.st_size);
 
-	printf(" %s\n", name);
+	with = colour(colour_for(&st));
+	printf(" %s%s%s\n", with, name, colour_end(with));
 
 	return 0;
 }
@@ -100,6 +135,8 @@ int main(int argc, char **argv, char **envp)
 	bool long_format = false;
 	char *path;
 	int c;
+
+	colour_setup();
 
 	while ((c = getopt(argc, argv, "l")) != -1) {
 		switch (c) {
