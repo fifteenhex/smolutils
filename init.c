@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "config.h"
+
+#define TAG "init"
+
 #include "common.h"
 #include "multicall.h"
 
