@@ -4,6 +4,16 @@
 #include "common.h"
 
 #include "nolibc_extensions/signal.h"
+#include "nolibc_extensions/unistd.h"
+
+/* Signals for controlling halt, poweroff, reboot, matches busybox */
+#define SIG_HALT	SIGUSR1
+#define SIG_POWEROFF	SIGUSR2
+#define SIG_REBOOT	SIGTERM
+
+#define SHUTDOWN_GRACE	2
+
+static volatile int shutdown_cmd;
 
 #define STARTUP_PATH "/sbin/startup"
 #define GETTY_PATH "/sbin/getty"
@@ -163,24 +173,59 @@ static int spawn_telnetd(void)
 	return telnetd_pid < 0 ? -1 : 0;
 }
 
-static void handle_sig(int sig)
+static void handle_shutdown(int sig)
 {
-	printf("got sig!\n");
+	switch (sig) {
+	case SIG_HALT:
+		shutdown_cmd = LINUX_REBOOT_CMD_HALT;
+		break;
+
+	case SIG_POWEROFF:
+		shutdown_cmd = LINUX_REBOOT_CMD_POWER_OFF;
+		break;
+
+	default:
+		shutdown_cmd = LINUX_REBOOT_CMD_RESTART;
+		break;
+	}
 }
 
 static int setup_signals(void)
 {
-	struct sigaction act = {
-		.sa_flags   = SA_RESTART,
-		.sa_handler = handle_sig,
+	static const int shutdown_signals[] = {
+		SIG_HALT,
+		SIG_POWEROFF,
+		SIG_REBOOT,
 	};
+	struct sigaction shutdown_act = {
+		.sa_handler = handle_shutdown,
+	};
+	unsigned i;
 	int ret;
 
-	ret = sigaction(SIGUSR1, &act, NULL);
-	if (ret)
-		verbose("failed to setup signals: %d\n", errno);
+	for (i = 0; i < ARRAY_SIZE(shutdown_signals); i++) {
+		ret = sigaction(shutdown_signals[i], &shutdown_act, NULL);
+		if (ret)
+			verbose("failed to setup signal %d: %d\n",
+				shutdown_signals[i], errno);
+	}
 
 	return 0;
+}
+
+static void do_shutdown(int cmd)
+{
+	printf("Shutting down\n");
+
+	kill(-1, SIGTERM);
+	sleep(SHUTDOWN_GRACE);
+	kill(-1, SIGKILL);
+
+	sync();
+
+	reboot(cmd);
+
+	error("reboot() failed: %d\n", errno);
 }
 
 /* Load modules, order is important as there is no dependency checking */
@@ -270,6 +315,11 @@ int main (int argc, char **argv, char **envp)
 		int status = 0;
 		pid_t pid;
 		int i;
+
+		if (shutdown_cmd) {
+			do_shutdown(shutdown_cmd);
+			shutdown_cmd = 0;
+		}
 
 		pid = wait(&status);
 
