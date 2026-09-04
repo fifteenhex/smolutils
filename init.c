@@ -323,6 +323,12 @@ int main (int argc, char **argv, char **envp)
 
 		pid = wait(&status);
 
+		/* No kids left */
+		if (pid < 0 && errno == ECHILD) {
+			verbose("No children left\n");
+			break;
+		}
+
 		verbose("pid %d came home\n", (int) pid);
 
 		if (telnetd_port && pid == telnetd_pid) {
