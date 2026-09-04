@@ -7,6 +7,11 @@
 
 #define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
 
+/* Shared state directories, tmpfs abuse */
+#define SMOL_RUN_DIR		"/run/smol"
+#define SMOL_RUN_PRIVATE_DIR	SMOL_RUN_DIR "/private"
+#define SMOL_RUN_PUBLIC_DIR	SMOL_RUN_DIR "/public"
+
 /* Printing stuff */
 
 /*
