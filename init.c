@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "multicall.h"
 
 #include "nolibc_extensions/signal.h"
 #include "nolibc_extensions/unistd.h"
@@ -274,7 +275,7 @@ static inline int run_startup(void)
 }
 
 
-int main (int argc, char **argv, char **envp)
+static int prog_init(int argc, char **argv, char **envp)
 {
 	int ret, i;
 
@@ -355,4 +356,48 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	return 0;
+}
+
+/*
+ * The shutdown names are this same binary, they just poke init and let
+ * it do the work. Nothing here needs a capability of its own, but it
+ * does need to be allowed to signal pid 1, which means being root.
+ */
+static int tell_init(int sig)
+{
+	if (kill(1, sig)) {
+		error("Failed to ask init to stop: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int prog_reboot(int argc, char **argv, char **envp)
+{
+	return tell_init(SIG_REBOOT);
+}
+
+static int prog_poweroff(int argc, char **argv, char **envp)
+{
+	return tell_init(SIG_POWEROFF);
+}
+
+static int prog_halt(int argc, char **argv, char **envp)
+{
+	return tell_init(SIG_HALT);
+}
+
+static const struct multicall_prog progs[] = {
+	{ "init", prog_init },
+	{ "reboot", prog_reboot },
+	{ "poweroff", prog_poweroff },
+	{ "halt", prog_halt },
+};
+
+int main (int argc, char **argv, char **envp)
+{
+	MULTICALL_DISPATCH(argv[0], progs);
+
+	return 1;
 }

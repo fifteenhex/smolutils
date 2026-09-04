@@ -54,6 +54,18 @@
 							"security.capability": "cap_setuid,cap_setgid+ep"
 						}
 					},
+					"reboot": {
+						"type": "symlink",
+						"target": "/sbin/init"
+					},
+					"poweroff": {
+						"type": "symlink",
+						"target": "/sbin/init"
+					},
+					"halt": {
+						"type": "symlink",
+						"target": "/sbin/init"
+					},
 					"mount": { },
 					"umount": {
 						"type": "symlink",

@@ -30,6 +30,7 @@ Even for the mmu enjoyers out there:
 | dhcpc     |            |                            |       |
 | dmesg     |            |                            |       |
 | getty     |            |                            |       |
+| halt      |            | init                       |       |
 | init      |            |                            |       |
 | insmod    |            |                            |       |
 | kill      |            |                            |       |
@@ -43,6 +44,8 @@ Even for the mmu enjoyers out there:
 | mv        | stub       | touch                      |       |
 | ping      |            |                            |       |
 | ps        |            |                            |       |
+| poweroff  |            | init                       |       |
+| reboot    |            | init                       |       |
 | resolv    |            |                            |       |
 | rm        |            | touch                      |       |
 | rmdir     |            | touch                      |       |
