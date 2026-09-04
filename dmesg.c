@@ -2,8 +2,26 @@
 
 #include "config.h"
 #include "common.h"
+#include "colour.h"
 
 #define MSG_MAX 2048
+
+#define LEVEL_ERR	3
+#define LEVEL_WARNING	4
+
+/* Get the priority and pick a nice colour for it */
+static const char *colour_for(const char *prefix)
+{
+	unsigned long level = strtoul(prefix, NULL, 10) & 7;
+
+	if (level <= LEVEL_ERR)
+		return COLOUR_RED;
+
+	if (level == LEVEL_WARNING)
+		return COLOUR_YELLOW;
+
+	return "";
+}
 
 static int readone(int fd, char *tmp, size_t sz, char **msg)
 {
@@ -54,6 +72,8 @@ int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
 
+	colour_setup();
+
 	fd = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
 	if (fd < 0) {
 		error("Failed to open /dev/kmsg: %d\n", errno);
@@ -61,6 +81,7 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	while (true) {
+		const char *with;
 		int ret;
 		char *msg;
 
@@ -68,7 +89,8 @@ int main (int argc, char **argv, char **envp)
 		if (ret)
 			break;
 
-		printf("%s\n", msg);
+		with = colour(colour_for(tmp));
+		printf("%s%s%s\n", with, msg, colour_end(with));
 	}
 
 	return 0;
