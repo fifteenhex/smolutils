@@ -110,6 +110,7 @@ HEADERS = config.h \
 	  net.h \
 	  readln.h \
 	  resolv.h \
+	  colour.h \
 	  memfd.h \
 	  multicall.h \
 	  nolibc_extensions/unistd.h \

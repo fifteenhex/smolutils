@@ -27,6 +27,11 @@
 #define CONFIG_TELNETD	y
 #endif
 
+/* Make everything look like knock-off systemd */
+#ifndef CONFIG_COLOUR
+#define CONFIG_COLOUR	y
+#endif
+
 /* Magic */
 #define __ARG_PLACEHOLDER_y			0,
 #define __take_second_arg(__ignored, val, ...)	val
