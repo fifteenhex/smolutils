@@ -7,6 +7,8 @@
 #include "common.h"
 #include "net.h"
 
+#include "dhcpc.h"
+
 #include <linux/sockios.h>
 
 #define DEFAULT_INTERFACE "eth0"
@@ -36,7 +38,8 @@ struct config {
 	uint32_t subnet_mask;
 	uint32_t router;
 	uint32_t serverid;
-	uint32_t dns[4];
+	uint32_t lease_time;
+	uint32_t dns[DHCPC_MAX_DNS];
 	uint8_t num_dns;
 };
 
@@ -491,9 +494,50 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 	return 0;
 }
 
+static int write_file(const char *path, const void *what, size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd < 0) {
+		error("Failed to open %s: %d\n", path, errno);
+		return -1;
+	}
+
+	if (write(fd, what, len) != (int) len) {
+		error("Failed to write %s: %d\n", path, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Write out a state file for nosey processes to look at */
+static void write_state(const struct config *config)
+{
+	struct dhcpc_lease lease = {
+		.address = config->address,
+		.subnet_mask = config->subnet_mask,
+		.router = config->router,
+		.serverid = config->serverid,
+		.lease_time = config->lease_time,
+	};
+	struct dhcpc_dns dns = { 0 };
+	unsigned int i;
+
+	write_file(DHCPC_LEASE_PATH, &lease, sizeof(lease));
+
+	for (i = 0; i < config->num_dns; i++)
+		dns.server[dns.num++] = config->dns[i];
+
+	if (dns.num)
+		write_file(DHCPC_DNS_PATH, &dns, sizeof(dns));
+}
+
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
 	uint32_t addr, subnet, router, serverid;
+	uint32_t lease;
 	char subnet_str[INET_ADDRSTRLEN];
 	char router_str[INET_ADDRSTRLEN];
 	char addr_str[INET_ADDRSTRLEN];
@@ -547,6 +591,10 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	if (find_opt_u32(p, OPT_ROUTER, &router))
 		router = 0;
 
+	/* Currently unused, will be used when we handle renewal */
+	if (find_opt_u32(p, OPT_LEASE, &lease))
+		lease = 0;
+
 	addr = ntohl(p->yiaddr);
 
 	addr_to_str(addr, addr_str, sizeof(addr_str));
@@ -560,6 +608,7 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	cntx->config.address = addr;
 	cntx->config.subnet_mask = subnet;
 	cntx->config.router = router;
+	cntx->config.lease_time = lease;
 
 	/* All of the DNS servers are in one option, 4 bytes each */
 	cntx->config.num_dns = 0;
@@ -680,6 +729,8 @@ int main(int argc, char **argv, char **envp)
 
 	if (cntx.config.router)
 		interface_set_default_route(cntx.interface, cntx.config.router);
+
+	write_state(&cntx.config);
 
 	return 0;
 }

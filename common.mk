@@ -111,6 +111,7 @@ HEADERS = config.h \
 	  readln.h \
 	  resolv.h \
 	  colour.h \
+	  dhcpc.h \
 	  memfd.h \
 	  multicall.h \
 	  nolibc_extensions/unistd.h \
