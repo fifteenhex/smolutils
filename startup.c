@@ -94,6 +94,17 @@ struct mountpoint {
 	const char *type;
 };
 
+struct rundir {
+	const char *path;
+	mode_t mode;
+};
+
+static const struct rundir rundirs[] = {
+	{ SMOL_RUN_DIR, 0755 },
+	{ SMOL_RUN_PUBLIC_DIR, 0755 },
+	{ SMOL_RUN_PRIVATE_DIR, 0700 },
+};
+
 static const struct mountpoint fstab[] = {
 	{"devtmpfs", "/dev", "devtmpfs"},
 	{"devpts", "/dev/pts", "devpts"},
@@ -121,6 +132,20 @@ static int mount_filesystems(void)
 		ret = do_mount(mp->source, mp->target, mp->type);
 		if (ret)
 			goto err;
+	}
+
+	/* State sharing directories */
+	for (int i = 0; i < ARRAY_SIZE(rundirs); i++) {
+		const struct rundir *d = &rundirs[i];
+
+		if (mkdir(d->path, d->mode) && errno != EEXIST) {
+			error("mkdir(%s) failed: %d\n", d->path, errno);
+			continue;
+		}
+
+		/* mkdir only asks, umask decides, so say it again */
+		if (chmod(d->path, d->mode))
+			error("chmod(%s) failed: %d\n", d->path, errno);
 	}
 
 	return 0;
