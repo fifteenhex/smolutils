@@ -723,8 +723,11 @@ int main(int argc, char **argv, char **envp)
 
 	verbose("Bringing %s up\n", cntx.interface);
 	ret = smolutils_net_interface_set_up(cntx.interface);
-	if (ret)
+	if (ret) {
+		/* Probably you set the wrong interface */
+		error("Failed to bring %s up: %d\n", cntx.interface, errno);
 		return 1;
+	}
 
 	verbose("Getting MAC address for %s\n", cntx.interface);
 	ret = get_mac(cntx.interface, cntx.mac);
