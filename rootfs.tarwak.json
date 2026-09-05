@@ -1,4 +1,7 @@
 {
+	"groups": {
+		"users": 1024
+	},
 	"defaults": {
 		"user": "root",
 		"group": "root"
@@ -108,6 +111,7 @@
 			},
                 	"sbin" : {
 				"type": "dir",
+				"mode": "0711",
 				"defaults": {
 					"mode": "0500"
 				},
@@ -126,7 +130,13 @@
 					"telnetd": {
 						"feature": "telnetd"
 					},
-					"init": { }
+					"init": {
+						"group": "users",
+						"mode": "0750",
+						"xattrs": {
+							"security.capability": "cap_kill+ep"
+						}
+					}
 				}
 			},
                 	"tmp" : {
