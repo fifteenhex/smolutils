@@ -8,8 +8,15 @@
 #include "net.h"
 
 #include "dhcpc.h"
+#include "later.h"
 
 #include <linux/sockios.h>
+
+#define DHCPC_PATH	"/sbin/dhcpc"
+
+#define RENEW_FRACTION	2
+
+#define RETRY_SECONDS	60
 
 #define DEFAULT_INTERFACE "eth0"
 #define SERVER_PORT 67
@@ -534,6 +541,32 @@ static void write_state(const struct config *config)
 		write_file(DHCPC_DNS_PATH, &dns, sizeof(dns));
 }
 
+/*
+ * Schedule to be run again later by init.
+ * We don't actually do dhcp renewal, we just do a normal request to
+ * save on code.
+ */
+static void ask_to_run_again(const char *interface, unsigned int secs)
+{
+	const char *argv[] = {
+		DHCPC_PATH,
+		"-i",
+		interface,
+		NULL
+	};
+	char name[32];
+
+	if (snprintf(name, sizeof(name), "dhcpc.%s", interface)
+	    >= (int) sizeof(name)) {
+		error("Interface name is too long: %s\n", interface);
+		return;
+	}
+
+	verbose("Asking to run again in %u seconds\n", secs);
+
+	later_ask(name, secs, argv);
+}
+
 int do_discover(struct context *cntx, struct dhcp_packet *p)
 {
 	uint32_t addr, subnet, router, serverid;
@@ -673,6 +706,7 @@ int main(int argc, char **argv, char **envp)
 		.interface = DEFAULT_INTERFACE,
 	};
 	bool have_address = false;
+	unsigned int renew;
 	struct dhcp_packet p;
 	int ret, tries;
 	int c;
@@ -722,6 +756,7 @@ int main(int argc, char **argv, char **envp)
 
 	if (!have_address) {
 		error("Giving up..\n");
+		ask_to_run_again(cntx.interface, RETRY_SECONDS);
 		return 1;
 	}
 
@@ -731,6 +766,9 @@ int main(int argc, char **argv, char **envp)
 		interface_set_default_route(cntx.interface, cntx.config.router);
 
 	write_state(&cntx.config);
+
+	renew = cntx.config.lease_time / RENEW_FRACTION;
+	ask_to_run_again(cntx.interface, renew ? renew : RETRY_SECONDS);
 
 	return 0;
 }
