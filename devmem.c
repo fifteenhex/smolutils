@@ -10,7 +10,7 @@
 #define DEFAULT_LENGTH	4
 #define MAX_LENGTH	4096
 
-static uint8_t block[MAX_LENGTH];
+static uint8_t *block;
 
 static bool read_block(int fd, unsigned long addr, unsigned int len,
 		       unsigned int width)
@@ -155,6 +155,13 @@ int main (int argc, char **argv, char **envp)
 	if (length % width) {
 		usage("A length of %lu isn't a whole number of %lu byte reads\n",
 		      length, width);
+		return 1;
+	}
+
+	block = mmap(NULL, MAX_LENGTH, PROT_READ | PROT_WRITE,
+		     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (block == MAP_FAILED) {
+		error("No room for a %d byte buffer: %d\n", MAX_LENGTH, errno);
 		return 1;
 	}
 
