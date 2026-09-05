@@ -380,7 +380,7 @@ static int open_redirects(struct command *cmd, int *fds)
 	return 0;
 }
 
-static void run_command(struct command *cmd)
+static void run_command(struct command *cmd, int in_fd, int out_fd)
 {
 	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 	int opened[3] = { -1, -1, -1 };
@@ -392,10 +392,16 @@ static void run_command(struct command *cmd)
 	if (!cmd->argc)
 		return;
 
+	if (in_fd >= 0)
+		fds[STDIN_FILENO] = in_fd;
+
+	if (out_fd >= 0)
+		fds[STDOUT_FILENO] = out_fd;
+
 	if (open_redirects(cmd, opened))
 		goto out;
 
-	/* Whatever a < or > opened is what the command gets */
+	/* A < or > on the command beats whatever it was handed */
 	for (i = 0; i < 3; i++) {
 		if (opened[i] >= 0)
 			fds[i] = opened[i];
@@ -473,7 +479,7 @@ int main (int argc, char **argv, char **envp)
 			continue;
 		}
 
-		run_command(&cmd);
+		run_command(&cmd, -1, -1);
 	}
 
 	debug("Exiting\n");
