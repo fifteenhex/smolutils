@@ -4,6 +4,7 @@
 #include "common.h"
 #include "colour.h"
 #include "users.h"
+#include "nolibc_extensions/unistd.h"
 
 static const char *colour_for(const struct stat *st)
 {
@@ -76,6 +77,32 @@ static void print_group(uid_t gid)
 		printf("%10u", gid);
 }
 
+/*
+ * Path max is a whole page, but if you are making paths that are a page
+ * long you are not using this ls.
+ */
+#define TARGET_MAX	256
+
+static void print_target(int dir, const char *name, const struct stat *st)
+{
+	char target[TARGET_MAX];
+	ssize_t got;
+
+	if (!is_enabled(CONFIG_LS_DETAIL))
+		return;
+
+	if (!S_ISLNK(st->st_mode))
+		return;
+
+	got = readlinkat(dir, name, target, sizeof(target) - 1);
+	if (got < 0)
+		return;
+
+	target[got] = '\0';
+
+	printf(" -> %s", target);
+}
+
 static int cb_long(const char *name, int dir, void *priv)
 {
 	const char *with;
@@ -125,7 +152,12 @@ static int cb_long(const char *name, int dir, void *priv)
 	printf(" %10lld", (long long)st.st_size);
 
 	with = colour(colour_for(&st));
-	printf(" %s%s%s\n", with, name, colour_end(with));
+	printf(" %s%s%s", with, name, colour_end(with));
+
+	/* target if symlink */
+	print_target(dir, name, &st);
+
+	printf("\n");
 
 	return 0;
 }

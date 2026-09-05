@@ -34,6 +34,11 @@
 #define CONFIG_DHCP_WAIT	y
 #endif
 
+/* fatter ls with stuff like symlink printing */
+#ifndef CONFIG_LS_DETAIL
+#define CONFIG_LS_DETAIL	y
+#endif
+
 /* Make everything look like knock-off systemd */
 #ifndef CONFIG_COLOUR
 #define CONFIG_COLOUR	y
