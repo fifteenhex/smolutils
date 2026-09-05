@@ -254,7 +254,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 	while (true) {
 		char *word = NULL;
 		bool to_stderr = false;
-		bool dbl = false;
+		bool is_append = false;
 		char op;
 
 		while (*p == ' ')
@@ -288,11 +288,11 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 		 * terminating the word lands on top of it
 		 */
 		op = is_special(*p) ? *p : '\0';
-		dbl = op == '>' && p[1] == '>';
+		is_append = op == '>' && p[1] == '>';
 
 		if (*p) {
 			*p = '\0';
-			p += dbl ? 2 : 1;
+			p += is_append ? 2 : 1;
 		}
 
 		if (word && op == '>' && strcmp(word, "2") == 0) {
@@ -320,7 +320,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 
 		if (op == '>') {
 			want_path = to_stderr ? STDERR_FILENO : STDOUT_FILENO;
-			cmd->append[want_path] = dbl;
+			cmd->append[want_path] = is_append;
 		}
 	}
 }
