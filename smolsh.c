@@ -282,7 +282,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 		/*
 		 * word is overwritten in place to make things extra confusing,
 		 * reading a character in doesn't mean it will end up in the final
-		 * word, see: escapes.
+		 * word, see: escapes and quotes.
 		 */
 		if (!is_special(*p)) {
 			word = p;
@@ -298,6 +298,20 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 						return SEP_BAD;
 
 					*out++ = *p++;
+					continue;
+				}
+
+				if (*p == '"') {
+					p++;
+
+					while (*p && *p != '"')
+						*out++ = *p++;
+
+					/* Missing closing quote */
+					if (!*p)
+						return SEP_BAD;
+
+					p++;
 					continue;
 				}
 
