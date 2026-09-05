@@ -94,7 +94,7 @@ static int parse_response_cb_memfd(uint32_t v4addr, void *priv)
 	struct resolv_buf *resolv_buf = (struct resolv_buf *) priv;
 	unsigned int num_results = resolv_buf->num_addr_v4;
 
-	if ((num_results + 1) >= RESOLV_MAX_RESULTS)
+	if (num_results >= RESOLV_MAX_RESULTS)
 		return 0;
 
 	resolv_buf->addr_v4[num_results].s_addr = v4addr;
