@@ -68,7 +68,7 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 
 	ret = spawn_and_wait_args("/bin/resolv", newargv);
 	if (ret) {
-		printf("failed to spawn resolv\n");
+		error("Failed to spawn resolv\n");
 		return -1;
 	}
 
