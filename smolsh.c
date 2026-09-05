@@ -156,38 +156,6 @@ static bool try_builtin(char **tokens, unsigned num_tokens, int stdout)
 	return false;
 }
 
-/*
- * These aren't really builtin's, we know where they are though
- * so don't bother doing any look up nonsense
- */
-struct fixed_path {
-	const char *cmd;
-	const char *path;
-};
-
-struct fixed_path fixed[] = {
-	{ "ls", "/bin/ls" },
-	{ "dmesg", "/bin/dmesg" },
-	{ "cat", "/bin/cat" },
-	{ "mkdir", "/bin/mkdir" },
-	{ "ps", "/bin/ps" },
-};
-
-static bool try_fixed(const char *cmd, char **path)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(fixed); i++) {
-		struct fixed_path *fp = &fixed[i];
-		if (strcmp(cmd, fp->cmd) == 0) {
-			*path = fp->path;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 static int try_absolute(const char *cmd, char **path)
 {
 	/* Check if we can execute it ... */
@@ -395,11 +363,6 @@ static void run_command(struct command *cmd)
 
 	if (try_builtin(cmd->argv, cmd->argc, fds[STDOUT_FILENO]))
 		goto out;
-
-	if (try_fixed(cmd->argv[0], &path)) {
-		run_cmd(path, cmd->argv, fds);
-		goto out;
-	}
 
 	ret = try_absolute(cmd->argv[0], &path);
 	if (ret) {
