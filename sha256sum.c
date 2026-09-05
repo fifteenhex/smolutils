@@ -29,12 +29,16 @@ int main (int argc, char **argv, char **envp)
 	path = argv[1];
 
 	fd = open(path, O_RDONLY);
-	if (fd < 0)
+	if (fd < 0) {
+		error("Failed to open %s: %d\n", path, errno);
 		return 1;
+	}
 
 	filesz = file_size(fd);
-	if (filesz < 0)
+	if (filesz < 0) {
+		error("Failed to size %s: %d\n", path, errno);
 		return 1;
+	}
 
 	lonesha256_stream(out, read_block, filesz);
 
