@@ -113,6 +113,7 @@ HEADERS = config.h \
 	  resolv.h \
 	  colour.h \
 	  dhcpc.h \
+	  later.h \
 	  memfd.h \
 	  multicall.h \
 	  nolibc_extensions/unistd.h \

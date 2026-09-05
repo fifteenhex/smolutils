@@ -5,6 +5,7 @@
 #define TAG "init"
 
 #include "common.h"
+#include "later.h"
 #include "multicall.h"
 
 #include "nolibc_extensions/signal.h"
@@ -177,6 +178,11 @@ static int spawn_telnetd(void)
 	return telnetd_pid < 0 ? -1 : 0;
 }
 
+/* Empty on purpose, it just has to interrupt wait() */
+static void handle_alarm(int sig)
+{
+}
+
 static void handle_shutdown(int sig)
 {
 	switch (sig) {
@@ -201,11 +207,18 @@ static int setup_signals(void)
 		SIG_POWEROFF,
 		SIG_REBOOT,
 	};
+	struct sigaction alarm_act = {
+		.sa_handler = handle_alarm,
+	};
 	struct sigaction shutdown_act = {
 		.sa_handler = handle_shutdown,
 	};
 	unsigned i;
 	int ret;
+
+	ret = sigaction(SIGALRM, &alarm_act, NULL);
+	if (ret)
+		verbose("Failed to setup alarm: %d\n", errno);
 
 	for (i = 0; i < ARRAY_SIZE(shutdown_signals); i++) {
 		ret = sigaction(shutdown_signals[i], &shutdown_act, NULL);
@@ -230,6 +243,67 @@ static void do_shutdown(int cmd)
 	reboot(cmd);
 
 	error("reboot() failed: %d\n", errno);
+}
+
+struct due_state {
+	uint32_t now;
+	uint32_t next;
+	bool have_next;
+};
+
+static int run_if_due(const char *name, int dir, void *priv)
+{
+	struct due_state *state = priv;
+	char *argv[LATER_ARGS + 1] = { 0 };
+	struct later_job job;
+	char path[64];
+	unsigned int i;
+
+	if (snprintf(path, sizeof(path), "%s/%s", LATER_DIR, name)
+	    >= (int) sizeof(path))
+		return 0;
+
+	if (later_read(path, &job)) {
+		verbose("%s isn't a job, leaving it\n", path);
+		return 0;
+	}
+
+	if (job.when > state->now) {
+		if (!state->have_next || job.when < state->next) {
+			state->next = job.when;
+			state->have_next = true;
+		}
+
+		return 0;
+	}
+
+	/* Remove the job now to avoid looping */
+	unlink(path);
+
+	for (i = 0; i < LATER_ARGS && job.argv[i][0]; i++)
+		argv[i] = job.argv[i];
+
+	verbose("running %s\n", argv[0]);
+
+	if (spawn(argv[0], argv, environ) < 0)
+		error("Failed to run %s: %d\n", argv[0], errno);
+
+	return 0;
+}
+
+/* Seconds until the next job, 0 when there isn't one */
+static unsigned int run_due_jobs(void)
+{
+	struct due_state state = { .now = later_now() };
+
+	if (iterate_dir(LATER_DIR, run_if_due, &state) < 0)
+		verbose("No %s to look in\n", LATER_DIR);
+
+	if (!state.have_next)
+		return 0;
+
+	/* alarm(0) cancels rather than sets, so never return zero */
+	return state.next > state.now ? state.next - state.now : 1;
 }
 
 /* Load modules, order is important as there is no dependency checking */
@@ -316,6 +390,7 @@ static int prog_init(int argc, char **argv, char **envp)
 
 	/* Now sit in wait for one of the gettys to exit */
 	while (true) {
+		unsigned int until;
 		int status = 0;
 		pid_t pid;
 		int i;
@@ -325,10 +400,21 @@ static int prog_init(int argc, char **argv, char **envp)
 			shutdown_cmd = 0;
 		}
 
+		until = run_due_jobs();
+		alarm(until);
+
 		pid = wait(&status);
+
+		if (pid < 0 && errno == EINTR)
+			continue;
 
 		/* No kids left */
 		if (pid < 0 && errno == ECHILD) {
+			if (until) {
+				sleep(until);
+				continue;
+			}
+
 			verbose("No children left\n");
 			break;
 		}

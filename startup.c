@@ -5,6 +5,7 @@
 #define TAG "startup"
 
 #include "common.h"
+#include "later.h"
 
 #include "nolibc_extensions/unistd.h"
 #include "nolibc_extensions/xattr.h"
@@ -121,6 +122,7 @@ static const struct rundir rundirs[] = {
 	{ SMOL_RUN_DIR, 0755 },
 	{ SMOL_RUN_PUBLIC_DIR, 0755 },
 	{ SMOL_RUN_PRIVATE_DIR, 0700 },
+	{ LATER_DIR, 0700 },
 };
 
 static const struct mountpoint fstab[] = {
