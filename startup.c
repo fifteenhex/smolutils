@@ -119,6 +119,7 @@ struct rundir {
 };
 
 static const struct rundir rundirs[] = {
+	{ "/run", 0755 },
 	{ SMOL_RUN_DIR, 0755 },
 	{ SMOL_RUN_PUBLIC_DIR, 0755 },
 	{ SMOL_RUN_PRIVATE_DIR, 0700 },
