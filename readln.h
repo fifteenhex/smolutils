@@ -28,6 +28,9 @@ struct readln_filter {
 static char readln_buf[READLN_BUFSZ];
 static size_t readln_pending = 0;
 
+/* Throwing away the end of a line that was too long */
+static bool readln_dropping = false;
+
 /* Shift the tail portion of the buffer to the head */
 static inline void _readln_consume(size_t howmuch)
 {
@@ -98,6 +101,17 @@ static inline int readln(char *out, size_t max,
 
 		newline = memchr(readln_buf, '\n', readln_pending);
 
+		/* Just consume until we get a newline */
+		if (readln_dropping) {
+			if (!newline) {
+				_readln_consume(readln_pending);
+			} else {
+				_readln_consume(newline - readln_buf + 1);
+				readln_dropping = false;
+				continue;
+			}
+		}
+
 		/* Buffer contains a newline? */
 		if (newline)
 		{
@@ -122,9 +136,12 @@ static inline int readln(char *out, size_t max,
 			return copy_len;
 		}
 
-		/* Buffer is full ? */
-		if (readln_pending == sizeof(readln_buf))
+		/* All full up and no newline insight, start throwing everything in the bin */
+		if (readln_pending == sizeof(readln_buf)) {
+			_readln_consume(readln_pending);
+			readln_dropping = true;
 			return READLN_OVERFLOW;
+		}
 
 		/* Read new data into the buffer */
 		ret = read(STDIN_FILENO, readln_buf + readln_pending,
