@@ -5,6 +5,7 @@
 #include "net.h"
 
 #include "resolv.h"
+#include "dhcpc.h"
 
 #define DNS_ID		0x1337
 #define DNS_SERVER	"8.8.8.8"
@@ -214,15 +215,42 @@ static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
 	return 0;
 }
 
+/* Try to get dns servers from dhcpc's state, fallback otherwise */
+static unsigned int dns_servers(uint32_t *servers, unsigned int max)
+{
+	struct dhcpc_dns dns;
+	struct in_addr fallback;
+	unsigned int num = 0;
+	unsigned int i;
+
+	if (!dhcpc_read_state(DHCPC_DNS_PATH, &dns, sizeof(dns)))
+		for (i = 0; i < dns.num && i < DHCPC_MAX_DNS && num < max; i++)
+			servers[num++] = htonl(dns.server[i]);
+
+	if (num)
+		return num;
+
+	verbose("No servers from DHCP, falling back to " DNS_SERVER "\n");
+
+	inet_pton(AF_INET, DNS_SERVER, &fallback);
+	servers[num++] = fallback.s_addr;
+
+	return num;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	struct sockaddr_in srv = {
 		.sin_family = AF_INET,
 		.sin_port   = htons(DNS_PORT),
 	};
+	uint32_t servers[DHCPC_MAX_DNS];
 	int __cleanup_fd sock = -1;
+	unsigned int num_servers;
 	const char *hostname;
 	uint8_t buf[BUF_SZ];
+	unsigned int i;
+	int qlen;
 	int ret;
 	int len;
 	int c;
@@ -247,7 +275,7 @@ int main (int argc, char **argv, char **envp)
 
         hostname = (optind < argc) ? argv[optind] : ".";
 
-	inet_pton(AF_INET, DNS_SERVER, &srv.sin_addr);
+	num_servers = dns_servers(servers, ARRAY_SIZE(servers));
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0)
@@ -257,17 +285,24 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	len = build_query(hostname, buf, sizeof(buf));
-	if (len < 0) {
+	qlen = build_query(hostname, buf, sizeof(buf));
+	if (qlen < 0) {
 		error("Bad hostname\n");
 		return 1;
 	}
 
-	ret = sendto(sock, buf, len, 0, (struct sockaddr *)&srv, sizeof(srv));
-	if (ret < 0)
-		return 1;
+	/* Ask each one in turn, the first to answer wins */
+	for (i = 0, len = 0; i < num_servers && len < 1; i++) {
+		srv.sin_addr.s_addr = servers[i];
 
-	len = recv(sock, buf, sizeof(buf), 0);
+		ret = sendto(sock, buf, qlen, 0,
+			     (struct sockaddr *)&srv, sizeof(srv));
+		if (ret < 0)
+			continue;
+
+		len = recv(sock, buf, sizeof(buf), 0);
+	}
+
 	if (len < 1)
 		return 1;
 
