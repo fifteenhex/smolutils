@@ -52,6 +52,16 @@ static void sync(void)
 	_sys_sync();
 }
 
+static long _sys_readlinkat(int dir, const char *path, char *buf, size_t size)
+{
+	return __nolibc_syscall4(__NR_readlinkat, dir, path, buf, size);
+}
+
+static ssize_t readlinkat(int dir, const char *path, char *buf, size_t size)
+{
+	return __sysret(_sys_readlinkat(dir, path, buf, size));
+}
+
 static long _sys_sethostname(const char *name, size_t size)
 {
 	return __nolibc_syscall2(__NR_sethostname, name, size);
