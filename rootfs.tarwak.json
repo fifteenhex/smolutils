@@ -36,6 +36,9 @@
 					"ls": { },
 					"ps": { },
 					"sha256sum": { },
+					"ip": {
+						"feature": "net"
+					},
 					"resolv": {
 						"feature": "net"
 					},

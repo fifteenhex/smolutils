@@ -68,6 +68,7 @@ PROGS_NET_SYSTEM =	\
 	dhcpc
 
 PROGS_NET_USER =	\
+	ip		\
 	ping		\
 	resolv		\
 	tftp
