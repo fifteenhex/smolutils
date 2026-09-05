@@ -39,6 +39,10 @@
 					"resolv": {
 						"feature": "net"
 					},
+					"devmem": {
+						"xattrs": {
+						}
+					},
 					"tftp": {
 						"feature": "net"
 					},

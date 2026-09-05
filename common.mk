@@ -32,6 +32,7 @@ PROGS_USER =		\
 	cat		\
 	sha256sum	\
 	xxd		\
+	devmem		\
 	man		\
 	less		\
 	uname		\
