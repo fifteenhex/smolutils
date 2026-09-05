@@ -383,6 +383,7 @@ static int open_redirects(struct command *cmd, int *fds)
 static void run_command(struct command *cmd)
 {
 	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
+	int opened[3] = { -1, -1, -1 };
 	char *path;
 	int ret;
 	int i;
@@ -391,8 +392,14 @@ static void run_command(struct command *cmd)
 	if (!cmd->argc)
 		return;
 
-	if (open_redirects(cmd, fds))
+	if (open_redirects(cmd, opened))
 		goto out;
+
+	/* Whatever a < or > opened is what the command gets */
+	for (i = 0; i < 3; i++) {
+		if (opened[i] >= 0)
+			fds[i] = opened[i];
+	}
 
 	/* We'll use the words as the argv, so add the terminator */
 	cmd->argv[cmd->argc] = NULL;
@@ -419,8 +426,8 @@ static void run_command(struct command *cmd)
 
 out:
 	for (i = 0; i < 3; i++) {
-		if (fds[i] != i)
-			close(fds[i]);
+		if (opened[i] >= 0)
+			close(opened[i]);
 	}
 }
 
