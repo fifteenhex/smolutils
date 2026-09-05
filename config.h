@@ -27,6 +27,11 @@
 #define CONFIG_TELNETD	y
 #endif
 
+/* Wait on dhcp to finish during startup */
+#ifndef CONFIG_DHCP_WAIT
+#define CONFIG_DHCP_WAIT	y
+#endif
+
 /* Make everything look like knock-off systemd */
 #ifndef CONFIG_COLOUR
 #define CONFIG_COLOUR	y

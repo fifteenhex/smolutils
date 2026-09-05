@@ -16,6 +16,8 @@
 #include <linux/capability.h>
 #include <linux/magic.h>
 
+#define DHCPC_PATH "/sbin/dhcpc"
+
 /* tmpfs supports xattrs but apparently there is no way to embed them in a cpio? */
 struct capability {
 	const char *path;
@@ -190,7 +192,15 @@ static int setup_network(const char *netif)
 
 	debug("configuring network on %s\n", netif);
 
-	spawn_and_wait_args("/sbin/dhcpc", dhcpc_args);
+	/* Let dhcpc do its thing in the background instead of stalling boot */
+	if (!is_enabled(CONFIG_DHCP_WAIT)) {
+		if (spawn(DHCPC_PATH, dhcpc_args, environ) < 0)
+			error("Failed to start dhcpc: %d\n", errno);
+
+		return 0;
+	}
+
+	spawn_and_wait_args(DHCPC_PATH, dhcpc_args);
 
 	return 0;
 }
