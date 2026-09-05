@@ -52,6 +52,16 @@ static void sync(void)
 	_sys_sync();
 }
 
+static long _sys_alarm(unsigned int seconds)
+{
+	return __nolibc_syscall1(__NR_alarm, seconds);
+}
+
+static unsigned int alarm(unsigned int seconds)
+{
+	return __sysret(_sys_alarm(seconds));
+}
+
 static long _sys_readlinkat(int dir, const char *path, char *buf, size_t size)
 {
 	return __nolibc_syscall4(__NR_readlinkat, dir, path, buf, size);
