@@ -14,19 +14,19 @@ static int copy_a_file(const char *src, const char *dst)
 
 	src_fd = open(src, O_RDONLY);
 	if (src_fd < 0) {
-		debug("failed to open src file\n");
+		error("Failed to open %s: %d\n", src, errno);
 		return -1;
 	}
 
 	sz = file_size(src_fd);
 	if (sz < 0) {
-		debug("failed to get source size\n");
+		error("Failed to size %s: %d\n", src, errno);
 		return -1;
 	}
 
 	dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (dst_fd < 0) {
-		debug("failed to open/create dst file\n");
+		error("Failed to create %s: %d\n", dst, errno);
 		return -1;
 	}
 
@@ -34,7 +34,7 @@ static int copy_a_file(const char *src, const char *dst)
 
 	ret = sendfile(dst_fd, src_fd, NULL, sz);
 	if (ret != sz) {
-		error("sendfile() failed\n");
+		error("Failed to copy %s: %d\n", src, errno);
 		return -1;
 	}
 
