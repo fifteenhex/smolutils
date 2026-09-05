@@ -14,6 +14,7 @@
 #endif
 
 #include <linux/capability.h>
+#include <linux/magic.h>
 
 /* tmpfs supports xattrs but apparently there is no way to embed them in a cpio? */
 struct capability {
@@ -28,9 +29,23 @@ static const struct capability capabilities[] = {
 #endif
 };
 
+/* Check if we are running from initramfs */
+static bool root_is_ram(void)
+{
+	struct statfs st;
+
+	if (statfs("/", &st))
+		return false;
+
+	return st.f_type == RAMFS_MAGIC || st.f_type == TMPFS_MAGIC;
+}
+
 static void set_capabilities(void)
 {
 	if (!is_enabled(CONFIG_INITRAMFS))
+		return;
+
+	if (!root_is_ram())
 		return;
 
 	debug("Adding caps\n");
