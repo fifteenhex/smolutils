@@ -4,7 +4,9 @@
 #define _SMOLUTILS_CONFIG_H
 
 /* This is like KConfig, but awful */
+#ifndef CONFIG_DEBUG
 #define CONFIG_DEBUG	y
+#endif
 
 /* Support running in an initramfs */
 #ifndef CONFIG_INITRAMFS

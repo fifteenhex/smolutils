@@ -24,7 +24,7 @@
 #define TAG_PREFIX	""
 #endif
 
-#ifdef CONFIG_DEBUG
+#if is_enabled(CONFIG_DEBUG)
 #define debug(fmt, ...) printf(TAG_PREFIX fmt, ##__VA_ARGS__)
 #else
 #define debug(...)
