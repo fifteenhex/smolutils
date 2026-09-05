@@ -27,10 +27,19 @@ static void setup_signals(void)
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
-static void run_cmd(const char *bin, char * const *argv, const int *fds)
+static void run_cmd(const char *bin, char * const *argv, const int *fds,
+		    bool nowait)
 {
 	bool killed = false;
 	int ret;
+
+	/* In some situations, like pipes, the process needs to spawn but not be waited on */
+	if (nowait) {
+		if (spawn_redirect(bin, argv, environ, fds) < 0)
+			error("Failed to run %s: %d\n", bin, errno);
+
+		return;
+	}
 
 	ret = spawn_and_wait_redirect(bin, argv, environ, &killed, fds);
 	if (ret) {
@@ -380,7 +389,7 @@ static int open_redirects(struct command *cmd, int *fds)
 	return 0;
 }
 
-static void run_command(struct command *cmd, int in_fd, int out_fd)
+static void run_command(struct command *cmd, int in_fd, int out_fd, bool nowait)
 {
 	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 	int opened[3] = { -1, -1, -1 };
@@ -416,7 +425,7 @@ static void run_command(struct command *cmd, int in_fd, int out_fd)
 	ret = try_absolute(cmd->argv[0], &path);
 	if (ret) {
 		if (ret == 1)
-			run_cmd(path, cmd->argv, fds);
+			run_cmd(path, cmd->argv, fds, nowait);
 		else
 			error("%s: not executable\n", cmd->argv[0]);
 
@@ -424,7 +433,7 @@ static void run_command(struct command *cmd, int in_fd, int out_fd)
 	}
 
 	if (try_search(cmd->argv[0], &path)) {
-		run_cmd(path, cmd->argv, fds);
+		run_cmd(path, cmd->argv, fds, nowait);
 		goto out;
 	}
 
@@ -479,7 +488,7 @@ int main (int argc, char **argv, char **envp)
 			continue;
 		}
 
-		run_command(&cmd, -1, -1);
+		run_command(&cmd, -1, -1, false);
 	}
 
 	debug("Exiting\n");
