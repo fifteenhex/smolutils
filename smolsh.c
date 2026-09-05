@@ -171,13 +171,22 @@ static int try_absolute(const char *cmd, char **path)
 	return 0;
 }
 
-#define DEFAULT_PATH "/bin"
+#define DEFAULT_PATH		"/bin"
+#define DEFAULT_PATH_ROOT	"/bin:/sbin"
 
 static const char *shell_path(void)
 {
+	static const char *fallback;
 	const char *env = getenv("PATH");
 
-	return (env && *env) ? env : DEFAULT_PATH;
+	if (env && *env)
+		return env;
+
+	/* Add sbin for root, the shells user shouldn't change */
+	if (!fallback)
+		fallback = getuid() ? DEFAULT_PATH : DEFAULT_PATH_ROOT;
+
+	return fallback;
 }
 
 static bool try_search(const char *cmd, char **path)
