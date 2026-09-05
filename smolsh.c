@@ -484,7 +484,7 @@ static void run_line(char *pos)
 			break;
 		}
 
-		if (sep == SEP_PIPE && pipe(pipe_fds)) {
+		if (sep == SEP_PIPE && pipe2(pipe_fds, O_CLOEXEC)) {
 			error("Failed to make a pipe: %d\n", errno);
 			break;
 		}
@@ -538,6 +538,12 @@ int main (int argc, char **argv, char **envp)
 		/* ctrl-c got bashed, newline and start over */
 		if (len == READLN_INTERRUPTED) {
 			printf("\n");
+			continue;
+		}
+
+		/* Too long to hold but go around, if we do scripts I think this is bad ?? */
+		if (len == READLN_OVERFLOW) {
+			error("Line too long\n");
 			continue;
 		}
 
