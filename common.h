@@ -133,7 +133,7 @@ static int iterate_dir(const char *path,
 	struct dirent e, *result;
 	int fd;
 
-	fd = open(path, O_RDONLY);
+	fd = open(path, O_RDONLY | O_DIRECTORY);
 	if (fd == -1)
 		return -1;
 
