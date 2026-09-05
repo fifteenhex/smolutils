@@ -272,14 +272,33 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 			return want_path < 0 ? SEP_END : SEP_BAD;
 		}
 
-		/* word is overwritten in place to make things extra confusing */
+		/*
+		 * word is overwritten in place to make things extra confusing,
+		 * reading a character in doesn't mean it will end up in the final
+		 * word, see: escapes.
+		 */
 		if (!is_special(*p)) {
 			word = p;
 			out = p;
 
-			while (*p && *p != ' ' && !is_special(*p)) {
-				/* Don't support this crazy stuff */
-				if (*p == '\\' || *p == '$')
+			while (*p) {
+				/* A \ makes whatever is next just a character, including a \ */
+				if (*p == '\\') {
+					p++;
+
+					/* We don't do continuations */
+					if (!*p)
+						return SEP_BAD;
+
+					*out++ = *p++;
+					continue;
+				}
+
+				if (*p == ' ' || is_special(*p))
+					break;
+
+				/* No expansion for now */
+				if (*p == '$')
 					return SEP_BAD;
 
 				*out++ = *p++;
