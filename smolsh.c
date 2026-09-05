@@ -158,6 +158,10 @@ static bool try_builtin(char **tokens, unsigned num_tokens, int stdout)
 
 static int try_absolute(const char *cmd, char **path)
 {
+	/* A bare name is for the search. Only something with a / is a path */
+	if (!strchr(cmd, '/'))
+		return 0;
+
 	/* Check if we can execute it ... */
 	if (access(cmd, X_OK) == 0) {
 		*path = cmd;
