@@ -77,6 +77,28 @@ static void print_group(uid_t gid)
 		printf("%10u", gid);
 }
 
+static unsigned int dev_major(dev_t dev)
+{
+	return (dev >> 8) & 0xfff;
+}
+
+static unsigned int dev_minor(dev_t dev)
+{
+	return (dev & 0xff) | ((dev >> 12) & 0xfff00);
+}
+
+static void print_size(const struct stat *st)
+{
+	if (is_enabled(CONFIG_LS_DETAIL) &&
+	    (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))) {
+		printf(" %4u,%5u", dev_major(st->st_rdev),
+		       dev_minor(st->st_rdev));
+		return;
+	}
+
+	printf(" %10lld", (long long) st->st_size);
+}
+
 /*
  * Path max is a whole page, but if you are making paths that are a page
  * long you are not using this ls.
@@ -148,8 +170,8 @@ static int cb_long(const char *name, int dir, void *priv)
 	/* gid */
 	print_group(st.st_gid);
 
-	/* size */
-	printf(" %10lld", (long long)st.st_size);
+	/* size col, which could be the size or a device number */
+	print_size(&st);
 
 	with = colour(colour_for(&st));
 	printf(" %s%s%s", with, name, colour_end(with));
