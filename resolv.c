@@ -7,7 +7,13 @@
 #include "resolv.h"
 #include "dhcpc.h"
 
-#define DNS_ID		0x1337
+static uint16_t dns_id;
+
+static void pick_dns_id(void)
+{
+	if (getrandom(&dns_id, sizeof(dns_id), 0) != sizeof(dns_id))
+		dns_id = (uint16_t) getpid();
+}
 #define DNS_SERVER	"8.8.8.8"
 #define DNS_PORT	53
 #define DNS_TIMEOUT	5
@@ -79,7 +85,7 @@ static int build_query(const char *host, uint8_t *buf, int buf_len)
 	int ret;
 
 	memset(hdr, 0, sizeof(*hdr));
-	hdr->id = htons(DNS_ID);
+	hdr->id = htons(dns_id);
 	/* RD set */
 	hdr->flags = htons(0x0100);
 	hdr->qdcount = htons(1);
@@ -152,7 +158,7 @@ static void parse_response(const uint8_t *buf, int len,
 		return;
 
 	/* Not an answer to anything we asked */
-	if (ntohs(hdr->id) != DNS_ID)
+	if (ntohs(hdr->id) != dns_id)
 		return;
 
 	ancount = ntohs(hdr->ancount);
@@ -285,6 +291,8 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
+	pick_dns_id();
+
 	qlen = build_query(hostname, buf, sizeof(buf));
 	if (qlen < 0) {
 		error("Bad hostname\n");
@@ -295,8 +303,10 @@ int main (int argc, char **argv, char **envp)
 	for (i = 0, len = 0; i < num_servers && len < 1; i++) {
 		srv.sin_addr.s_addr = servers[i];
 
-		ret = sendto(sock, buf, qlen, 0,
-			     (struct sockaddr *)&srv, sizeof(srv));
+		if (connect(sock, (struct sockaddr *)&srv, sizeof(srv)))
+			continue;
+
+		ret = sendto(sock, buf, qlen, 0, NULL, 0);
 		if (ret < 0)
 			continue;
 
