@@ -62,6 +62,16 @@ static ssize_t readlinkat(int dir, const char *path, char *buf, size_t size)
 	return __sysret(_sys_readlinkat(dir, path, buf, size));
 }
 
+static long _sys_unlinkat(int dir, const char *path, int flags)
+{
+	return __nolibc_syscall3(__NR_unlinkat, dir, path, flags);
+}
+
+static int unlinkat(int dir, const char *path, int flags)
+{
+	return __sysret(_sys_unlinkat(dir, path, flags));
+}
+
 static long _sys_sethostname(const char *name, size_t size)
 {
 	return __nolibc_syscall2(__NR_sethostname, name, size);
