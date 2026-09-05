@@ -401,7 +401,7 @@ static void run_command(struct command *cmd, int in_fd, int out_fd)
 	if (open_redirects(cmd, opened))
 		goto out;
 
-	/* A < or > on the command beats whatever it was handed */
+	/* < or > in the command might override what was passed */
 	for (i = 0; i < 3; i++) {
 		if (opened[i] >= 0)
 			fds[i] = opened[i];
