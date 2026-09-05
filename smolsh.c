@@ -241,6 +241,7 @@ struct command {
 /* What ended a command */
 enum sep {
 	SEP_END,
+	SEP_PIPE,
 	SEP_BAD,
 };
 
@@ -269,9 +270,6 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 
 		while (*p == ' ')
 			p++;
-
-		if (*p == '|')
-			return SEP_BAD;
 
 		/* The end of the line */
 		if (!*p) {
@@ -345,6 +343,12 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 		} else if (want_path >= 0) {
 			/* Two redirections in a row, nothing to open */
 			return SEP_BAD;
+		}
+
+		/* This part is done as it's being piped into the next */
+		if (op == '|') {
+			*pos = p;
+			return SEP_PIPE;
 		}
 
 		if (op == '<')
@@ -446,6 +450,54 @@ out:
 	}
 }
 
+/* One command or a pipeline, whose stages all have to be going at once */
+static void run_line(char *pos)
+{
+	int prev_read = -1;
+	bool piped = false;
+	enum sep sep;
+
+	do {
+		int pipe_fds[2] = { -1, -1 };
+		struct command cmd;
+
+		sep = parse_cmd(&pos, &cmd);
+
+		/* A pipe wants a command on both sides of it */
+		if (sep == SEP_BAD ||
+		    (!cmd.argc && (sep == SEP_PIPE || prev_read >= 0))) {
+			printf("Syntax error\n");
+			break;
+		}
+
+		if (sep == SEP_PIPE && pipe(pipe_fds)) {
+			error("Failed to make a pipe: %d\n", errno);
+			break;
+		}
+
+		run_command(&cmd, prev_read, pipe_fds[1], sep == SEP_PIPE);
+
+		/* Let go of both ends or the reader never sees the end of the input */
+		if (prev_read >= 0)
+			close(prev_read);
+
+		if (pipe_fds[1] >= 0)
+			close(pipe_fds[1]);
+
+		prev_read = pipe_fds[0];
+		piped |= prev_read >= 0;
+	} while (sep != SEP_END && keeprocking);
+
+	if (prev_read >= 0)
+		close(prev_read);
+
+	/* Collect whatever we didn't wait for */
+	while (piped) {
+		if (waitpid(-1, NULL, 0) < 0 && errno != EINTR)
+			break;
+	}
+}
+
 static void do_prompt(void)
 {
 	char cwd[1024];
@@ -463,8 +515,6 @@ int main (int argc, char **argv, char **envp)
 	setup_signals();
 
 	while (keeprocking) {
-		struct command cmd;
-		char *pos = line;
 		int len;
 
 		do_prompt();
@@ -483,12 +533,7 @@ int main (int argc, char **argv, char **envp)
 
 		verbose("Got command line: \"%s\"\n", line);
 
-		if (parse_cmd(&pos, &cmd) == SEP_BAD) {
-			printf("Syntax error\n");
-			continue;
-		}
-
-		run_command(&cmd, -1, -1, false);
+		run_line(line);
 	}
 
 	debug("Exiting\n");
