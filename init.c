@@ -57,13 +57,13 @@ static void parse_cmdline(int argc, char **argv)
 {
 	int i;
 
-	debug("cmdline args:\n");
+	verbose("cmdline args:\n");
 
 	/* First arg will be the program name, skip that */
 	for (i = 1; i < argc; i++) {
 		const char *arg = argv[i];
 
-		debug("%s\n", arg);
+		verbose("%s\n", arg);
 
 		if (STARTS_WITH(arg, cmdline_opt_prefix)) {
 			const char *opt = arg + STRLEN(cmdline_opt_prefix);
@@ -76,7 +76,7 @@ static void parse_cmdline(int argc, char **argv)
 					continue;
 				}
 
-				debug("Will start getty on TTY %s\n", tty_path);
+				verbose("Will start getty on TTY %s\n", tty_path);
 				/*
 				 * I guess its safe to just point the argv memory to avoid
 				 * wasting memory copying strings.
@@ -87,7 +87,7 @@ static void parse_cmdline(int argc, char **argv)
 			else if (!hostname && STARTS_WITH(opt, cmdline_opt_hostname)) {
 				const char *name = opt + STRLEN(cmdline_opt_hostname);
 
-				debug("Hostname will be %s\n", name);
+				verbose("Hostname will be %s\n", name);
 				hostname = name;
 			}
 
@@ -99,14 +99,14 @@ static void parse_cmdline(int argc, char **argv)
 					continue;
 				}
 
-				debug("Will load %s\n", path);
+				verbose("Will load %s\n", path);
 				modules[num_modules++] = path;
 			}
 
 			else if (!dhcpif && STARTS_WITH(opt, cmdline_opt_dhcpif)) {
 				const char *intf = opt + STRLEN(cmdline_opt_dhcpif);
 
-				debug("Will configure %s via DHCP\n", intf);
+				verbose("Will configure %s via DHCP\n", intf);
 				dhcpif = intf;
 			}
 
@@ -117,8 +117,8 @@ static void parse_cmdline(int argc, char **argv)
 				/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
 				telnetd_port = *port ? port : "23";
 
-				debug("Will start telnetd on port %s\n",
-				      telnetd_port);
+				verbose("Will start telnetd on port %s\n",
+					telnetd_port);
 			}
 		}
 	}
@@ -128,7 +128,7 @@ static void parse_environment(char **envp)
 {
 	char *var;
 
-	debug("environment variables\n");
+	verbose("environment variables\n");
 
 	while (true) {
 		var = *envp++;
@@ -136,7 +136,7 @@ static void parse_environment(char **envp)
 		if (!var)
 			break;
 
-		debug("%s\n", var);
+		verbose("%s\n", var);
 	}
 }
 

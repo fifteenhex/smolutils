@@ -51,7 +51,7 @@ static void set_capabilities(void)
 	if (!root_is_ram())
 		return;
 
-	debug("Adding caps\n");
+	verbose("Adding caps\n");
 
 	for (int i = 0; i < ARRAY_SIZE(capabilities); i++) {
 		const struct capability *c = &capabilities[i];
@@ -62,11 +62,16 @@ static void set_capabilities(void)
 			.data[0].permitted = htole32(c->caps),
 		};
 
+		/*
+		 * If setxattr doesn't work its because your fs is
+		 * poop or your kernel config hasn't enable xattrs for
+		 * tmpfs.
+		 */
 		if (setxattr(c->path, "security.capability",
 			     &data, sizeof(data), 0))
 			debug("Failed to label %s: %d\n", c->path, errno);
 		else
-			debug("labelled %s\n", c->path);
+			verbose("labelled %s\n", c->path);
 	}
 }
 
@@ -85,7 +90,7 @@ static int do_mount(const char *source, const char *target, const char *type)
 		return ret;
 	}
 
-	debug("mounted %s(%s) on %s\n", source, type, target);
+	verbose("mounted %s(%s) on %s\n", source, type, target);
 
 	return 0;
 }
@@ -140,13 +145,13 @@ static int mount_filesystems(void)
 {
 	int ret;
 
-	debug("mounting filesystems...\n");
+	verbose("mounting filesystems...\n");
 
 	for (int i = 0; i < ARRAY_SIZE(fstab); i++) {
 		const struct mountpoint *mp = &fstab[i];
 
 		if (already_mounted(mp->target)) {
-			debug("%s is already mounted\n", mp->target);
+			verbose("%s is already mounted\n", mp->target);
 			continue;
 		}
 
@@ -178,7 +183,7 @@ err:
 #if is_enabled(CONFIG_NETWORK)
 static void setup_loopback(void)
 {
-	debug("bringing up loopback\n");
+	verbose("bringing up loopback\n");
 
 	if (smolutils_net_interface_set_up("lo"))
 		verbose("Failed to bring up lo: %d\n", errno);
@@ -193,7 +198,7 @@ static int setup_network(const char *netif)
 		NULL
 	};
 
-	debug("configuring network on %s\n", netif);
+	verbose("configuring network on %s\n", netif);
 
 	/* Let dhcpc do its thing in the background instead of stalling boot */
 	if (!is_enabled(CONFIG_DHCP_WAIT)) {
