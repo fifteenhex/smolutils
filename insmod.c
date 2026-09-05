@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "config.h"
+
+#define TAG "insmod"
+
 #include "common.h"
 
 #include "nolibc_extensions/modules.h"
