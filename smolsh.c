@@ -253,6 +253,7 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 
 	while (true) {
 		char *word = NULL;
+		char *out = NULL;
 		bool to_stderr = false;
 		bool is_append = false;
 		char op;
@@ -271,15 +272,17 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 			return want_path < 0 ? SEP_END : SEP_BAD;
 		}
 
+		/* word is overwritten in place to make things extra confusing */
 		if (!is_special(*p)) {
 			word = p;
+			out = p;
 
 			while (*p && *p != ' ' && !is_special(*p)) {
 				/* Don't support this crazy stuff */
 				if (*p == '\\' || *p == '$')
 					return SEP_BAD;
 
-				p++;
+				*out++ = *p++;
 			}
 		}
 
@@ -290,10 +293,11 @@ static enum sep parse_cmd(char **pos, struct command *cmd)
 		op = is_special(*p) ? *p : '\0';
 		is_append = op == '>' && p[1] == '>';
 
-		if (*p) {
-			*p = '\0';
+		if (*p)
 			p += is_append ? 2 : 1;
-		}
+
+		if (out)
+			*out = '\0';
 
 		if (word && op == '>' && strcmp(word, "2") == 0) {
 			to_stderr = true;
