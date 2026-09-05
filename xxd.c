@@ -3,22 +3,66 @@
 #include "config.h"
 #include "common.h"
 
+/* get an fd from our parent, for memfd based chaining */
+static int inherited_fd(const char *arg)
+{
+	char *endptr;
+	long fd;
+
+	fd = strtol(arg, &endptr, 10);
+	if (endptr == arg || *endptr != '\0' || fd < 0) {
+		error("Not an fd: %s\n", arg);
+		return -1;
+	}
+
+	return fd;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
+	unsigned long offset = 0;
 	const char *path;
+	char *endptr;
 	off_t sz;
 	int i, j;
+	int c;
 
-	if (argc != 2)
-		return 1;
+	while ((c = getopt(argc, argv, "m:o:")) != -1) {
+		switch (c) {
+		case 'm':
+			fd = inherited_fd(optarg);
+			if (fd < 0)
+				return 1;
+			break;
 
-	path = argv[1];
+		case 'o':
+			offset = strtoul(optarg, &endptr, 0);
+			if (endptr == optarg || *endptr != '\0') {
+				error("Not an address: %s\n", optarg);
+				return 1;
+			}
+			break;
 
-	fd = open(path, O_RDONLY);
+		default:
+			usage("usage: xxd [-m <fd>] [-o <address>] <file>\n");
+			return 1;
+		}
+	}
+
 	if (fd < 0) {
-		error("Failed to open: %s\n", path);
-		return 1;
+		if (optind != argc - 1) {
+			usage("usage: xxd [-m <fd>] [-o <address>] <file>\n");
+			return 1;
+		}
+
+		path = argv[optind];
+
+		fd = open(path, O_RDONLY);
+		if (fd < 0) {
+			error("Failed to open: %s\n", path);
+			return 1;
+		}
 	}
 
 	sz = file_size(fd);
@@ -32,7 +76,7 @@ int main (int argc, char **argv, char **envp)
 		if (ret < 0)
 			return 1;
 
-		printf("%08x: ", i);
+		printf("%08lx: ", offset + i);
 
 		for (j = 0; j < 0x10; j += 2) {
 			uint8_t lsb = buf[j];
