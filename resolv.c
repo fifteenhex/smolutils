@@ -6,6 +6,7 @@
 
 #include "resolv.h"
 
+#define DNS_ID		0x1337
 #define DNS_SERVER	"8.8.8.8"
 #define DNS_PORT	53
 #define DNS_TIMEOUT	5
@@ -20,13 +21,44 @@ struct dns_hdr {
 	uint16_t arcount;
 } __attribute__((packed));
 
-static int encode_name(const char *name, uint8_t *out)
+/* Avoid doing unaligned accesses on 68000 */
+static uint16_t dns_get16(const uint8_t *buf)
+{
+	uint16_t v;
+
+	memcpy(&v, buf, sizeof(v));
+
+	return ntohs(v);
+}
+
+static void dns_put16(uint8_t *buf, uint16_t v)
+{
+	v = htons(v);
+
+	memcpy(buf, &v, sizeof(v));
+}
+
+static int encode_name(const char *name, uint8_t *out, int out_len)
 {
 	int off = 0;
 
 	while (*name) {
 		const char *dot = strchr(name, '.');
 		int len = dot ? dot - name : (int)strlen(name);
+
+		/* Skip a stray dot */
+		if (len == 0) {
+			name++;
+			continue;
+		}
+
+		/* A label is 63 bytes at most */
+		if (len > 63)
+			return -1;
+
+		/* Length byte, the label, and the terminator */
+		if ((off + 1 + len + 1) > out_len)
+			return -1;
 
 		out[off++] = len;
 		memcpy(out + off, name, len);
@@ -39,24 +71,29 @@ static int encode_name(const char *name, uint8_t *out)
 	return off;
 }
 
-static int build_query(const char *host, uint8_t *buf)
+static int build_query(const char *host, uint8_t *buf, int buf_len)
 {
 	struct dns_hdr *hdr = (struct dns_hdr *)buf;
 	int off = sizeof(*hdr);
+	int ret;
 
 	memset(hdr, 0, sizeof(*hdr));
-	hdr->id = htons(0x1337);
+	hdr->id = htons(DNS_ID);
 	/* RD set */
 	hdr->flags = htons(0x0100);
 	hdr->qdcount = htons(1);
 
-	off += encode_name(host, buf + off);
+	/* Leave room for the QTYPE and QCLASS */
+	ret = encode_name(host, buf + off, buf_len - off - 4);
+	if (ret < 0)
+		return -1;
+	off += ret;
 
 	/* QTYPE  A */
-	*(uint16_t *)(buf + off) = htons(1);
+	dns_put16(buf + off, 1);
 	off += 2;
 	/* QCLASS IN */
-	*(uint16_t *)(buf + off) = htons(1);
+	dns_put16(buf + off, 1);
 	off += 2;
 
 	return off;
@@ -107,12 +144,21 @@ static void parse_response(const uint8_t *buf, int len,
 			   int (*cb)(uint32_t v4addr, void *priv), void *priv)
 {
 	const struct dns_hdr *hdr = (const struct dns_hdr *)buf;
-	int ancount = ntohs(hdr->ancount);
+	int ancount;
 	int off = sizeof(*hdr);
+
+	if (len < (int) sizeof(*hdr))
+		return;
+
+	/* Not an answer to anything we asked */
+	if (ntohs(hdr->id) != DNS_ID)
+		return;
+
+	ancount = ntohs(hdr->ancount);
 
 	/* skip question section */
 	off = skip_name(buf, len, off);
-	if (off < 0)
+	if (off < 0 || (off + 4) > len)
 		return;
 	/* QTYPE + QCLASS */
 	off += 4;
@@ -124,14 +170,17 @@ static void parse_response(const uint8_t *buf, int len,
 		if (off < 0 || off + 10 > len)
 			return;
 
-		type = ntohs(*(uint16_t *)(buf + off));
+		type = dns_get16(buf + off);
 		off += 2;
 		/* class */
 		off += 2;
 		/* ttl   */
 		off += 4;
-		rdlen = ntohs(*(uint16_t *)(buf + off));
+		rdlen = dns_get16(buf + off);
 		off += 2;
+
+		if ((off + rdlen) > len)
+			return;
 
 		if (type == 1 && rdlen == 4) {
 			uint32_t v4addr;
@@ -151,8 +200,10 @@ static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
 	char *endptr;
 	int memfd;
 
-	/* TODO: check that parsing actually worked */
-	tmp = strtoul(optarg, &endptr, 10);
+	tmp = strtoul(memfd_str, &endptr, 10);
+	if (endptr == memfd_str || *endptr != '\0')
+		return -1;
+
 	memfd = tmp;
 
 	if (resolv_mapbuf(memfd, resolv_buf))
@@ -206,7 +257,12 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	len = build_query(hostname, buf);
+	len = build_query(hostname, buf, sizeof(buf));
+	if (len < 0) {
+		error("Bad hostname\n");
+		return 1;
+	}
+
 	ret = sendto(sock, buf, len, 0, (struct sockaddr *)&srv, sizeof(srv));
 	if (ret < 0)
 		return 1;
