@@ -203,20 +203,41 @@ static int try_absolute(const char *cmd, char **path)
 	return 0;
 }
 
+#define DEFAULT_PATH "/bin"
+
+static const char *shell_path(void)
+{
+	const char *env = getenv("PATH");
+
+	return (env && *env) ? env : DEFAULT_PATH;
+}
+
 static bool try_search(const char *cmd, char **path)
 {
 	/* this should be PATH_MAX I guess.. seems like a waste of 4K */
 	static char _path[1024];
+	const char *at = shell_path();
 
-	if (snprintf(_path, sizeof(_path), "/bin/%s", cmd) >= (int) sizeof(_path))
-		return false;
+	while (*at) {
+		const char *end = strchr(at, ':');
+		int len;
 
-	if (access(_path, X_OK))
-		return false;
+		if (!end)
+			end = at + strlen(at);
 
-	*path = _path;
+		len = end - at;
 
-	return true;
+		if (len && snprintf(_path, sizeof(_path), "%.*s/%s",
+				    len, at, cmd) < (int) sizeof(_path) &&
+		    !access(_path, X_OK)) {
+			*path = _path;
+			return true;
+		}
+
+		at = *end ? end + 1 : end;
+	}
+
+	return false;
 }
 
 /* One command and where its input and output should go */
