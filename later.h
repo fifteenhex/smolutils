@@ -73,16 +73,28 @@ static inline int later_ask(const char *name, unsigned int secs,
 static inline int later_read(const char *path, struct later_job *job)
 {
 	int __cleanup_fd fd = -1;
+	struct stat st;
+	unsigned int i;
 
-	fd = open(path, O_RDONLY);
+	fd = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
 	if (fd < 0)
+		return -1;
+
+	if (fstat(fd, &st) || !S_ISREG(st.st_mode))
 		return -1;
 
 	if (read(fd, job, sizeof(*job)) != sizeof(*job))
 		return -1;
 
+	for (i = 0; i < LATER_ARGS; i++)
+		job->argv[i][LATER_ARG_MAX - 1] = '\0';
+
 	/* Nothing to run means nothing to do */
 	if (!job->argv[0][0])
+		return -1;
+
+	/* An absolute path, so it can't be a name found along a PATH */
+	if (job->argv[0][0] != '/')
 		return -1;
 
 	return 0;
