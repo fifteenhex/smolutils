@@ -114,6 +114,7 @@ HEADERS = config.h \
 	  readln.h \
 	  resolv.h \
 	  colour.h \
+	  sysfs.h \
 	  dhcpc.h \
 	  later.h \
 	  memfd.h \
