@@ -20,46 +20,48 @@ Even for the mmu enjoyers out there:
 
 ## What
 
-| name      | progress   | binary name (if multicall) | notes |
-|-----------|------------|----------------------------|-------|
-| cat       |            |                            |       |
-| chmod     | stub       |                            |       |
-| chown     | stub       |                            |       |
-| cp        |            |                            |       |
-| df        |            |                            |       |
-| dhcpc     |            |                            |       |
-| dmesg     |            |                            |       |
-| getty     |            |                            |       |
-| halt      |            | init                       |       |
-| init      |            |                            |       |
-| insmod    |            |                            |       |
-| kill      |            |                            |       |
-| less      | stub       |                            |       |
-| ln        |            | touch                      |       |
-| ls        |            |                            |       |
-| lz4       | stub       |                            |       |
-| man       | stub       |                            |       |
-| mkdir     |            | touch                      |       |
-| mount     |            |                            |       |
-| mv        | stub       | touch                      |       |
-| ping      |            |                            |       |
-| ps        |            |                            |       |
-| poweroff  |            | init                       |       |
-| reboot    |            | init                       |       |
-| resolv    |            |                            |       |
-| rm        |            | touch                      |       |
-| rmdir     |            | touch                      |       |
-| sha256sum |            |                            |       |
-| smolsh    |            |                            |       |
-| sntp      |            |                            |       |
-| startup   |            |                            |       |
-| su        |            |                            | no auth, dangerous! |
-| tftp      | stub       |                            |       |
-| telnetd   |            |                            |       |
-| touch     |            |                            |       |
-| umount    |            | mount                      |       |
-| uname     |            |                            |       |
-| xxd       |            |                            |       |
+| name      | progress | binary name (if multicall) | notes               |
+|-----------|----------|----------------------------|---------------------|
+| cat       |          | files                      |                     |
+| chmod     |          | files                      |                     |
+| chown     |          | files                      |                     |
+| cp        |          | files                      |                     |
+| devmem    |          |                            |                     |
+| df        |          |                            |                     |
+| dhcpc     |          |                            |                     |
+| dmesg     |          |                            |                     |
+| getty     |          |                            |                     |
+| halt      |          | init                       |                     |
+| init      |          |                            |                     |
+| insmod    |          |                            |                     |
+| ip        |          |                            |                     |
+| kill      |          | process                    |                     |
+| less      | stub     |                            |                     |
+| ln        |          | files                      |                     |
+| ls        |          |                            |                     |
+| lz4       | stub     |                            | not in the build    |
+| man       | stub     |                            |                     |
+| mkdir     |          | files                      |                     |
+| mount     |          |                            |                     |
+| mv        |          | files                      |                     |
+| ping      |          |                            |                     |
+| poweroff  |          | init                       |                     |
+| ps        |          | process                    |                     |
+| reboot    |          | init                       |                     |
+| resolv    |          |                            |                     |
+| rm        |          | files                      |                     |
+| rmdir     |          | files                      |                     |
+| sha256sum |          |                            |                     |
+| smolsh    |          |                            |                     |
+| sntp      |          |                            |                     |
+| startup   |          |                            |                     |
+| su        |          |                            | no auth, dangerous! |
+| telnetd   |          |                            |                     |
+| tftp      | stub     |                            |                     |
+| touch     |          | files                      |                     |
+| umount    |          | mount                      |                     |
+| uname     |          |                            |                     |
+| xxd       |          |                            |                     |
 
 ## Design
 
