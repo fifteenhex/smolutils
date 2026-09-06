@@ -108,6 +108,7 @@ endif
 
 HEADERS = config.h \
 	  common.h \
+	  cmdline.h \
 	  users.h \
 	  net.h \
 	  readln.h \
