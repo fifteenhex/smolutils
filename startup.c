@@ -5,6 +5,7 @@
 #define TAG "startup"
 
 #include "common.h"
+#include "cmdline.h"
 #include "later.h"
 
 #include "nolibc_extensions/unistd.h"
@@ -18,6 +19,36 @@
 #include <linux/magic.h>
 
 #define DHCPC_PATH "/sbin/dhcpc"
+
+static const char cmdline_opt_hostname[] = "hostname=";
+static const char cmdline_opt_dhcpif[] = "dhcpif=";
+
+static const char *hostname = NULL;
+static const char *dhcpif = NULL;
+
+static void parse_cmdline(int argc, char **argv)
+{
+	int i;
+
+	/* First arg will be the program name, skip that */
+	for (i = 1; i < argc; i++) {
+		const char *arg = argv[i];
+		const char *val;
+
+		val = cmdline_option(arg, cmdline_opt_hostname);
+		if (val && !hostname) {
+			verbose("Hostname will be %s\n", val);
+			hostname = val;
+			continue;
+		}
+
+		val = cmdline_option(arg, cmdline_opt_dhcpif);
+		if (val && !dhcpif) {
+			verbose("Will configure %s via DHCP\n", val);
+			dhcpif = val;
+		}
+	}
+}
 
 /* tmpfs supports xattrs but apparently there is no way to embed them in a cpio? */
 struct capability {
@@ -216,23 +247,12 @@ static int setup_network(const char *netif)
 
 int main (int argc, char **argv, char **envp)
 {
-	int c;
-	char *hostname = NULL;
-	char *netif = NULL;
+	parse_cmdline(argc, argv);
 
-        while ((c = getopt(argc, argv, "h:n:")) != -1) {
-                switch (c) {
-		case 'h':
-			hostname = optarg;
-			break;
-                case 'n':
-                        netif = optarg;
-                        break;
-                }
-        }
+	if (!hostname)
+		hostname = "smol";
 
-	if (hostname)
-		sethostname(hostname, strlen(hostname));
+	sethostname(hostname, strlen(hostname));
 
 	mount_filesystems();
 
@@ -241,8 +261,8 @@ int main (int argc, char **argv, char **envp)
 #if is_enabled(CONFIG_NETWORK)
 	setup_loopback();
 
-	if (netif)
-		setup_network(netif);
+	if (dhcpif)
+		setup_network(dhcpif);
 #endif
 
 	return 0;

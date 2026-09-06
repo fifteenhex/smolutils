@@ -324,25 +324,16 @@ static void load_modules(void)
 	}
 }
 
-static inline int run_startup(void)
+/* Give startup our args with its name and then put our name back */
+static int run_startup(char **argv)
 {
-	char *startup_args[6] = {
-		"startup",
-	};
-	int startup_argc = 1;
+	char *ours = argv[0];
 	int ret;
 
-	if (!hostname)
-		hostname="smol";
-	startup_args[startup_argc++] = "-h";
-	startup_args[startup_argc++] = hostname;
+	argv[0] = "startup";
+	ret = spawn_and_wait_args(STARTUP_PATH, argv);
+	argv[0] = ours;
 
-	if (dhcpif) {
-		startup_args[startup_argc++] = "-n";
-		startup_args[startup_argc++] = dhcpif;
-	}
-
-	ret = spawn_and_wait_args(STARTUP_PATH, startup_args);
 	if (ret)
 		error("startup failed\n");
 
@@ -368,7 +359,7 @@ static int prog_init(int argc, char **argv, char **envp)
 
 	load_modules();
 
-	ret = run_startup();
+	ret = run_startup(argv);
 	if (ret)
 		return 1;
 
