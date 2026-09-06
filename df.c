@@ -5,6 +5,28 @@
 
 #define PROC_MOUNTS "/proc/mounts"
 
+typedef long long df_size_t;
+
+/* Divide to kb first to keep within 32bits */
+static df_size_t blocks_to_kb(df_size_t blocks, unsigned long bsize)
+{
+	if (is_enabled(CONFIG_DF_LARGE))
+		return (blocks * bsize) / 1024;
+
+	return (unsigned long) blocks * (bsize / 1024);
+}
+
+static unsigned int use_percent(df_size_t total, df_size_t used)
+{
+	if (is_enabled(CONFIG_DF_LARGE))
+		return total ? (unsigned int) (used * 100 / total) : 0;
+
+	if (total < 100)
+		return used ? 100 : 0;
+
+	return (unsigned long) used / ((unsigned long) total / 100);
+}
+
 static char linebuf[1024];
 
 struct mount {
@@ -79,12 +101,12 @@ static int parse_mount(char *line, struct mount *mount)
 
 static int process_line(char *line)
 {
-	long long total = 0;
-	long long avail = 0;
-	long long used = 0;
+	df_size_t total = 0;
+	df_size_t avail = 0;
+	df_size_t used = 0;
 	struct mount mount;
 	struct statfs buf;
-	int usepercent = 0;
+	unsigned int usepercent = 0;
 	int ret;
 
 	ret = parse_mount(line, &mount);
@@ -98,13 +120,13 @@ static int process_line(char *line)
 	}
 
 	if (buf.f_bsize) {
-		total = ((long long)buf.f_blocks * buf.f_bsize) / 1024;
-		avail = ((long long)buf.f_bavail * buf.f_bsize) / 1024;
-		used  = ((long long)(buf.f_blocks - buf.f_bfree) * buf.f_bsize) / 1024;
-		usepercent = total ? (int)(used * 100 / total) : 0;
+		total = blocks_to_kb(buf.f_blocks, buf.f_bsize);
+		avail = blocks_to_kb(buf.f_bavail, buf.f_bsize);
+		used  = blocks_to_kb(buf.f_blocks - buf.f_bfree, buf.f_bsize);
+		usepercent = use_percent(total, used);
 	}
 
-	printf("%-20s %12lld %12lld %12lld %4d%% %s\n",
+	printf("%-20s %12lld %12lld %12lld %4u%% %s\n",
 		mount.dev, total, used, avail, usepercent, mount.mountpoint);
 
 	return 0;

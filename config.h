@@ -39,6 +39,11 @@
 #define CONFIG_LS_DETAIL	y
 #endif
 
+/* Disable to avoid __divdi3 at the cost of not supporting 4TB fs */
+#ifndef CONFIG_DF_LARGE
+#define CONFIG_DF_LARGE	y
+#endif
+
 /* Make everything look like knock-off systemd */
 #ifndef CONFIG_COLOUR
 #define CONFIG_COLOUR	y
