@@ -50,9 +50,15 @@
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
-					"kill": { },
+					"kill": {
+						"type": "symlink",
+						"target": "/lib/smol/process"
+					},
 					"ls": { },
-					"ps": { },
+					"ps": {
+						"type": "symlink",
+						"target": "/lib/smol/process"
+					},
 					"sha256sum": { },
 					"ip": {
 						"feature": "net"
@@ -135,7 +141,8 @@
 							"mode": "0555"
 						},
 						"entities": {
-							"files": { }
+							"files": { },
+							"process": { }
 						}
 					}
 				}
