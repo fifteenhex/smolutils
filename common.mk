@@ -105,6 +105,7 @@ HEADERS = config.h \
 	  common.h \
 	  cmdline.h \
 	  users.h \
+	  seat.h \
 	  net.h \
 	  readln.h \
 	  resolv.h \

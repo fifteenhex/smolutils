@@ -44,6 +44,11 @@
 #define CONFIG_DF_LARGE	y
 #endif
 
+/* "seats", this lets a logged in user use input, fb etc via a directory in /run */
+#ifndef CONFIG_SEAT
+#define CONFIG_SEAT	y
+#endif
+
 /* Make everything look like knock-off systemd */
 #ifndef CONFIG_COLOUR
 #define CONFIG_COLOUR	y
