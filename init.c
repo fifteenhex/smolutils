@@ -5,6 +5,7 @@
 #define TAG "init"
 
 #include "common.h"
+#include "cmdline.h"
 #include "later.h"
 #include "multicall.h"
 
@@ -29,7 +30,6 @@ static volatile int shutdown_cmd;
 #define TELNETD_NAME "telnetd"
 #define SHELL_PATH "/bin/smolsh"
 
-static const char cmdline_opt_prefix[] = "smolinit.";
 static const char cmdline_opt_getty[] = "getty=";
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
@@ -62,64 +62,62 @@ static void parse_cmdline(int argc, char **argv)
 	/* First arg will be the program name, skip that */
 	for (i = 1; i < argc; i++) {
 		const char *arg = argv[i];
+		const char *val;
 
 		verbose("%s\n", arg);
 
-		if (STARTS_WITH(arg, cmdline_opt_prefix)) {
-			const char *opt = arg + STRLEN(cmdline_opt_prefix);
-
-			if (STARTS_WITH(opt, cmdline_opt_getty)) {
-				const char *tty_path = opt + STRLEN(cmdline_opt_getty);
-
-				if (num_gettys >= ARRAY_SIZE(gettys)) {
-					error("Too many gettys\n");
-					continue;
-				}
-
-				verbose("Will start getty on TTY %s\n", tty_path);
-				/*
-				 * I guess its safe to just point the argv memory to avoid
-				 * wasting memory copying strings.
-				 */
-				gettys[num_gettys++].tty_path = tty_path;
+		val = cmdline_option(arg, cmdline_opt_getty);
+		if (val) {
+			if (num_gettys >= ARRAY_SIZE(gettys)) {
+				error("Too many gettys\n");
+				continue;
 			}
 
-			else if (!hostname && STARTS_WITH(opt, cmdline_opt_hostname)) {
-				const char *name = opt + STRLEN(cmdline_opt_hostname);
+			verbose("Will start getty on TTY %s\n", val);
+			/*
+			 * I guess its safe to just point the argv memory to avoid
+			 * wasting memory copying strings.
+			 */
+			gettys[num_gettys++].tty_path = val;
+			continue;
+		}
 
-				verbose("Hostname will be %s\n", name);
-				hostname = name;
+		val = cmdline_option(arg, cmdline_opt_hostname);
+		if (val && !hostname) {
+			verbose("Hostname will be %s\n", val);
+			hostname = val;
+			continue;
+		}
+
+		val = cmdline_option(arg, cmdline_opt_insmod);
+		if (val) {
+			if (num_modules >= ARRAY_SIZE(modules)) {
+				error("Too many modules\n");
+				continue;
 			}
 
-			else if (STARTS_WITH(opt, cmdline_opt_insmod)) {
-				const char *path = opt + STRLEN(cmdline_opt_insmod);
+			verbose("Will load %s\n", val);
+			modules[num_modules++] = val;
+			continue;
+		}
 
-				if (num_modules >= ARRAY_SIZE(modules)) {
-					error("Too many modules\n");
-					continue;
-				}
+		val = cmdline_option(arg, cmdline_opt_dhcpif);
+		if (val && !dhcpif) {
+			verbose("Will configure %s via DHCP\n", val);
+			dhcpif = val;
+			continue;
+		}
 
-				verbose("Will load %s\n", path);
-				modules[num_modules++] = path;
-			}
+		if (!is_enabled(CONFIG_TELNETD) || telnetd_port)
+			continue;
 
-			else if (!dhcpif && STARTS_WITH(opt, cmdline_opt_dhcpif)) {
-				const char *intf = opt + STRLEN(cmdline_opt_dhcpif);
+		val = cmdline_option(arg, cmdline_opt_telnetd);
+		if (val) {
+			/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
+			telnetd_port = *val ? val : "23";
 
-				verbose("Will configure %s via DHCP\n", intf);
-				dhcpif = intf;
-			}
-
-			else if (is_enabled(CONFIG_TELNETD) &&
-				 (!telnetd_port && STARTS_WITH(opt, cmdline_opt_telnetd))) {
-				const char *port = opt + STRLEN(cmdline_opt_telnetd);
-
-				/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
-				telnetd_port = *port ? port : "23";
-
-				verbose("Will start telnetd on port %s\n",
-					telnetd_port);
-			}
+			verbose("Will start telnetd on port %s\n",
+				telnetd_port);
 		}
 	}
 }
