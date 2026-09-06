@@ -23,6 +23,8 @@
 #define INSMOD_PATH "/sbin/insmod"
 #define INSMOD_NAME "insmod"
 
+#define STARTUP_PATH "/sbin/startup"
+
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
 static const char cmdline_opt_insmod[] = "insmod=";
@@ -284,6 +286,16 @@ static int setup_network(const char *netif)
 }
 #endif
 
+/* On an initramfs startup can be deleted unlink ourselves */
+static void delete_self(void)
+{
+	if (!root_is_ram())
+		return;
+
+	if (unlink(STARTUP_PATH))
+		verbose("Failed to remove %s: %d\n", STARTUP_PATH, errno);
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	parse_cmdline(argc, argv);
@@ -306,6 +318,8 @@ int main (int argc, char **argv, char **envp)
 	if (dhcpif)
 		setup_network(dhcpif);
 #endif
+
+	delete_self();
 
 	return 0;
 }
