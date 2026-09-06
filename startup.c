@@ -20,11 +20,18 @@
 
 #define DHCPC_PATH "/sbin/dhcpc"
 
+#define INSMOD_PATH "/sbin/insmod"
+#define INSMOD_NAME "insmod"
+
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
+static const char cmdline_opt_insmod[] = "insmod=";
 
 static const char *hostname = NULL;
 static const char *dhcpif = NULL;
+
+static const char *modules[8];
+static unsigned num_modules = 0;
 
 static void parse_cmdline(int argc, char **argv)
 {
@@ -34,6 +41,18 @@ static void parse_cmdline(int argc, char **argv)
 	for (i = 1; i < argc; i++) {
 		const char *arg = argv[i];
 		const char *val;
+
+		val = cmdline_option(arg, cmdline_opt_insmod);
+		if (val) {
+			if (num_modules >= ARRAY_SIZE(modules)) {
+				error("Too many modules\n");
+				continue;
+			}
+
+			verbose("Will load %s\n", val);
+			modules[num_modules++] = val;
+			continue;
+		}
 
 		val = cmdline_option(arg, cmdline_opt_hostname);
 		if (val && !hostname) {
@@ -47,6 +66,26 @@ static void parse_cmdline(int argc, char **argv)
 			verbose("Will configure %s via DHCP\n", val);
 			dhcpif = val;
 		}
+	}
+}
+
+/* Load modules, order is important as there is no dependency checking */
+static void load_modules(void)
+{
+	unsigned i;
+
+	if (!is_enabled(CONFIG_MODULES))
+		return;
+
+	for (i = 0; i < num_modules; i++) {
+		char * const newargv[] = {
+			INSMOD_NAME,
+			(char *) modules[i],
+			NULL
+		};
+
+		if (spawn_and_wait_args(INSMOD_PATH, newargv))
+			error("Failed to load %s\n", modules[i]);
 	}
 }
 
@@ -253,6 +292,9 @@ int main (int argc, char **argv, char **envp)
 		hostname = "smol";
 
 	sethostname(hostname, strlen(hostname));
+
+	/* Before anything that might want a driver that isn't there yet */
+	load_modules();
 
 	mount_filesystems();
 

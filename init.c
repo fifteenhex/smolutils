@@ -304,26 +304,6 @@ static unsigned int run_due_jobs(void)
 	return state.next > state.now ? state.next - state.now : 1;
 }
 
-/* Load modules, order is important as there is no dependency checking */
-static void load_modules(void)
-{
-	unsigned i;
-
-	if (!is_enabled(CONFIG_MODULES))
-		return;
-
-	for (i = 0; i < num_modules; i++) {
-		char * const newargv[] = {
-			INSMOD_NAME,
-			(char *) modules[i],
-			NULL
-		};
-
-		if (spawn_and_wait_args(INSMOD_PATH, newargv))
-			error("Failed to load %s\n", modules[i]);
-	}
-}
-
 /* Give startup our args with its name and then put our name back */
 static int run_startup(char **argv)
 {
@@ -356,8 +336,6 @@ static int prog_init(int argc, char **argv, char **envp)
 	parse_cmdline(argc, argv);
 
 	parse_environment(envp);
-
-	load_modules();
 
 	ret = run_startup(argv);
 	if (ret)
