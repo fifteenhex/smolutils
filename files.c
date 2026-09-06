@@ -70,7 +70,7 @@ static int prog_ln(int argc, char **argv, char **envp)
 }
 
 /* Cross filesystem move using sendfile() */
-static int move_across(const char *src, const char *dst)
+static int copy_file(const char *src, const char *dst)
 {
 	int __cleanup_fd src_fd = -1;
 	int __cleanup_fd dst_fd = -1;
@@ -109,6 +109,14 @@ static int move_across(const char *src, const char *dst)
 
 		left -= done;
 	}
+
+	return 0;
+}
+
+static int move_across(const char *src, const char *dst)
+{
+	if (copy_file(src, dst))
+		return 1;
 
 	if (unlink(src)) {
 		error("unlink(%s) failed: %d\n", src, errno);
@@ -244,51 +252,13 @@ static int prog_cat(int argc, char **argv, char **envp)
 	return ret;
 }
 
-static int copy_a_file(const char *src, const char *dst)
-{
-	int __cleanup_fd src_fd = -1;
-	int __cleanup_fd dst_fd = -1;
-	off_t sz;
-	int ret;
-
-	debug("copying %s to %s\n", src, dst);
-
-	src_fd = open(src, O_RDONLY);
-	if (src_fd < 0) {
-		error("Failed to open %s: %d\n", src, errno);
-		return -1;
-	}
-
-	sz = file_size(src_fd);
-	if (sz < 0) {
-		error("Failed to size %s: %d\n", src, errno);
-		return -1;
-	}
-
-	dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (dst_fd < 0) {
-		error("Failed to create %s: %d\n", dst, errno);
-		return -1;
-	}
-
-	debug("Calling sendfile() to copy %lld bytes\n", (long long) sz);
-
-	ret = sendfile(dst_fd, src_fd, NULL, sz);
-	if (ret != sz) {
-		error("Failed to copy %s: %d\n", src, errno);
-		return -1;
-	}
-
-	return 0;
-}
-
 static int prog_cp(int argc, char **argv, char **envp)
 {
 	/* super dumb for now */
 	if (argc != 3)
 		return 1;
 
-	if (copy_a_file(argv[1], argv[2]))
+	if (copy_file(argv[1], argv[2]))
 		return 1;
 
 	return 0;
