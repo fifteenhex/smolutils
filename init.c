@@ -24,16 +24,12 @@ static volatile int shutdown_cmd;
 #define STARTUP_PATH "/sbin/startup"
 #define GETTY_PATH "/sbin/getty"
 #define GETTY_NAME "getty"
-#define INSMOD_PATH "/sbin/insmod"
-#define INSMOD_NAME "insmod"
 #define TELNETD_PATH "/sbin/telnetd"
 #define TELNETD_NAME "telnetd"
 #define SHELL_PATH "/bin/smolsh"
 
+/* The rest of them are startup's, it gets handed the same list */
 static const char cmdline_opt_getty[] = "getty=";
-static const char cmdline_opt_hostname[] = "hostname=";
-static const char cmdline_opt_dhcpif[] = "dhcpif=";
-static const char cmdline_opt_insmod[] = "insmod=";
 static const char cmdline_opt_telnetd[] = "telnetd=";
 
 struct getty {
@@ -43,12 +39,6 @@ struct getty {
 
 static struct getty gettys[16];
 static unsigned num_gettys = 0;
-
-static const char *hostname = NULL;
-static const char *dhcpif = NULL;
-
-static const char *modules[8];
-static unsigned num_modules = 0;
 
 static const char *telnetd_port = NULL;
 static pid_t telnetd_pid = -1;
@@ -79,32 +69,6 @@ static void parse_cmdline(int argc, char **argv)
 			 * wasting memory copying strings.
 			 */
 			gettys[num_gettys++].tty_path = val;
-			continue;
-		}
-
-		val = cmdline_option(arg, cmdline_opt_hostname);
-		if (val && !hostname) {
-			verbose("Hostname will be %s\n", val);
-			hostname = val;
-			continue;
-		}
-
-		val = cmdline_option(arg, cmdline_opt_insmod);
-		if (val) {
-			if (num_modules >= ARRAY_SIZE(modules)) {
-				error("Too many modules\n");
-				continue;
-			}
-
-			verbose("Will load %s\n", val);
-			modules[num_modules++] = val;
-			continue;
-		}
-
-		val = cmdline_option(arg, cmdline_opt_dhcpif);
-		if (val && !dhcpif) {
-			verbose("Will configure %s via DHCP\n", val);
-			dhcpif = val;
 			continue;
 		}
 
