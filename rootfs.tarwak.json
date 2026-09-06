@@ -23,10 +23,22 @@
 					"mode": "0555"
 				},
 				"entities": {
-					"cat": { },
-					"cp": { },
-					"chmod": { },
-					"chown": { },
+					"cat": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
+					"cp": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
+					"chmod": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
+					"chown": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
 					"df": { },
 					"dmesg": { },
 					"smolsh": { },
@@ -34,7 +46,10 @@
 					"man": { },
 					"less": { },
 					"uname": { },
-					"touch": { },
+					"touch": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
 					"kill": { },
 					"ls": { },
 					"ps": { },
@@ -83,23 +98,23 @@
 					},
 					"rmdir": {
 						"type": "symlink",
-						"target": "/bin/touch"
+						"target": "/lib/smol/files"
 					},
 					"mkdir": {
 						"type": "symlink",
-						"target": "/bin/touch"
+						"target": "/lib/smol/files"
 					},
 					"ln": {
 						"type": "symlink",
-						"target": "/bin/touch"
+						"target": "/lib/smol/files"
 					},
 					"rm": {
 						"type": "symlink",
-						"target": "/bin/touch"
+						"target": "/lib/smol/files"
 					},
 					"mv": {
 						"type": "symlink",
-						"target": "/bin/touch"
+						"target": "/lib/smol/files"
 					}
 				}
                 	},
@@ -108,6 +123,22 @@
 			},
                 	"run" : {
 				"type": "dir"
+			},
+			"lib" : {
+				"type": "dir",
+				"mode": "0555",
+				"entities": {
+					"smol": {
+						"type": "dir",
+						"mode": "0555",
+						"defaults": {
+							"mode": "0555"
+						},
+						"entities": {
+							"files": { }
+						}
+					}
+				}
 			},
                 	"sbin" : {
 				"type": "dir",

@@ -199,6 +199,174 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	return 0;
 }
 
+static int cat_fd(int fd)
+{
+	char buf[4096];
+	int len;
+
+	while (true) {
+		len = read(fd, buf, sizeof(buf));
+		if (len < 0)
+			return -1;
+		if (len == 0)
+			return 0;
+
+		/* FIXME: For now write byte by byte because of nolibc's fwrite() */
+		fwrite(buf, 1, len, stdout);
+	}
+}
+
+static int prog_cat(int argc, char **argv, char **envp)
+{
+	int ret = 0;
+	int i;
+
+	/* No arguments means read stdin */
+	if (argc < 2)
+		return cat_fd(STDIN_FILENO) ? 1 : 0;
+
+	for (i = 1; i < argc; i++) {
+		int __cleanup_fd fd = -1;
+
+		fd = open(argv[i], O_RDONLY);
+		if (fd < 0) {
+			error("Failed to open %s: %d\n", argv[i], errno);
+			ret = 1;
+			continue;
+		}
+
+		if (cat_fd(fd)) {
+			error("Failed to read %s: %d\n", argv[i], errno);
+			ret = 1;
+		}
+	}
+
+	return ret;
+}
+
+static int copy_a_file(const char *src, const char *dst)
+{
+	int __cleanup_fd src_fd = -1;
+	int __cleanup_fd dst_fd = -1;
+	off_t sz;
+	int ret;
+
+	debug("copying %s to %s\n", src, dst);
+
+	src_fd = open(src, O_RDONLY);
+	if (src_fd < 0) {
+		error("Failed to open %s: %d\n", src, errno);
+		return -1;
+	}
+
+	sz = file_size(src_fd);
+	if (sz < 0) {
+		error("Failed to size %s: %d\n", src, errno);
+		return -1;
+	}
+
+	dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (dst_fd < 0) {
+		error("Failed to create %s: %d\n", dst, errno);
+		return -1;
+	}
+
+	debug("Calling sendfile() to copy %lld bytes\n", (long long) sz);
+
+	ret = sendfile(dst_fd, src_fd, NULL, sz);
+	if (ret != sz) {
+		error("Failed to copy %s: %d\n", src, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int prog_cp(int argc, char **argv, char **envp)
+{
+	/* super dumb for now */
+	if (argc != 3)
+		return 1;
+
+	if (copy_a_file(argv[1], argv[2]))
+		return 1;
+
+	return 0;
+}
+
+static int prog_chmod(int argc, char **argv, char **envp)
+{
+	unsigned long mode;
+	char *end;
+	int ret = 0;
+	int i;
+
+	if (argc < 3) {
+		usage("usage: chmod <octal mode> <file>...\n");
+		return 1;
+	}
+
+	/* Only the octal form, nobody needs u+x that badly */
+	mode = strtoul(argv[1], &end, 8);
+	if (end == argv[1] || *end != '\0' || mode > 07777) {
+		error("Not a mode: %s\n", argv[1]);
+		return 1;
+	}
+
+	for (i = 2; i < argc; i++) {
+		if (chmod(argv[i], mode)) {
+			error("chmod(%s) failed: %d\n", argv[i], errno);
+			ret = 1;
+		}
+	}
+
+	return ret;
+}
+
+static int prog_chown(int argc, char **argv, char **envp)
+{
+	gid_t gid = (gid_t) -1;
+	uid_t uid;
+	char *end;
+	int ret = 0;
+	int i;
+
+	if (argc < 3) {
+		usage("usage: chown <uid>[:<gid>] <file>...\n");
+		return 1;
+	}
+
+	uid = strtoul(argv[1], &end, 10);
+	if (end == argv[1]) {
+		error("Not a uid: %s\n", argv[1]);
+		return 1;
+	}
+
+	if (*end == ':') {
+		char *group = end + 1;
+
+		gid = strtoul(group, &end, 10);
+		if (end == group) {
+			error("Not a gid: %s\n", group);
+			return 1;
+		}
+	}
+
+	if (*end != '\0') {
+		error("Not a uid: %s\n", argv[1]);
+		return 1;
+	}
+
+	for (i = 2; i < argc; i++) {
+		if (chown(argv[i], uid, gid)) {
+			error("chown(%s) failed: %d\n", argv[i], errno);
+			ret = 1;
+		}
+	}
+
+	return ret;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "touch", prog_touch },
 	{ "ln", prog_ln },
@@ -206,6 +374,10 @@ static const struct multicall_prog progs[] = {
 	{ "mkdir", prog_mkdir },
 	{ "rm", prog_rm },
 	{ "rmdir", prog_rmdir },
+	{ "cat", prog_cat },
+	{ "cp", prog_cp },
+	{ "chmod", prog_chmod },
+	{ "chown", prog_chown },
 };
 
 int main (int argc, char **argv, char **envp)

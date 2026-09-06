@@ -28,18 +28,14 @@ PROGS_USER =		\
 	smolsh		\
 	dmesg		\
 	ls		\
+	files		\
 	ps		\
-	cat		\
 	sha256sum	\
 	xxd		\
 	devmem		\
 	man		\
 	less		\
 	uname		\
-	cp		\
-	touch		\
-	chmod		\
-	chown		\
 	kill		\
 	df		\
 	su		\
