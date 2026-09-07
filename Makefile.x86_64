@@ -10,7 +10,8 @@ COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 LZ4OPTS = -nostdinc -I$(NOLIBCDIR) -fno-lto
 
 lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h
-	$(CC) \
+	$(MSG) CC thirdparty/lz4/lz4.c
+	$(Q)$(CC) \
 	$(LZ4OPTS) \
 	$(COPTS) \
 	$(STATICPIE) \
@@ -18,19 +19,22 @@ lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h
 	-c -o $@ $<
 
 lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
-	$(CC) $(COPTS) \
+	$(MSG) CC lz4
+	$(Q)$(CC) $(COPTS) \
 	-fno-lto \
 	$(STATICPIE) \
 	-o $@ $< lz4.x86_64.o
 
 .SECONDARY:
 %.x86_64.elf.dbg: %.c $(HEADERS)
-	$(CC) $(COPTS) \
+	$(MSG) CC $*
+	$(Q)$(CC) $(COPTS) \
 	$(STATICPIE) \
 	-o $@ $<
 
 %.x86_64.elf: %.x86_64.elf.dbg
-	$(STRIP) $< -o $@
+	$(MSG) STRIP $*
+	$(Q)$(STRIP) $< -o $@
 
 SYSTEM_ELFS = $(addsuffix .x86_64.elf,$(PROGS_SYSTEM))
 SYSTEM_ELFS += $(addsuffix .x86_64.elf,$(PROGS_NET_SYSTEM))
@@ -42,22 +46,25 @@ elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.x86_64.elf
 
 .PHONY: x86_64.tar
 x86_64.tar: rootfs.tarwak.json elfs
-	$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.x86_64.elf" $(_TARWAKFEATURES)
+	$(MSG) TARWAK $@
+	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.x86_64.elf" $(_TARWAKFEATURES)
 
 .PHONY: x86_64.erofs
 x86_64.erofs: x86_64.tar
-	$(EROFS_CMD) $@ $<
+	$(MSG) EROFS $@
+	$(Q)$(EROFS_CMD) $@ $<
 
 # Convert the tar into a cpio to use for an initramfs
 .PHONY: x86_64.cpio.gz
 x86_64.cpio.gz: x86_64.tar
-	bsdtar --format=newc -cf - @$< | gzip -9 > $@
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf - @$< | gzip -9 > $@
 
 .PHONY: clean
 clean:
-	rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+	$(Q)rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
 
 # Only check our headers as nolibc upsets clang-tidy.
 .PHONY: clang-tidy
 clang-tidy:
-	clang-tidy --header-filter='$(CURDIR)/.*\.h$$' $(C_FILES) -- $(COPTS)
+	$(Q)clang-tidy --header-filter='$(CURDIR)/.*\.h$$' $(C_FILES) -- $(COPTS)

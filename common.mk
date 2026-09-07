@@ -1,5 +1,14 @@
 MAKEFLAGS += --no-builtin-rules
 
+# Reduce the output, pass V=1 to get the noise back
+ifeq ($(V),1)
+Q =
+MSG = @:
+else
+Q = @
+MSG = @printf '  %-7s %s\n'
+endif
+
 # Make sure we know where to get nolibc
 ifndef NOLIBCDIR
 $(error Please pass NOLIBCDIR with the path to your copy of nolibc (tools/include/nolibc/ in the linux source))
