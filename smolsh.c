@@ -121,10 +121,32 @@ static int pwd_handler(int argc, char **argv, int stdout)
 	return 0;
 }
 
+#define SECONDS_MAX 0xffffffffUL
+
+static bool parse_seconds(const char *arg, unsigned int *out)
+{
+	unsigned long secs;
+	char *end;
+
+	secs = strtoul(arg, &end, 10);
+	if (end == arg || *end != '\0' || secs > SECONDS_MAX)
+		return false;
+
+	*out = secs;
+
+	return true;
+}
+
 static int sleep_handler(int argc, char **argv, int stdout)
 {
-	// FIXME
-	sleep(10);
+	unsigned int secs;
+
+	if (argc != 2 || !parse_seconds(argv[1], &secs)) {
+		usage("usage: sleep <seconds>\n");
+		return 1;
+	}
+
+	sleep(secs);
 
 	return 0;
 }
