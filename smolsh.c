@@ -3,6 +3,7 @@
 #include "config.h"
 #include "common.h"
 #include "readln.h"
+#include "users.h"
 
 #include "nolibc_extensions/signal.h"
 
@@ -137,6 +138,19 @@ static bool parse_seconds(const char *arg, unsigned int *out)
 	return true;
 }
 
+static int whoami_handler(int argc, char **argv, int stdout)
+{
+	uid_t uid = getuid();
+	const char *user = users_map_user(uid);
+
+	if (user)
+		dprintf(stdout, "%s\n", user);
+	else
+		dprintf(stdout, "%u\n", (unsigned int) uid);
+
+	return 0;
+}
+
 static int sleep_handler(int argc, char **argv, int stdout)
 {
 	unsigned int secs;
@@ -166,6 +180,7 @@ struct builtin builtins[] = {
 	{ "clear", clear_handler },
 	{ "echo", echo_handler },
 	{ "pwd", pwd_handler },
+	{ "whoami", whoami_handler },
 	{ "sleep", sleep_handler },
 	{ "exit", exit_handler },
 };
