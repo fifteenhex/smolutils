@@ -28,9 +28,11 @@
 static const char cmdline_opt_hostname[] = "hostname=";
 static const char cmdline_opt_dhcpif[] = "dhcpif=";
 static const char cmdline_opt_insmod[] = "insmod=";
+static const char cmdline_opt_securetty[] = "securetty=";
 
 static const char *hostname = NULL;
 static const char *dhcpif = NULL;
+static const char *securetty = NULL;
 
 static const char *modules[8];
 static unsigned num_modules = 0;
@@ -67,8 +69,42 @@ static void parse_cmdline(int argc, char **argv)
 		if (val && !dhcpif) {
 			verbose("Will configure %s via DHCP\n", val);
 			dhcpif = val;
+			continue;
+		}
+
+		val = cmdline_option(arg, cmdline_opt_securetty);
+		if (val && !securetty) {
+			verbose("Secure console is %s\n", val);
+			securetty = val;
 		}
 	}
+}
+
+static void check_secure_console(void)
+{
+	struct stat st;
+
+	if (!securetty)
+		return;
+
+	if (stat(securetty, &st)) {
+		debug("No secure console at %s: %d\n", securetty, errno);
+		goto drop;
+	}
+
+	/* A regular file would keep the secret for anyone who can read the fs */
+	if (!S_ISCHR(st.st_mode)) {
+		verbose("Secure console %s isn't a character device\n",
+		      securetty);
+		goto drop;
+	}
+
+	verbose("Secure console is %s\n", securetty);
+
+	return;
+
+drop:
+	securetty = NULL;
 }
 
 /* Load modules, order is important as there is no dependency checking */
@@ -309,6 +345,8 @@ int main (int argc, char **argv, char **envp)
 	load_modules();
 
 	mount_filesystems();
+
+	check_secure_console();
 
 	set_capabilities();
 
