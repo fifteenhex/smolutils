@@ -12,6 +12,9 @@
 #define SMOL_RUN_PRIVATE_DIR	SMOL_RUN_DIR "/private"
 #define SMOL_RUN_PUBLIC_DIR	SMOL_RUN_DIR "/public"
 
+/* A tty we trust with important stuff */
+#define SMOL_SECURETTY_PATH SMOL_RUN_PRIVATE_DIR "/securetty"
+
 /* Printing stuff */
 
 /*

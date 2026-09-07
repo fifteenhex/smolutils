@@ -316,8 +316,14 @@ static int prog_init(int argc, char **argv, char **envp)
 		}
 	}
 
+	/* No securetty == no telnet */
+	if (telnetd_port && access(SMOL_SECURETTY_PATH, F_OK)) {
+		debug("No secure console, not starting telnetd\n");
+		telnetd_port = NULL;
+	}
+
 	if (telnetd_port && spawn_telnetd())
-		error("Failed to spawn telnetd\n");
+		debug("Failed to spawn telnetd\n");
 
 	/* Now sit in wait for one of the gettys to exit */
 	while (true) {

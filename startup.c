@@ -80,9 +80,19 @@ static void parse_cmdline(int argc, char **argv)
 	}
 }
 
+/* Stash a link to the trusted tty */
+static void publish_secure_console(void)
+{
+	if (symlink(securetty, SMOL_SECURETTY_PATH))
+		error("Failed to link %s: %d\n", SMOL_SECURETTY_PATH, errno);
+}
+
 static void check_secure_console(void)
 {
 	struct stat st;
+
+	/* Remove any dangling link in case you are crazy enough to use this on a r/w fs */
+	unlink(SMOL_SECURETTY_PATH);
 
 	if (!securetty)
 		return;
@@ -100,6 +110,8 @@ static void check_secure_console(void)
 	}
 
 	verbose("Secure console is %s\n", securetty);
+
+	publish_secure_console();
 
 	return;
 
