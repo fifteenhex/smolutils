@@ -44,6 +44,11 @@
 #define CONFIG_DF_LARGE	y
 #endif
 
+/* Dumb authentication, when a telnet login or su happens a code from the "securetty" has to be entered */
+#ifndef CONFIG_AUTH
+#define CONFIG_AUTH	y
+#endif
+
 /* "seats", this lets a logged in user use input, fb etc via a directory in /run */
 #ifndef CONFIG_SEAT
 #define CONFIG_SEAT	y

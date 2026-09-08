@@ -111,6 +111,7 @@ ifdef UAPIDIR
 endif
 
 HEADERS = config.h \
+	  auth.h \
 	  common.h \
 	  cmdline.h \
 	  users.h \
