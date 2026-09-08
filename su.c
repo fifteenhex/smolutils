@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "auth.h"
 #include "users.h"
 
 #define SHELL_PATH "/bin/smolsh"
@@ -17,6 +18,11 @@ int main(int argc, char **argv, char **envp)
 
 	if (users_changeuser(0, 0)) {
 		error("Failed to become root\n");
+		return 1;
+	}
+
+	if (auth_check("su")) {
+		error("You shall not pass!\n");
 		return 1;
 	}
 
