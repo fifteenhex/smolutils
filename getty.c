@@ -5,6 +5,7 @@
 #define TAG "getty"
 
 #include "common.h"
+#include "auth.h"
 #include "seat.h"
 #include "users.h"
 
@@ -197,6 +198,12 @@ int main(int argc, char **argv, char **envp)
 	dup2(tty_fd, STDOUT_FILENO);
 	dup2(tty_fd, STDERR_FILENO);
 	close(tty_fd);
+
+	/* We don't just let anyone poke around in here I've have you know.. */
+	if (auth_check(tty_path)) {
+		error("%s wasn't allowed in\n", tty_path);
+		return 1;
+	}
 
 	/* While we are still root, a device node isn't the user's to make */
 	seat_make(&seat, seat_name(tty_path), SMOLUTILS_USERS_NORMAL_MIN);
