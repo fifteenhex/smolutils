@@ -42,6 +42,7 @@ PROGS_USER =		\
 	sha256sum	\
 	xxd		\
 	devmem		\
+	lsbus		\
 	man		\
 	less		\
 	uname		\

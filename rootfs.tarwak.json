@@ -43,6 +43,10 @@
 					"dmesg": { },
 					"smolsh": { },
 					"xxd": { },
+					"lspci": {
+						"type": "symlink",
+						"target": "/lib/smol/lsbus"
+					},
 					"man": { },
 					"less": { },
 					"uname": { },
@@ -142,7 +146,8 @@
 						},
 						"entities": {
 							"files": { },
-							"process": { }
+							"process": { },
+							"lsbus": { }
 						}
 					}
 				}
