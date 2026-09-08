@@ -47,6 +47,10 @@
 						"type": "symlink",
 						"target": "/lib/smol/lsbus"
 					},
+					"lsusb": {
+						"type": "symlink",
+						"target": "/lib/smol/lsbus"
+					},
 					"man": { },
 					"less": { },
 					"uname": { },
