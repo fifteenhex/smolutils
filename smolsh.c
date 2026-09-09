@@ -165,6 +165,13 @@ static int sleep_handler(int argc, char **argv, int stdout)
 	return 0;
 }
 
+static int sync_handler(int argc, char **argv, int stdout)
+{
+	sync();
+
+	return 0;
+}
+
 static int exit_handler(int argc, char **argv, int stdout)
 {
 	if (argc > 1)
@@ -181,6 +188,7 @@ struct builtin builtins[] = {
 	{ "echo", echo_handler },
 	{ "pwd", pwd_handler },
 	{ "whoami", whoami_handler },
+	{ "sync", sync_handler },
 	{ "sleep", sleep_handler },
 	{ "exit", exit_handler },
 };
