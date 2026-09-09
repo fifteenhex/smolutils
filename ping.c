@@ -198,8 +198,13 @@ int main (int argc, char **argv, char **envp)
 
 		gettimeofday(&t1, NULL);
 
-		ms = ((t1.tv_sec - t0.tv_sec) * 1000) +
-		     ((t1.tv_usec - t0.tv_usec) / 1000);
+		/*
+		 * The round trip should fit into a long,
+		 * if it doesn't you have problems, and truncation
+		 * avoids pulling in libgcc on m68k.
+		 */
+		ms = ((long) (t1.tv_sec - t0.tv_sec) * 1000) +
+		     ((long) (t1.tv_usec - t0.tv_usec) / 1000);
 
 		printf("Reply from %s: seq=%d time=%ldms\n", host, seq, ms);
 		replies++;
