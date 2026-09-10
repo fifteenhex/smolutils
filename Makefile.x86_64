@@ -2,27 +2,42 @@ include common.mk
 
 all: elfs
 
-STATICPIE=-fpie -static-pie
+# Build with NOPIE=1 when using upstream nolibc (as of 7.2).
+ifdef NOPIE
+STATICPIE = -static
+else
+STATICPIE = -fpie -static-pie
+endif
+
+$(shell echo '$(STATICPIE)' | cmp -s - .buildmode 2>/dev/null || echo '$(STATICPIE)' > .buildmode)
+HEADERS += .buildmode
 
 COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 
-# avoid LTO for lz4 for now as we have some header/symbol/linker fun issues
-LZ4OPTS = -nostdinc -I$(NOLIBCDIR) -fno-lto
+# Bit of hand holding for lz4
+LZ4INC = -nostdinc -I$(NOLIBCDIR)
+LZ4OPTS = -fno-lto
+LZ4OPTS += -ffunction-sections -fdata-sections
+LZ4LDOPTS = -Wl,--gc-sections
 
-lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h
+lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h .buildmode
 	$(MSG) CC thirdparty/lz4/lz4.c
 	$(Q)$(CC) \
-	$(LZ4OPTS) \
+	$(LZ4INC) \
 	$(COPTS) \
+	$(LZ4OPTS) \
 	$(STATICPIE) \
 	-DLZ4_USER_MEMORY_FUNCTIONS \
 	-c -o $@ $<
 
 lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
 	$(MSG) CC lz4
-	$(Q)$(CC) $(COPTS) \
-	-fno-lto \
+	$(Q)$(CC) \
+	$(LZ4INC) \
+	$(COPTS) \
+	$(LZ4OPTS) \
 	$(STATICPIE) \
+	$(LZ4LDOPTS) \
 	-o $@ $< lz4.x86_64.o
 
 .SECONDARY:
@@ -62,7 +77,14 @@ x86_64.cpio.gz: x86_64.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+	$(Q)rm -f .buildmode *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+
+PROGS ?= $(PROGS_SYSTEM) $(PROGS_USER) $(PROGS_NET_SYSTEM) $(PROGS_NET_USER)
+
+.PHONY: multicall-size
+multicall-size:
+	CC="$(CC)" COPTS="$(COPTS) $(STATICPIE)" SIZE="$(CROSS_COMPILE)size" \
+	PROGS="$(PROGS)" ./multicall-size.sh
 
 # Only check our headers as nolibc upsets clang-tidy.
 .PHONY: clang-tidy
