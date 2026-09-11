@@ -176,7 +176,6 @@ static int iterate_dir(const char *path,
 
 /* Process stuff */
 
-
 /*
  * Mininal wrapper around vfork() + execve() to avoid
  * shitting up the parent's stack.

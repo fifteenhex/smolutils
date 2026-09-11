@@ -19,6 +19,13 @@ _build/.stamp.linux_cloned: | _build
 	git -C _build/linux sparse-checkout set tools/include/nolibc
 	touch $@
 
+NOLIBCEXTBRANCH=main
+NOLIBCEXTREPO=https://github.com/fifteenhex/nolibc-extensions.git
+
+_build/.stamp.nolibcext_cloned: | _build
+	git -C _build clone --depth 1 --branch $(NOLIBCEXTBRANCH) $(NOLIBCEXTREPO)
+	touch $@
+
 TARWAKBRANCH=master
 TARWAKREPO=https://github.com/fifteenhex/tarwak.git
 
@@ -44,6 +51,7 @@ UAPI_M68K = /usr/m68k-linux-gnu/include
 UAPI_X86_64 = /usr/include /usr/include/x86_64-linux-gnu
 
 NOLIBCPATH = `realpath _build/linux/tools/include/nolibc/`
+NOLIBCEXTPATH = `realpath _build/nolibc-extensions`
 
 TARWAK=_build/tarwak/build/tarwak
 $(TARWAK): _build/.stamp.tarwak_cloned
@@ -52,27 +60,30 @@ $(TARWAK): _build/.stamp.tarwak_cloned
 
 SIXEIGHTOPTS = UAPIDIR="$(UAPI_M68K)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
+		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-` \
 		TARWAK=`realpath $(TARWAK)`
 
 
 PEKEHACHIROKUOPTS = UAPIDIR="$(UAPI_X86_64)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
+		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
 		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-` \
 		TARWAK=`realpath $(TARWAK)`
 
 # Let clang-tidy work without all the other jank
 TIDYOPTS = UAPIDIR="$(UAPI_X86_64)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
+		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
 		CROSS_COMPILE=none \
 		TARWAK=none
 
 .PHONY: clang-tidy
-clang-tidy: _build/.stamp.linux_cloned
+clang-tidy: _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned
 	$(MAKE) -f Makefile.x86_64 $(TIDYOPTS) clang-tidy
 
 .PHONY: build
-build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
+build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
@@ -91,7 +102,7 @@ QEMUCMD = qemu-system-x86_64 -nographic -no-reboot -m 128 -kernel $$kernel -init
 
 BOOT_MODULE = e1000
 
-boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned $(TARWAK)
+boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
 	kernel="$(KERNEL)"; \
 	if [ ! -r "$$kernel" ]; then \

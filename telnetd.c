@@ -9,8 +9,6 @@
 #include "pts.h"
 #include "users.h"
 
-#include "nolibc_extensions/signal.h"
-
 #define GETTY_PATH	"/sbin/getty"
 #define GETTY_NAME	"getty"
 #define SHELL_PATH	"/bin/smolsh"

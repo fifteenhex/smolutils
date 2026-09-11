@@ -269,7 +269,6 @@ static int setup_socket(struct context *cntx)
 	return 0;
 }
 
-
 static const char *addr_to_str(uint32_t addr, char *buf, socklen_t len)
 {
 	uint32_t tmp = htonl(addr);
@@ -408,7 +407,6 @@ static bool check_packet(struct context *cntx, struct dhcp_packet *p, unsigned i
 		return false;
 	}
 
-
 	return true;
 }
 
@@ -476,7 +474,6 @@ static int _find_opt_u32(struct dhcp_packet *p, uint8_t *from, uint8_t **pos, ui
 
 	return 0;
 }
-
 
 static int find_opt_u32(struct dhcp_packet *p, uint8_t code, uint32_t *opt)
 {

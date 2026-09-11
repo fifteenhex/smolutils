@@ -4,7 +4,6 @@
 #include "common.h"
 
 #include "multicall.h"
-#include "nolibc_extensions/unistd.h"
 
 static int prog_touch(int argc, char **argv, char **envp)
 {

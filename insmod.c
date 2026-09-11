@@ -6,8 +6,6 @@
 
 #include "common.h"
 
-#include "nolibc_extensions/modules.h"
-
 #include <linux/module.h>
 
 /* Detect file a module is compressed by extension */

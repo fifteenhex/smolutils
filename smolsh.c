@@ -5,8 +5,6 @@
 #include "readln.h"
 #include "users.h"
 
-#include "nolibc_extensions/signal.h"
-
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16
 

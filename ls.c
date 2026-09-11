@@ -4,7 +4,6 @@
 #include "common.h"
 #include "colour.h"
 #include "users.h"
-#include "nolibc_extensions/unistd.h"
 
 static const char *colour_for(const struct stat *st)
 {

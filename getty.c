@@ -9,9 +9,6 @@
 #include "seat.h"
 #include "users.h"
 
-#include "nolibc_extensions/signal.h"
-#include "nolibc_extensions/unistd.h"
-
 /* Don't get killed by SIGINT */
 static void handle_sigint(int sig)
 {

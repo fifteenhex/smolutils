@@ -9,9 +9,6 @@
 #include "later.h"
 #include "multicall.h"
 
-#include "nolibc_extensions/signal.h"
-#include "nolibc_extensions/unistd.h"
-
 /* Signals for controlling halt, poweroff, reboot, matches busybox */
 #define SIG_HALT	SIGUSR1
 #define SIG_POWEROFF	SIGUSR2
@@ -283,7 +280,6 @@ static int run_startup(char **argv)
 
 	return 0;
 }
-
 
 static int prog_init(int argc, char **argv, char **envp)
 {

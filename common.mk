@@ -14,6 +14,11 @@ ifndef NOLIBCDIR
 $(error Please pass NOLIBCDIR with the path to your copy of nolibc (tools/include/nolibc/ in the linux source))
 endif
 
+# Make sure we know where the nolibc extensions are
+ifndef NOLIBCEXTDIR
+$(error Please pass NOLIBCEXTDIR with the path to your clone of nolibc-extensions)
+endif
+
 # Make sure we know where the toolchain is
 ifndef CROSS_COMPILE
 $(error Please pass CROSS_COMPILE with the prefix of you toolchain)
@@ -100,6 +105,7 @@ _TARWAKFEATURES += -fmodules
 endif
 
 COPTS= -include $(NOLIBCDIR)/nolibc.h \
+	-include $(NOLIBCEXTDIR)/include/nolibc-extensions.h \
 	-Wl,--hash-style=gnu \
 	$(_COPTS)
 
@@ -125,9 +131,6 @@ HEADERS = config.h \
 	  dhcpc.h \
 	  later.h \
 	  memfd.h \
-	  multicall.h \
-	  nolibc_extensions/unistd.h \
-	  nolibc_extensions/xattr.h \
-	  nolibc_extensions/signal.h
+	  multicall.h
 
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar
