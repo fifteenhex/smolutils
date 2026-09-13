@@ -81,7 +81,6 @@
 					"tftp": {
 						"feature": "net"
 					},
-					"uname": { },
 					"ping": {
 						"feature": "net",
 						"xattrs": {
