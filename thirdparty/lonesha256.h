@@ -149,8 +149,8 @@ LSHA256DEF int lonesha256_fixed (unsigned char out[32], const unsigned char* in,
 
 //lonesha256_stream function
 LSHA256DEF int lonesha256_stream (unsigned char out[32], int(*in)(unsigned char*), size_t len) {
-    //writes the sha256 hash of the first "len" bytes in buffer "in" to buffer "out"
-    //returns 0 on success, may return non-zero in future versions to indicate error
+    //writes the sha256 hash of the "len" bytes handed over by "in" to buffer "out"
+    //returns 0 on success, non-zero if "in" couldn't hand over a block
     const uint32_t K[64] = {
         0x428a2f98UL, 0x71374491UL, 0xb5c0fbcfUL, 0xe9b5dba5UL,
         0x3956c25bUL, 0x59f111f1UL, 0x923f82a4UL, 0xab1c5ed5UL,
@@ -177,13 +177,13 @@ LSHA256DEF int lonesha256_stream (unsigned char out[32], int(*in)(unsigned char*
     unsigned char sha256_buf[64];
     //process input in 64 byte chunks
     while (len >= 64) {
-       in(sha256_buf);
+       if (in(sha256_buf)) return 1;
        SHA256_COMPRESS(sha256_buf);
        sha256_length += 64 * 8;
        len -= 64;
     }
     //copy remaining bytes into sha256_buf
-    in(sha256_buf);
+    if (in(sha256_buf)) return 1;
     //finish up (len now number of bytes in sha256_buf)
     sha256_length += len * 8;
     sha256_buf[len++] = 0x80;
