@@ -1,4 +1,4 @@
-.buildmode
+.buildmode*
 
 *.o
 *.gdb

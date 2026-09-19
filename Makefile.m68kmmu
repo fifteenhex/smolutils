@@ -1,0 +1,64 @@
+include common.mk
+
+all: elfs
+
+CPU ?= 68040
+
+ifeq ($(filter $(CPU),68030 68040 68060),)
+$(error CPU=$(CPU) is not one of 68030, 68040 or 68060)
+endif
+
+COPTS += -m$(CPU) -D R_68K_RELATIVE=22
+
+COPTS += -Wl,-z,max-page-size=4096
+
+ifdef NOPIE
+STATICPIE = -static
+else
+STATICPIE = -fpie -pie -Wl,--no-dynamic-linker
+endif
+
+$(shell echo '$(STATICPIE)' | cmp -s - .buildmode.$(CPU) 2>/dev/null || echo '$(STATICPIE)' > .buildmode.$(CPU))
+HEADERS += .buildmode.$(CPU)
+
+.SECONDARY:
+
+%.$(CPU).elf.dbg: %.c $(HEADERS)
+	$(MSG) CC $*
+	$(Q)$(CC) $(COPTS) \
+	$(STATICPIE) \
+	-o $@ $< -lgcc
+
+%.$(CPU).elf: %.$(CPU).elf.dbg
+	$(MSG) STRIP $*
+	$(Q)$(STRIP) $< -o $@
+
+SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
+SYSTEM_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_SYSTEM))
+USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
+USER_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_USER))
+
+.PHONY: elfs
+elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+
+.PHONY: m68k-$(CPU).tar
+m68k-$(CPU).tar: rootfs.tarwak.json elfs
+	$(MSG) TARWAK $@
+	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.$(CPU).elf" $(_TARWAKFEATURES)
+
+.PHONY: m68k-$(CPU).erofs
+m68k-$(CPU).erofs: m68k-$(CPU).tar
+	$(MSG) EROFS $@
+	$(Q)$(EROFS_CMD) $@ $<
+
+.PHONY: m68k-$(CPU).cpio.gz
+m68k-$(CPU).cpio.gz: m68k-$(CPU).tar
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf - @$< | gzip -9 > $@
+
+.PHONY: clean
+clean:
+	$(Q)rm -f .buildmode.68030 .buildmode.68040 .buildmode.68060
+	$(Q)rm -f *.68030.elf *.68040.elf *.68060.elf
+	$(Q)rm -f *.68030.elf.dbg *.68040.elf.dbg *.68060.elf.dbg
+	$(Q)rm -f m68k-680[346]0.tar m68k-680[346]0.erofs m68k-680[346]0.cpio.gz
