@@ -42,9 +42,8 @@ USER_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_USER))
 elfs: $(SYSTEM_ELFS) $(USER_ELFS)
 
 .PHONY: m68k-$(CPU).tar
-m68k-$(CPU).tar: rootfs.tarwak.json elfs
-	$(MSG) TARWAK $@
-	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.$(CPU).elf" $(_TARWAKFEATURES)
+m68k-$(CPU).tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+	$(call build_tar,$@,%s.$(CPU).elf)
 
 .PHONY: m68k-$(CPU).erofs
 m68k-$(CPU).erofs: m68k-$(CPU).tar

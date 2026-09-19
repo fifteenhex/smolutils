@@ -55,9 +55,8 @@ USER_ELFS += $(addsuffix .68000.elf,$(PROGS_NET_USER))
 elfs: $(SYSTEM_ELFS) $(USER_ELFS)
 
 .PHONY: m68k.tar
-m68k.tar: rootfs.tarwak.json elfs
-	$(MSG) TARWAK $@
-	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.68000.elf" $(_TARWAKFEATURES)
+m68k.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+	$(call build_tar,$@,%s.68000.elf)
 
 .PHONY: m68k.erofs
 m68k.erofs: m68k.tar

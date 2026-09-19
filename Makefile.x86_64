@@ -60,9 +60,8 @@ USER_ELFS += $(addsuffix .x86_64.elf,$(PROGS_NET_USER))
 elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.x86_64.elf
 
 .PHONY: x86_64.tar
-x86_64.tar: rootfs.tarwak.json elfs
-	$(MSG) TARWAK $@
-	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $@ -b ./ -p "%s.x86_64.elf" $(_TARWAKFEATURES)
+x86_64.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+	$(call build_tar,$@,%s.x86_64.elf)
 
 .PHONY: x86_64.erofs
 x86_64.erofs: x86_64.tar

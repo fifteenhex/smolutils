@@ -133,4 +133,22 @@ HEADERS = config.h \
 	  memfd.h \
 	  multicall.h
 
+# This allows you to extend the rootfs with tarballs containing extra
+# goodies but the configuration from rootfs.tarwak.json applies, probably
+# in interesting/unexpected ways,..
+ifdef EXTRA_TARS
+ifndef TARMUNGE
+$(error Please pass TARMUNGE with the path of your tarmunge binary to use EXTRA_TARS)
+endif
+endif
+
+# $(1) is the tarball to make, $(2) the pattern tarwak names elfs by
+define build_tar
+	$(MSG) TARWAK $(1)
+	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $(1) -b ./ -p "$(2)" $(_TARWAKFEATURES)
+	$(if $(EXTRA_TARS),$(MSG) TARMUNGE $(1))
+	$(if $(EXTRA_TARS),$(Q)$(TARMUNGE) -i rootfs.tarwak.json -o $(1).tmp $(1) $(EXTRA_TARS))
+	$(if $(EXTRA_TARS),$(Q)mv $(1).tmp $(1))
+endef
+
 EROFS_CMD = mkfs.erofs -E force-inode-compact,all-fragments,dedupe -zlz4hc --tar
