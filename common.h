@@ -68,6 +68,16 @@ static off_t file_size(int fd) {
 	return st.st_size;
 }
 
+static bool is_chardev(int fd)
+{
+	struct stat st;
+
+	if (fstat(fd, &st) == -1)
+		return false;
+
+	return S_ISCHR(st.st_mode);
+}
+
 /* write() with loop to make sure the full write happens */
 static inline int write_full(int fd, const void *buf, int len)
 {
