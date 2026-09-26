@@ -63,8 +63,61 @@ static int prog_insmod(int argc, char **argv, char **envp)
 	return 0;
 }
 
+static int prog_rmmod(int argc, char **argv, char **envp)
+{
+	int flags = O_NONBLOCK;
+	const char *name;
+	char buf[64];
+	char *dot;
+	int c;
+
+	while ((c = getopt(argc, argv, "f")) != -1) {
+		switch (c) {
+		case 'f':
+			/* Force unload, I hope you know what you're doing... */
+			flags |= O_TRUNC;
+			break;
+
+		default:
+			usage("Usage: %s [-f] <module>\n", argv[0]);
+			return 1;
+		}
+	}
+
+	if (optind != argc - 1) {
+		usage("Usage: %s [-f] <module>\n", argv[0]);
+		return 1;
+	}
+
+	/* Module name can be the name or the file path */
+	name = strrchr(argv[optind], '/');
+	name = name ? name + 1 : argv[optind];
+
+	if (strlcpy(buf, name, sizeof(buf)) >= sizeof(buf)) {
+		error("Module name too long\n");
+		return 1;
+	}
+
+	dot = strrchr(buf, '.');
+	if (dot && !strcmp(dot, ".ko"))
+		*dot = 0;
+
+	/* Replace dots for underscores */
+	for (dot = buf; *dot; dot++)
+		if (*dot == '-')
+			*dot = '_';
+
+	if (delete_module(buf, flags)) {
+		error("Failed to unload %s: %d\n", buf, errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "insmod", prog_insmod },
+	{ "rmmod", prog_rmmod },
 };
 
 int main (int argc, char **argv, char **envp)

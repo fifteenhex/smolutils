@@ -172,6 +172,11 @@
 						"target": "/lib/smol/modules",
 						"feature": "modules"
 					},
+					"rmmod": {
+						"type": "symlink",
+						"target": "/lib/smol/modules",
+						"feature": "modules"
+					},
 					"startup": { },
 					"sntp": {
 						"feature": "net"

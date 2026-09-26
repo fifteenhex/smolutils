@@ -51,6 +51,7 @@ Even for the mmu enjoyers out there:
 | resolv    |          |                            |                     |
 | rm        |          | files                      |                     |
 | rmdir     |          | files                      |                     |
+| rmmod     |          | modules                    |                     |
 | sha256sum |          |                            |                     |
 | smolsh    |          |                            |                     |
 | sntp      |          |                            |                     |
