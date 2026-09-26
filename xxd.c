@@ -22,13 +22,14 @@ int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
 	unsigned long offset = 0;
+	unsigned long length = 0;
 	const char *path;
 	char *endptr;
 	off_t sz;
 	int i, j;
 	int c;
 
-	while ((c = getopt(argc, argv, "m:o:")) != -1) {
+	while ((c = getopt(argc, argv, "m:o:l:")) != -1) {
 		switch (c) {
 		case 'm':
 			fd = inherited_fd(optarg);
@@ -44,15 +45,25 @@ int main (int argc, char **argv, char **envp)
 			}
 			break;
 
+		case 'l':
+			length = strtoul(optarg, &endptr, 0);
+			if (endptr == optarg || *endptr != '\0') {
+				error("Not a length: %s\n", optarg);
+				return 1;
+			}
+			break;
+
 		default:
-			usage("usage: xxd [-m <fd>] [-o <address>] <file>\n");
+			usage("usage: xxd [-m <fd>] [-o <address>] "
+			      "[-l <length>] <file>\n");
 			return 1;
 		}
 	}
 
 	if (fd < 0) {
 		if (optind != argc - 1) {
-			usage("usage: xxd [-m <fd>] [-o <address>] <file>\n");
+			usage("usage: xxd [-m <fd>] [-o <address>] "
+			      "[-l <length>] <file>\n");
 			return 1;
 		}
 
@@ -65,16 +76,33 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
-	sz = file_size(fd);
+	/* For character devices there is no size, so just use length */
+	if (length && is_chardev(fd))
+		sz = (off_t) length;
+	else
+		sz = file_size(fd);
+
+	/* Clamp sz to the requested length if there was one */
+	if (length && (off_t) length < sz)
+		sz = (off_t) length;
 
 	for (i = 0; i < sz; i += 0x10) {
 		uint8_t buf[0x10] = { 0 };
+		int want = 0x10;
 		int ret;
 
+		/* clamp want so it doesn't read past the size or requested length */
+		if (sz - i < want)
+			want = (int) (sz - i);
+
 		/* Read a row's worth of data */
-		ret = read(fd, buf, 0x10);
+		ret = read(fd, buf, want);
 		if (ret < 0)
 			return 1;
+
+		/* Ran out early: a short device, or -l past the end */
+		if (!ret)
+			break;
 
 		printf("%08lx: ", offset + i);
 
