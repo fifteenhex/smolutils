@@ -33,7 +33,7 @@ Even for the mmu enjoyers out there:
 | getty     |          |                            |                     |
 | halt      |          | init                       |                     |
 | init      |          |                            |                     |
-| insmod    |          |                            |                     |
+| insmod    |          | modules                    |                     |
 | ip        |          |                            |                     |
 | kill      |          | process                    |                     |
 | less      | stub     |                            |                     |

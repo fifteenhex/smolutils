@@ -2,9 +2,11 @@
 
 #include "config.h"
 
-#define TAG "insmod"
+#define TAG "modules"
 
 #include "common.h"
+
+#include "multicall.h"
 
 #include <linux/module.h>
 
@@ -21,7 +23,7 @@ static bool is_compressed(const char *path)
 	       !strcmp(dot, ".zst");
 }
 
-int main(int argc, char **argv, char **envp)
+static int prog_insmod(int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
 	char params[128] = "";
@@ -59,4 +61,15 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	return 0;
+}
+
+static const struct multicall_prog progs[] = {
+	{ "insmod", prog_insmod },
+};
+
+int main (int argc, char **argv, char **envp)
+{
+	MULTICALL_DISPATCH(argv[0], progs);
+
+	return 1;
 }

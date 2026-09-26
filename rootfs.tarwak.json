@@ -150,7 +150,11 @@
 						"entities": {
 							"files": { },
 							"process": { },
-							"lsbus": { }
+							"lsbus": { },
+							"modules": {
+								"mode": "0500",
+								"feature": "modules"
+							}
 						}
 					}
 				}
@@ -164,6 +168,8 @@
 				"entities": {
 					"getty": { },
 					"insmod": {
+						"type": "symlink",
+						"target": "/lib/smol/modules",
 						"feature": "modules"
 					},
 					"startup": { },
