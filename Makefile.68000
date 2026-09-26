@@ -63,6 +63,17 @@ m68k.erofs: m68k.tar
 	$(MSG) EROFS $@
 	$(Q)$(EROFS_CMD) $@ $<
 
+.PHONY: m68k.cpio.gz
+m68k.cpio.gz: m68k.tar
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf - @$< | gzip -9 > $@
+
+.PHONY: m68k.cpio
+m68k.cpio: m68k.tar
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf $@ @$<
+
 .PHONY: clean
 clean:
 	$(Q)rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
+	$(Q)rm -f m68k.cpio m68k.cpio.gz
