@@ -19,11 +19,10 @@ static const char *multicall_basename(const char *path)
 #define MULTICALL_DISPATCH(_progname, _progs)				\
 {									\
 	const char *_name = multicall_basename(_progname);		\
-	unsigned int i;							\
 									\
-	for (i = 0; i < ARRAY_SIZE(_progs); i++) {			\
-		if (strcmp(_progs[i].progname, _name) == 0)		\
-			return _progs[i].progcb(argc, argv, envp);	\
+	foreach(_prog, _progs) {					\
+		if (strcmp(_prog->progname, _name) == 0)		\
+			return _prog->progcb(argc, argv, envp);		\
 	}								\
 }
 
