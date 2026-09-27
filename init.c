@@ -40,6 +40,25 @@ static unsigned num_gettys = 0;
 static const char *telnetd_port = NULL;
 static pid_t telnetd_pid = -1;
 
+static bool parse_cmdline_telnetd(const char *arg)
+{
+	const char *val;
+
+	if (!is_enabled(CONFIG_TELNETD) || telnetd_port)
+		return false;
+
+	val = cmdline_option(arg, cmdline_opt_telnetd);
+	if (!val)
+		return false;
+
+	/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
+	telnetd_port = *val ? val : "23";
+
+	verbose("Will start telnetd on port %s\n", telnetd_port);
+
+	return true;
+}
+
 static void parse_cmdline(int argc, char **argv)
 {
 	int i;
@@ -69,17 +88,8 @@ static void parse_cmdline(int argc, char **argv)
 			continue;
 		}
 
-		if (!is_enabled(CONFIG_TELNETD) || telnetd_port)
+		if (parse_cmdline_telnetd(arg))
 			continue;
-
-		val = cmdline_option(arg, cmdline_opt_telnetd);
-		if (val) {
-			/* FIXME port isn't optional,  smolinit.telnetd=0 means the default port */
-			telnetd_port = *val ? val : "23";
-
-			verbose("Will start telnetd on port %s\n",
-				telnetd_port);
-		}
 	}
 }
 
