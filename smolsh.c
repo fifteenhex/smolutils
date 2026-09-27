@@ -194,11 +194,8 @@ struct builtin builtins[] = {
 static bool try_builtin(char **tokens, unsigned num_tokens, int stdout)
 {
 	const char *cmd = tokens[0];
-	int i;
 
-	for (i = 0; i < ARRAY_SIZE(builtins); i++) {
-		struct builtin *bi = &builtins[i];
-
+	foreach(bi, builtins) {
 		if (strcmp(cmd, bi->cmd) == 0) {
 			bi->handler(num_tokens, tokens, stdout);
 			return true;
