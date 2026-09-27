@@ -7,6 +7,12 @@
 
 #define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
 
+/* for each item in an array */
+#define foreach(_p, _array)						\
+	for (__typeof__(&(_array)[0]) _p = (_array);			\
+	     _p < (_array) + ARRAY_SIZE(_array);			\
+	     _p++)
+
 /* Shared state directories, tmpfs abuse */
 #define SMOL_RUN_DIR		"/run/smol"
 #define SMOL_RUN_PRIVATE_DIR	SMOL_RUN_DIR "/private"
