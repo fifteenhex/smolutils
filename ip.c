@@ -38,15 +38,14 @@ static void print_flags(short flags)
 		{ IFF_RUNNING, "RUNNING" },
 	};
 	bool first = true;
-	unsigned int i;
 
 	printf("<");
 
-	for (i = 0; i < ARRAY_SIZE(known); i++) {
-		if (!(flags & known[i].flag))
+	foreach(f, known) {
+		if (!(flags & f->flag))
 			continue;
 
-		printf("%s%s", first ? "" : ",", known[i].name);
+		printf("%s%s", first ? "" : ",", f->name);
 		first = false;
 	}
 
