@@ -170,8 +170,7 @@ static void set_capabilities(void)
 
 	verbose("Adding caps\n");
 
-	for (int i = 0; i < ARRAY_SIZE(capabilities); i++) {
-		const struct capability *c = &capabilities[i];
+	foreach(c, capabilities) {
 		struct vfs_cap_data data = {
 			.magic_etc = htole32(VFS_CAP_REVISION_2 |
 					     VFS_CAP_FLAGS_EFFECTIVE),
@@ -264,9 +263,7 @@ static int mount_filesystems(void)
 
 	verbose("mounting filesystems...\n");
 
-	for (int i = 0; i < ARRAY_SIZE(fstab); i++) {
-		const struct mountpoint *mp = &fstab[i];
-
+	foreach(mp, fstab) {
 		if (already_mounted(mp->target)) {
 			verbose("%s is already mounted\n", mp->target);
 			continue;
@@ -278,9 +275,7 @@ static int mount_filesystems(void)
 	}
 
 	/* State sharing directories */
-	for (int i = 0; i < ARRAY_SIZE(rundirs); i++) {
-		const struct rundir *d = &rundirs[i];
-
+	foreach(d, rundirs) {
 		if (mkdir(d->path, d->mode) && errno != EEXIST) {
 			error("mkdir(%s) failed: %d\n", d->path, errno);
 			continue;
