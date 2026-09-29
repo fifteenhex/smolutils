@@ -20,32 +20,32 @@ static const struct mount_option mount_options[] = {
 	{ "rw", MS_RDONLY, true },
 };
 
+static const struct mount_option *find_option(const char *name, int len)
+{
+	foreach(o, mount_options)
+		if ((int) strlen(o->name) == len &&
+		    !strncmp(name, o->name, len))
+			return o;
+
+	return NULL;
+}
+
 static int parse_options(const char *opts, unsigned long *flags)
 {
 	while (*opts) {
 		const char *comma = strchr(opts, ',');
 		int len = comma ? (int) (comma - opts) : (int) strlen(opts);
-		unsigned int i;
+		const struct mount_option *o = find_option(opts, len);
 
-		for (i = 0; i < ARRAY_SIZE(mount_options); i++) {
-			const struct mount_option *o = &mount_options[i];
-
-			if ((int) strlen(o->name) != len ||
-			    strncmp(opts, o->name, len))
-				continue;
-
-			if (o->clear)
-				*flags &= ~o->flag;
-			else
-				*flags |= o->flag;
-
-			break;
-		}
-
-		if (i == ARRAY_SIZE(mount_options)) {
+		if (!o) {
 			error("Unknown option: %.*s\n", len, opts);
 			return -1;
 		}
+
+		if (o->clear)
+			*flags &= ~o->flag;
+		else
+			*flags |= o->flag;
 
 		opts = comma ? comma + 1 : opts + len;
 	}
