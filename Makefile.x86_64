@@ -1,18 +1,8 @@
+SMOL_ARCH = x86_64
+
 include common.mk
 
 all: elfs
-
-# Build with NOPIE=1 when using upstream nolibc (as of 7.2).
-ifdef NOPIE
-STATICPIE = -static
-else
-STATICPIE = -fpie -static-pie
-endif
-
-$(shell echo '$(STATICPIE)' | cmp -s - .buildmode 2>/dev/null || echo '$(STATICPIE)' > .buildmode)
-HEADERS += .buildmode
-
-COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 
 # Bit of hand holding for lz4
 LZ4INC = -nostdinc -I$(NOLIBCDIR)
@@ -20,7 +10,7 @@ LZ4OPTS = -fno-lto
 LZ4OPTS += -ffunction-sections -fdata-sections
 LZ4LDOPTS = -Wl,--gc-sections
 
-lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h .buildmode
+lz4.x86_64.o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h $(SMOL_BUILDMODE)
 	$(MSG) CC thirdparty/lz4/lz4.c
 	$(Q)$(CC) \
 	$(LZ4INC) \
@@ -39,17 +29,6 @@ lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
 	$(STATICPIE) \
 	$(LZ4LDOPTS) \
 	-o $@ $< lz4.x86_64.o
-
-.SECONDARY:
-%.x86_64.elf.dbg: %.c $(HEADERS)
-	$(MSG) CC $*
-	$(Q)$(CC) $(COPTS) \
-	$(STATICPIE) \
-	-o $@ $<
-
-%.x86_64.elf: %.x86_64.elf.dbg
-	$(MSG) STRIP $*
-	$(Q)$(STRIP) $< -o $@
 
 SYSTEM_ELFS = $(addsuffix .x86_64.elf,$(PROGS_SYSTEM))
 SYSTEM_ELFS += $(addsuffix .x86_64.elf,$(PROGS_NET_SYSTEM))
@@ -76,7 +55,7 @@ x86_64.cpio.gz: x86_64.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f .buildmode *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+	$(Q)rm -f $(SMOL_BUILDMODE) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
 
 PROGS ?= $(PROGS_SYSTEM) $(PROGS_USER) $(PROGS_NET_SYSTEM) $(PROGS_NET_USER)
 

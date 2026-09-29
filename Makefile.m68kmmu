@@ -1,37 +1,14 @@
-include common.mk
-
-all: elfs
-
 CPU ?= 68040
 
 ifeq ($(filter $(CPU),68030 68040 68060),)
 $(error CPU=$(CPU) is not one of 68030, 68040 or 68060)
 endif
 
-COPTS += -m$(CPU) -D R_68K_RELATIVE=22
+SMOL_ARCH = $(CPU)
 
-COPTS += -Wl,-z,max-page-size=4096
+include common.mk
 
-ifdef NOPIE
-STATICPIE = -static
-else
-STATICPIE = -fpie -pie -Wl,--no-dynamic-linker
-endif
-
-$(shell echo '$(STATICPIE)' | cmp -s - .buildmode.$(CPU) 2>/dev/null || echo '$(STATICPIE)' > .buildmode.$(CPU))
-HEADERS += .buildmode.$(CPU)
-
-.SECONDARY:
-
-%.$(CPU).elf.dbg: %.c $(HEADERS)
-	$(MSG) CC $*
-	$(Q)$(CC) $(COPTS) \
-	$(STATICPIE) \
-	-o $@ $< -lgcc
-
-%.$(CPU).elf: %.$(CPU).elf.dbg
-	$(MSG) STRIP $*
-	$(Q)$(STRIP) $< -o $@
+all: elfs
 
 SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
 SYSTEM_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_SYSTEM))

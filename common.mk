@@ -1,37 +1,9 @@
-MAKEFLAGS += --no-builtin-rules
-
-# Reduce the output, pass V=1 to get the noise back
-ifeq ($(V),1)
-Q =
-MSG = @:
-else
-Q = @
-MSG = @printf '  %-7s %s\n'
-endif
-
-# Make sure we know where to get nolibc
-ifndef NOLIBCDIR
-$(error Please pass NOLIBCDIR with the path to your copy of nolibc (tools/include/nolibc/ in the linux source))
-endif
-
-# Make sure we know where the nolibc extensions are
-ifndef NOLIBCEXTDIR
-$(error Please pass NOLIBCEXTDIR with the path to your clone of nolibc-extensions)
-endif
-
-# Make sure we know where the toolchain is
-ifndef CROSS_COMPILE
-$(error Please pass CROSS_COMPILE with the prefix of you toolchain)
-endif
+include smolcommon.mk
 
 # Make sure we know where tarwak is
 ifndef TARWAK
 $(error Please pass TARWAK with the path of your tarwak binary)
 endif
-
-CC=$(CROSS_COMPILE)gcc
-BFDLD=$(CROSS_COMPILE)ld.bfd
-STRIP=$(CROSS_COMPILE)strip
 
 PROGS_SYSTEM = init	\
 	       getty	\
@@ -54,12 +26,6 @@ PROGS_USER =		\
 	df		\
 	su		\
 	mount
-
-# Make some warnings into errors because I am bad at the programming
-_COPTS =  -Werror=return-type
-_COPTS += -Werror=implicit-function-declaration
-_COPTS += -flto
-_COPTS += -ggdb -nostdlib -std=c99 -Os
 
 # Feature parsing
 
@@ -104,18 +70,8 @@ else
 _TARWAKFEATURES += -fmodules
 endif
 
-COPTS= -include $(NOLIBCDIR)/nolibc.h \
-	-include $(NOLIBCEXTDIR)/include/nolibc-extensions.h \
-	-Wl,--hash-style=gnu \
-	$(_COPTS)
-
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
 	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
-
-# UAPIDIR may be a space separated list of directories
-ifdef UAPIDIR
-	COPTS += $(addprefix -I,$(UAPIDIR))
-endif
 
 HEADERS = config.h \
 	  auth.h \

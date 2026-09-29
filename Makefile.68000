@@ -1,4 +1,9 @@
+SMOL_ARCH = 68000
+SMOL_LIBS = libgcc_68000.a
+
 include common.mk
+
+HEADERS += libgcc_68000.a
 
 all: elfs
 
@@ -8,14 +13,7 @@ all: elfs
 
 #	-fno-stack-protector \
 
-COPTS += -m68000 \
-	 -mstrict-align \
-	 -D R_68K_RELATIVE=22
-
 #	-I_build/headers/include
-
-# stop deleting my dbg elf!
-.SECONDARY:
 
 #%.elf.dbg: %.pie.o
 #	$(BFDLD) \
@@ -28,23 +26,6 @@ COPTS += -m68000 \
 
 
 #	-Wl,--no-dynamic-linker \
-
-STATICPIE=-fpie -pie -Wl,--no-dynamic-linker
-
-# This reduces the size of the binaries by putting segments
-# with different permissions on the same 4K page which you
-# might care about if you have an MMU.
-COPTS += -Wl,-z,max-page-size=4
-
-%.68000.elf.dbg: %.c $(HEADERS) libgcc_68000.a
-	$(MSG) CC $*
-	$(Q)$(CC) $(COPTS) \
-	$(STATICPIE) \
-	-o $@ $< libgcc_68000.a
-
-%.68000.elf: %.68000.elf.dbg
-	$(MSG) STRIP $*
-	$(Q)$(STRIP) $< -o $@
 
 .PHONY: system_elfs user_elfs
 SYSTEM_ELFS = $(addsuffix .68000.elf,$(PROGS_SYSTEM))
@@ -75,5 +56,5 @@ m68k.cpio: m68k.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
+	$(Q)rm -f $(SMOL_BUILDMODE) *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
 	$(Q)rm -f m68k.cpio m68k.cpio.gz
