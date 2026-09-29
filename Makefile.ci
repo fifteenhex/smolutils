@@ -84,6 +84,20 @@ TIDYOPTS = UAPIDIR="$(UAPI_X86_64)" \
 clang-tidy: _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned
 	$(MAKE) -f Makefile.x86_64 $(TIDYOPTS) clang-tidy
 
+# Let clang-format work without all the other jank
+FORMATOPTS = NOLIBCDIR=none \
+		NOLIBCEXTDIR=none \
+		CROSS_COMPILE=none \
+		TARWAK=none
+
+.PHONY: clang-format-check
+clang-format-check:
+	$(MAKE) -f Makefile.x86_64 $(FORMATOPTS) clang-format-check
+
+.PHONY: clang-format
+clang-format:
+	$(MAKE) -f Makefile.x86_64 $(FORMATOPTS) clang-format
+
 .PHONY: build
 build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs

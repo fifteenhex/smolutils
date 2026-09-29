@@ -116,3 +116,18 @@ LIBC_WOPTS ?= -Wall -Wextra
 %.libc.elf: %.libc.elf.dbg
 	$(MSG) STRIP $*
 	$(Q)$(HOSTSTRIP) $< -o $@
+
+# Formatting, to the style in .clang-format next to this. Only what's at the
+# top level: anything vendored under a subdirectory is left as it came.
+CLANG_FORMAT ?= clang-format
+SMOL_FORMAT_FILES ?= $(wildcard *.c *.h)
+
+.PHONY: clang-format
+clang-format:
+	$(MSG) FORMAT "$(words $(SMOL_FORMAT_FILES)) files"
+	$(Q)$(CLANG_FORMAT) -i $(SMOL_FORMAT_FILES)
+
+# Says what it would change without changing it, and fails if there is any
+.PHONY: clang-format-check
+clang-format-check:
+	$(Q)$(CLANG_FORMAT) --dry-run -Werror $(SMOL_FORMAT_FILES)
