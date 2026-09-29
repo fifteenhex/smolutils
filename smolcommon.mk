@@ -57,6 +57,13 @@ ifeq ($(SMOL_ARCH),x86_64)
 COPTS += -D R_AMD64_RELATIVE=8 -Wl,-z,noseparate-code
 _PIE = -fpie -static-pie
 _LINK = pie
+else ifneq ($(filter $(SMOL_ARCH),cortexa7 cortexa9),)
+COPTS += -march=armv7-a -mtune=$(subst cortexa,cortex-a,$(SMOL_ARCH)) \
+	 -D R_ARM_RELATIVE=23
+COPTS += -Wl,-u,raise
+SMOL_LIBS += -lgcc
+_PIE = -fpie -static-pie
+_LINK = static
 else ifeq ($(SMOL_ARCH),68000)
 COPTS += -m68000 -mstrict-align -D R_68K_RELATIVE=22
 # Segments with different permissions can share a page when there's no MMU
@@ -70,7 +77,7 @@ SMOL_LIBS += -lgcc
 _PIE = -fpie -pie -Wl,--no-dynamic-linker
 _LINK = pie
 else
-$(error SMOL_ARCH=$(SMOL_ARCH) is not one of x86_64 68000 68030 68040 68060)
+$(error SMOL_ARCH=$(SMOL_ARCH) is not one of x86_64 cortexa7 cortexa9 68000 68030 68040 68060)
 endif
 
 ifdef PIE

@@ -1,0 +1,66 @@
+CPU ?= cortexa9
+
+ifeq ($(filter $(CPU),cortexa7 cortexa9),)
+$(error CPU=$(CPU) is not one of cortexa7 or cortexa9)
+endif
+
+SMOL_ARCH = $(CPU)
+
+include common.mk
+
+all: elfs
+
+LZ4INC = -nostdinc -I$(NOLIBCDIR)
+LZ4OPTS = -fno-lto
+LZ4OPTS += -ffunction-sections -fdata-sections
+LZ4LDOPTS = -Wl,--gc-sections
+
+lz4.$(CPU).o: thirdparty/lz4/lz4.c thirdparty/lz4/lz4.h $(SMOL_BUILDMODE)
+	$(MSG) CC thirdparty/lz4/lz4.c
+	$(Q)$(CC) \
+	$(LZ4INC) \
+	$(COPTS) \
+	$(LZ4OPTS) \
+	$(STATICPIE) \
+	-DLZ4_USER_MEMORY_FUNCTIONS \
+	-c -o $@ $<
+
+lz4.$(CPU).elf.dbg: lz4.c lz4.$(CPU).o $(HEADERS)
+	$(MSG) CC $*
+	$(Q)$(CC) $(COPTS) \
+	$(LZ4OPTS) $(LZ4LDOPTS) \
+	$(STATICPIE) \
+	-o $@ $< lz4.$(CPU).o -lgcc
+
+SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
+SYSTEM_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_SYSTEM))
+USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
+USER_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_USER))
+
+.PHONY: elfs
+elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.$(CPU).elf
+
+.PHONY: arm-$(CPU).tar
+arm-$(CPU).tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+	$(call build_tar,$@,%s.$(CPU).elf)
+
+.PHONY: arm-$(CPU).erofs
+arm-$(CPU).erofs: arm-$(CPU).tar
+	$(MSG) EROFS $@
+	$(Q)$(EROFS_CMD) $@ $<
+
+.PHONY: arm-$(CPU).cpio.gz
+arm-$(CPU).cpio.gz: arm-$(CPU).tar
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf - @$< | gzip -9 > $@
+
+.PHONY: arm-$(CPU).cpio
+arm-$(CPU).cpio: arm-$(CPU).tar
+	$(MSG) CPIO $@
+	$(Q)bsdtar --format=newc -cf $@ @$<
+
+.PHONY: clean
+clean:
+	$(Q)rm -f $(SMOL_BUILDMODE)
+	$(Q)rm -f *.$(CPU).o *.$(CPU).elf *.$(CPU).elf.dbg
+	$(Q)rm -f arm-$(CPU).tar arm-$(CPU).erofs arm-$(CPU).cpio arm-$(CPU).cpio.gz
