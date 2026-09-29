@@ -88,8 +88,10 @@ STATICPIE ?= -static
 endif
 
 SMOL_BUILDMODE = .buildmode.$(SMOL_SUFFIX)
-$(shell echo '$(STATICPIE)' | cmp -s - $(SMOL_BUILDMODE) 2>/dev/null || echo '$(STATICPIE)' > $(SMOL_BUILDMODE))
-HEADERS += $(SMOL_BUILDMODE)
+
+.PHONY: FORCE
+$(SMOL_BUILDMODE): FORCE
+	$(Q)echo '$(STATICPIE)' | cmp -s - $@ 2>/dev/null || echo '$(STATICPIE)' > $@
 
 %.$(SMOL_SUFFIX).elf.dbg: %.c $$(HEADERS) $(SMOL_BUILDMODE)
 	$(MSG) CC $*
