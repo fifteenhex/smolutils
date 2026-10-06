@@ -76,8 +76,15 @@ COPTS += -Wl,-z,max-page-size=4096
 SMOL_LIBS += -lgcc
 _PIE = -fpie -pie -Wl,--no-dynamic-linker
 _LINK = pie
+else ifeq ($(SMOL_ARCH),sh4)
+COPTS += -m4 -D R_SH_RELATIVE=165
+# LTO fix
+COPTS += -Wl,-u,_start_wrapper
+SMOL_LIBS += -lgcc
+_PIE = -fpie -pie -Wl,--no-dynamic-linker
+_LINK = static
 else
-$(error SMOL_ARCH=$(SMOL_ARCH) is not one of x86_64 cortexa7 cortexa9 68000 68030 68040 68060)
+$(error SMOL_ARCH=$(SMOL_ARCH) is not one of x86_64 cortexa7 cortexa9 68000 68030 68040 68060 sh4)
 endif
 
 ifdef PIE
