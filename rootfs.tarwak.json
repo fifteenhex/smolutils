@@ -58,6 +58,10 @@
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
+					"free": {
+						"type": "symlink",
+						"target": "/lib/smol/process"
+					},
 					"kill": {
 						"type": "symlink",
 						"target": "/lib/smol/process"

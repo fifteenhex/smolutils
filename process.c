@@ -8,6 +8,83 @@
 
 static const char *proc_path = "/proc";
 
+#define PROC_MEMINFO	"/proc/meminfo"
+#define PROC_FILE_MAX	4096
+
+static char procbuf[PROC_FILE_MAX];
+
+static const char *next_line(const char *p)
+{
+	p = strchr(p, '\n');
+
+	return p ? p + 1 : NULL;
+}
+
+static bool meminfo_field(const char *key, unsigned long *out)
+{
+	size_t keylen = strlen(key);
+	const char *p;
+
+	for (p = procbuf; p && *p; p = next_line(p)) {
+		char *end;
+
+		if (strncmp(p, key, keylen))
+			continue;
+
+		*out = strtoul(p + keylen, &end, 10);
+
+		return end != p + keylen;
+	}
+
+	return false;
+}
+
+static const char * const cache_fields[] = {
+	"Buffers:",
+	"Cached:",
+	"SReclaimable:",
+};
+
+static int prog_free(int argc, char **argv, char **envp)
+{
+	unsigned long free_kb;
+	unsigned long total;
+	unsigned long avail;
+	unsigned long cache;
+	unsigned long used;
+
+	if (!read_file(PROC_MEMINFO, procbuf, sizeof(procbuf))) {
+		error("Failed to read %s: %d\n", PROC_MEMINFO, errno);
+		return 1;
+	}
+
+	/* Impossible? */
+	if (!meminfo_field("MemTotal:", &total) ||
+	    !meminfo_field("MemFree:", &free_kb) ||
+	    !meminfo_field("MemAvailable:", &avail)) {
+		return 1;
+	}
+
+	/* Total up buffers, cache,... */
+	cache = 0;
+
+	foreach(field, cache_fields) {
+		unsigned long val;
+
+		if (!meminfo_field(*field, &val))
+			return 1;
+
+		cache += val;
+	}
+
+	used = total - avail;
+
+	printf("%18s %12s %12s %12s\n", "total", "used", "free", "buff/cache");
+	printf("Mem: %13lu %12lu %12lu %12lu\n", total, used, free_kb, cache);
+
+	return 0;
+}
+
 static void print_user(uid_t uid)
 {
 	const char *user = users_map_user(uid);
@@ -115,6 +192,7 @@ static int prog_kill(int argc, char **argv, char **envp)
 }
 
 static const struct multicall_prog progs[] = {
+	{ "free", prog_free },
 	{ "kill", prog_kill },
 	{ "ps", prog_ps },
 };
