@@ -41,9 +41,12 @@ _COPTS += -Werror=implicit-function-declaration
 _COPTS += -flto
 _COPTS += -ggdb -nostdlib -std=c99 -Os
 
+SMOL_STACK_SIZE ?= 16384
+
 COPTS= -include $(NOLIBCDIR)/nolibc.h \
 	-include $(NOLIBCEXTDIR)/include/nolibc-extensions.h \
 	-Wl,--hash-style=gnu \
+	-Wl,-z,stack-size=$(SMOL_STACK_SIZE) \
 	$(_COPTS)
 
 # UAPIDIR may be a space separated list of directories
