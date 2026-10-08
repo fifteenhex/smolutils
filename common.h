@@ -184,6 +184,31 @@ static int iterate_dir(const char *path,
 	return 0;
 }
 
+/*
+ * Mainly for reading /proc, /sys single line files.
+ * Reads, NULL terminates and strips newline.
+ */
+static inline bool read_file(const char *path, char *out, size_t len)
+{
+	int __cleanup_fd fd = -1;
+	int got;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return false;
+
+	got = read_full(fd, out, len - 1);
+	if (got <= 0)
+		return false;
+
+	out[got] = '\0';
+
+	while (got && (out[got - 1] == '\n' || out[got - 1] == '\r'))
+		out[--got] = '\0';
+
+	return true;
+}
+
 /* String matching */
 
 /* Does a string start with this char array? */

@@ -8,27 +8,12 @@
 static bool sysfs_read(const char *dir, const char *name,
 		       char *out, size_t len)
 {
-	int __cleanup_fd fd = -1;
 	char path[256];
-	int got;
 
 	if (snprintf(path, sizeof(path), "%s/%s", dir, name) >= (int) sizeof(path))
 		return false;
 
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		return false;
-
-	got = read(fd, out, len - 1);
-	if (got <= 0)
-		return false;
-
-	out[got] = '\0';
-
-	while (got && (out[got - 1] == '\n' || out[got - 1] == '\r'))
-		out[--got] = '\0';
-
-	return true;
+	return read_file(path, out, len);
 }
 
 static bool sysfs_read_number(const char *dir, const char *name,
