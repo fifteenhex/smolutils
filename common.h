@@ -254,6 +254,27 @@ static inline int read_lines(const char *path, char *buf, size_t len,
 	return dropped;
 }
 
+/* get the next whitespace separated field from a string and terminate it */
+static inline char *next_field(char **pos)
+{
+	char *start = *pos;
+	char *end;
+
+	while (*start == ' ' || *start == '\t')
+		start++;
+
+	if (!*start)
+		return NULL;
+
+	for (end = start; *end && *end != ' ' && *end != '\t'; end++)
+		;
+
+	*pos = *end ? end + 1 : end;
+	*end = '\0';
+
+	return start;
+}
+
 /* String matching */
 
 /* Does a string start with this char array? */

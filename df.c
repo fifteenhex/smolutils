@@ -47,47 +47,46 @@ static int parse_mount(char *line, struct mount *mount)
 	char *dump;
 	char *pass;
 
-	dev = line;
+	dev = next_field(&line);
+	if (!dev) {
+		verbose("Didn't find dev in line\n");
+		return -EINVAL;
+	}
 
 	/* Mount point should be after the dev */
-	mountpoint = strchr(line, ' ');
+	mountpoint = next_field(&line);
 	if (!mountpoint) {
 		verbose("Didn't find mountpoint in line\n");
 		return -EINVAL;
 	}
-	*mountpoint++ = '\0';
 
 	/* type should be after the mount point */
-	type = strchr(mountpoint, ' ');
+	type = next_field(&line);
 	if (!type) {
 		verbose("Didn't find type in line\n");
 		return -EINVAL;
 	}
-	*type++ = '\0';
 
 	/* options should be after the type */
-	opts = strchr(type, ' ');
+	opts = next_field(&line);
 	if (!opts) {
 		verbose("Didn't find opts in line\n");
 		return -EINVAL;
 	}
-	*opts++ = '\0';
 
 	/* dump should be after the options */
-	dump = strchr(opts, ' ');
+	dump = next_field(&line);
 	if (!dump) {
 		verbose("Didn't find dump in line\n");
 		return -EINVAL;
 	}
-	*dump++ = '\0';
 
 	/* pass should be after dump */
-	pass = strchr(dump, ' ');
+	pass = next_field(&line);
 	if (!pass) {
 		verbose("Didn't find pass in line\n");
 		return -EINVAL;
 	}
-	*pass++ = '\0';
 
 	mount->dev = dev;
 	mount->mountpoint = mountpoint;
