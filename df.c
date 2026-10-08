@@ -132,45 +132,38 @@ static int process_line(char *line)
 	return 0;
 }
 
+static void df_line(char *line, void *priv)
+{
+	int *ret = priv;
+
+	/* Only process the line if there wasn't already an error */
+	if (!*ret)
+		*ret = process_line(line);
+}
+
 int main (int argc, char **argv, char **envp)
 {
-	unsigned int pos = 0;
-	int __cleanup_fd fd = -1;
-	int ret;
-
-	fd = open(PROC_MOUNTS, O_RDONLY);
-	if (fd < 0) {
-		verbose("Failed to open %s\n", PROC_MOUNTS);
-		return 1;
-	}
+	int lineret = 0;
+	int dropped;
 
 	printf("%-20s %12s %12s %12s %5s %s\n",
 		"Filesystem", "1K-blocks", "Used", "Available", "Use%", "Mounted on");
 
-	while (true) {
-		ret = read(fd, &linebuf[pos], 1);
-		if (ret == 0)
-			break;
+	dropped = read_lines(PROC_MOUNTS, linebuf, sizeof(linebuf),
+			     df_line, &lineret);
+	if (dropped < 0) {
+		verbose("Failed to open %s\n", PROC_MOUNTS);
+		return 1;
+	}
 
-		if (ret != 1) {
-			verbose("Failed to read from input\n");
-			return 1;
-		}
+	if (dropped) {
+		verbose("Line too long\n");
+		return 1;
+	}
 
-		if (linebuf[pos] == '\n') {
-			linebuf[pos] = '\0';
-			ret = process_line(linebuf);
-			if (ret) {
-				verbose("Failed to process input line\n");
-				return 1;
-			}
-
-			pos = 0;
-		}
-		else if (++pos == ARRAY_SIZE(linebuf) - 1) {
-			verbose("Line too long\n");
-			return 1;
-		}
+	if (lineret) {
+		verbose("Failed to process input line\n");
+		return 1;
 	}
 
 	return 0;

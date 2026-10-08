@@ -209,6 +209,51 @@ static inline bool read_file(const char *path, char *out, size_t len)
 	return true;
 }
 
+/* Read a file line by line, calling cb() for each */
+static inline int read_lines(const char *path, char *buf, size_t len,
+			     void (*cb)(char *line, void *priv), void *priv)
+{
+	int __cleanup_fd fd = -1;
+	size_t held = 0;
+	int dropped = 0;
+	int got;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return -1;
+
+	while ((got = read(fd, buf + held, len - held - 1)) > 0) {
+		char *p = buf;
+		char *nl;
+
+		held += got;
+		buf[held] = '\0';
+
+		while ((nl = strchr(p, '\n'))) {
+			*nl = '\0';
+			cb(p, priv);
+			p = nl + 1;
+		}
+
+		held = strlen(p);
+
+		/* Drop the line if its too big */
+		if (held == len - 1) {
+			dropped++;
+			held = 0;
+			continue;
+		}
+
+		memmove(buf, p, held + 1);
+	}
+
+	/* Tail bit */
+	if (held)
+		cb(buf, priv);
+
+	return dropped;
+}
+
 /* String matching */
 
 /* Does a string start with this char array? */
