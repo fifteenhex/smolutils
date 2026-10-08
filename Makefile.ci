@@ -58,10 +58,12 @@ $(TARWAK): _build/.stamp.tarwak_cloned
 	cd _build/tarwak && meson setup build
 	cd _build/tarwak/build && meson compile
 
+M68K_CROSS_COMPILE ?= `realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
+
 SIXEIGHTOPTS = UAPIDIR="$(UAPI_M68K)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
 		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
-		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-` \
+		CROSS_COMPILE=$(M68K_CROSS_COMPILE) \
 		TARWAK=`realpath $(TARWAK)`
 
 
