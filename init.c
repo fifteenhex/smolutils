@@ -228,8 +228,7 @@ static int run_if_due(const char *name, int dir, void *priv)
 	char path[64];
 	unsigned int i;
 
-	if (snprintf(path, sizeof(path), "%s/%s", LATER_DIR, name)
-	    >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), LATER_DIR, name))
 		return 0;
 
 	if (later_read(path, &job)) {
