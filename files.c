@@ -266,7 +266,6 @@ static int prog_cp(int argc, char **argv, char **envp)
 static int prog_chmod(int argc, char **argv, char **envp)
 {
 	unsigned long mode;
-	char *end;
 	int ret = 0;
 	int i;
 
@@ -276,8 +275,7 @@ static int prog_chmod(int argc, char **argv, char **envp)
 	}
 
 	/* Only the octal form, nobody needs u+x that badly */
-	mode = strtoul(argv[1], &end, 8);
-	if (end == argv[1] || *end != '\0' || mode > 07777) {
+	if (!parse_ul(argv[1], 8, &mode) || mode > 07777) {
 		error("Not a mode: %s\n", argv[1]);
 		return 1;
 	}
