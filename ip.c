@@ -109,8 +109,7 @@ static int cb(const char *name, int dir, void *priv)
 	struct ifreq ifr;
 	char path[256];
 
-	if (snprintf(path, sizeof(path), "%s/%s", NET_CLASS, name)
-	    >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), NET_CLASS, name))
 		return 0;
 
 	printf("%s: ", name);
