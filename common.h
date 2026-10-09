@@ -275,6 +275,15 @@ static inline char *next_field(char **pos)
 	return start;
 }
 
+static inline bool parse_ul(const char *s, int base, unsigned long *out)
+{
+	char *end;
+
+	*out = strtoul(s, &end, base);
+
+	return end != s && *end == '\0';
+}
+
 static inline bool path_join(char *buf, size_t len, const char *dir,
 			     const char *name)
 {
