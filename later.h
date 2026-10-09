@@ -50,8 +50,7 @@ static inline int later_ask(const char *name, unsigned int secs,
 
 	job.when = later_now() + secs;
 
-	if (snprintf(path, sizeof(path), "%s/%s", LATER_DIR, name)
-	    >= (int) sizeof(path)) {
+	if (!path_join(path, sizeof(path), LATER_DIR, name)) {
 		error("Name too long: %s\n", name);
 		return -1;
 	}
