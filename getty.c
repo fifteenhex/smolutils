@@ -38,8 +38,7 @@ static int seat_add(const char *name, int dir, void *priv)
 	if (!S_ISCHR(st.st_mode))
 		return 0;
 
-	if (snprintf(path, sizeof(path), "%s/%s", seat->path, name)
-	    >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), seat->path, name))
 		return 0;
 
 	if (mknod(path, S_IFCHR | 0600, st.st_rdev)) {
