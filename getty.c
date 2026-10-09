@@ -145,12 +145,7 @@ static char * const *seat_environ(struct seat *seat)
 
 static void setup_signals(void)
 {
-	struct sigaction act = {
-		.sa_flags   = SA_RESTART,
-		.sa_handler = handle_sigint,
-	};
-
-	if (sigaction(SIGINT, &act, NULL))
+	if (signal_catch(SIGINT, handle_sigint, SA_RESTART))
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
