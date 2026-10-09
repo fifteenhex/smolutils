@@ -90,8 +90,7 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 	}
 
 	/* Module name can be the name or the file path */
-	name = strrchr(argv[optind], '/');
-	name = name ? name + 1 : argv[optind];
+	name = path_basename(argv[optind]);
 
 	if (strlcpy(buf, name, sizeof(buf)) >= sizeof(buf)) {
 		error("Module name too long\n");
