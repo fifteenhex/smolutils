@@ -275,6 +275,16 @@ static inline char *next_field(char **pos)
 	return start;
 }
 
+static inline int signal_catch(int sig, void (*handler)(int), int flags)
+{
+	struct sigaction act = {
+		.sa_handler = handler,
+		.sa_flags = flags,
+	};
+
+	return sigaction(sig, &act, NULL);
+}
+
 static inline bool parse_ul(const char *s, int base, unsigned long *out)
 {
 	char *end;
