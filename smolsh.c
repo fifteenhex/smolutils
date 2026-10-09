@@ -18,11 +18,8 @@ static void handle_sigint(int sig)
 
 static void setup_signals(void)
 {
-	struct sigaction act = {
-		.sa_handler = handle_sigint,
-	};
-
-	if (sigaction(SIGINT, &act, NULL))
+	/* No SA_RESTART: the read() at the prompt has to come back */
+	if (signal_catch(SIGINT, handle_sigint, 0))
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
