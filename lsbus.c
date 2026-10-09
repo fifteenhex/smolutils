@@ -14,8 +14,7 @@ static int cb_pci(const char *name, int dir, void *priv)
 	unsigned long vendor, device, class;
 	char path[256];
 
-	if (snprintf(path, sizeof(path), "%s/%s", PCI_DEVICES, name)
-	    >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), PCI_DEVICES, name))
 		return 0;
 
 	if (!sysfs_read_number(path, "vendor", &vendor) ||
@@ -48,8 +47,7 @@ static int cb_usb(const char *name, int dir, void *priv)
 	char what[SYSFS_VALUE_MAX];
 	char path[256];
 
-	if (snprintf(path, sizeof(path), "%s/%s", USB_DEVICES, name)
-	    >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), USB_DEVICES, name))
 		return 0;
 
 	if (!sysfs_read_number(path, "busnum", &bus) ||
