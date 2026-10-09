@@ -125,10 +125,8 @@ static int pwd_handler(int argc, char **argv, int stdout)
 static bool parse_seconds(const char *arg, unsigned int *out)
 {
 	unsigned long secs;
-	char *end;
 
-	secs = strtoul(arg, &end, 10);
-	if (end == arg || *end != '\0' || secs > SECONDS_MAX)
+	if (!parse_ul(arg, 10, &secs) || secs > SECONDS_MAX)
 		return false;
 
 	*out = secs;
