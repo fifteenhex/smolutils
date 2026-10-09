@@ -8,17 +8,10 @@ struct multicall_prog {
 	int (*progcb)(int argc, char **argv, char **envp);
 };
 
-/* multicall works on the basename but we might have been called by path */
-static const char *multicall_basename(const char *path)
-{
-	const char *slash = strrchr(path, '/');
-
-	return slash ? slash + 1 : path;
-}
-
 #define MULTICALL_DISPATCH(_progname, _progs)				\
 {									\
-	const char *_name = multicall_basename(_progname);		\
+									\
+	const char *_name = path_basename(_progname);			\
 									\
 	foreach(_prog, _progs) {					\
 		if (strcmp(_prog->progname, _name) == 0)		\
