@@ -105,15 +105,6 @@ static bool show(unsigned long addr, unsigned int len)
 	return true;
 }
 
-static bool parse_number(const char *what, unsigned long *out)
-{
-	char *endptr;
-
-	*out = strtoul(what, &endptr, 0);
-
-	return endptr != what && *endptr == '\0';
-}
-
 int main (int argc, char **argv, char **envp)
 {
 	unsigned long length = DEFAULT_LENGTH;
@@ -125,7 +116,7 @@ int main (int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "l:w:")) != -1) {
 		switch (c) {
 		case 'l':
-			if (!parse_number(optarg, &length) || !length ||
+			if (!parse_ul(optarg, 0, &length) || !length ||
 			    length > MAX_LENGTH) {
 				usage("Not a length: %s\n", optarg);
 				return 1;
@@ -133,7 +124,7 @@ int main (int argc, char **argv, char **envp)
 			break;
 
 		case 'w':
-			if (!parse_number(optarg, &width) ||
+			if (!parse_ul(optarg, 0, &width) ||
 			    (width != 1 && width != 2 && width != 4 &&
 			     width != 8)) {
 				usage("Not a width: %s\n", optarg);
@@ -174,7 +165,7 @@ int main (int argc, char **argv, char **envp)
 	for (i = optind; i < argc; i++) {
 		unsigned long addr;
 
-		if (!parse_number(argv[i], &addr)) {
+		if (!parse_ul(argv[i], 0, &addr)) {
 			error("Not an address: %s\n", argv[i]);
 			ret = 1;
 			continue;
