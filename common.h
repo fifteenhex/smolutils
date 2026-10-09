@@ -275,6 +275,13 @@ static inline char *next_field(char **pos)
 	return start;
 }
 
+static inline const char *path_basename(const char *path)
+{
+	const char *slash = strrchr(path, '/');
+
+	return slash ? slash + 1 : path;
+}
+
 /* String matching */
 
 /* Does a string start with this char array? */
