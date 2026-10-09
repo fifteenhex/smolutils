@@ -204,11 +204,9 @@ static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
 {
 	size_t mapsz = sizeof(struct resolv_buf);
 	unsigned long tmp;
-	char *endptr;
 	int memfd;
 
-	tmp = strtoul(memfd_str, &endptr, 10);
-	if (endptr == memfd_str || *endptr != '\0')
+	if (!parse_ul(memfd_str, 10, &tmp))
 		return -1;
 
 	memfd = tmp;
