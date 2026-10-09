@@ -25,7 +25,6 @@ int main (int argc, char **argv, char **envp)
 	unsigned long length = 0;
 	unsigned long skip = 0;
 	const char *path;
-	char *endptr;
 	off_t sz;
 	int i, j;
 	int c;
@@ -39,24 +38,21 @@ int main (int argc, char **argv, char **envp)
 			break;
 
 		case 'o':
-			offset = strtoul(optarg, &endptr, 0);
-			if (endptr == optarg || *endptr != '\0') {
+			if (!parse_ul(optarg, 0, &offset)) {
 				error("Not an address: %s\n", optarg);
 				return 1;
 			}
 			break;
 
 		case 's':
-			skip = strtoul(optarg, &endptr, 0);
-			if (endptr == optarg || *endptr != '\0') {
+			if (!parse_ul(optarg, 0, &skip)) {
 				error("Not an offset: %s\n", optarg);
 				return 1;
 			}
 			break;
 
 		case 'l':
-			length = strtoul(optarg, &endptr, 0);
-			if (endptr == optarg || *endptr != '\0') {
+			if (!parse_ul(optarg, 0, &length)) {
 				error("Not a length: %s\n", optarg);
 				return 1;
 			}
