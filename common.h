@@ -275,6 +275,12 @@ static inline char *next_field(char **pos)
 	return start;
 }
 
+static inline bool path_join(char *buf, size_t len, const char *dir,
+			     const char *name)
+{
+	return (size_t) snprintf(buf, len, "%s/%s", dir, name) < len;
+}
+
 static inline const char *path_basename(const char *path)
 {
 	const char *slash = strrchr(path, '/');
