@@ -10,7 +10,7 @@ static bool sysfs_read(const char *dir, const char *name,
 {
 	char path[256];
 
-	if (snprintf(path, sizeof(path), "%s/%s", dir, name) >= (int) sizeof(path))
+	if (!path_join(path, sizeof(path), dir, name))
 		return false;
 
 	return read_file(path, out, len);
