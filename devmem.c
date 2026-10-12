@@ -9,6 +9,7 @@
 
 #define DEFAULT_LENGTH	4
 #define MAX_LENGTH	4096
+#define MAX_ADDRESSES	32
 
 #define USAGE_TEXT \
 	"usage: devmem [-l <length>] [-w <width>] [-s <value>] <address>...\n" \
@@ -170,15 +171,32 @@ static bool show(unsigned long addr, unsigned int len)
 	return true;
 }
 
+static bool parse_address(const char *arg, unsigned long width,
+			  unsigned long *addr)
+{
+	if (!parse_ul(arg, 0, addr)) {
+		error("Not an address: %s\n", arg);
+		return false;
+	}
+
+	if (*addr % width) {
+		error("0x%lx isn't %lu byte aligned\n", *addr, width);
+		return false;
+	}
+
+	return true;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	unsigned long length = DEFAULT_LENGTH;
+	unsigned long addrs[MAX_ADDRESSES];
 	unsigned long long value = 0;
 	const char *setarg = NULL;
 	bool have_length = false;
 	int __cleanup_fd fd = -1;
 	unsigned long width = 4;
-	int ret = 0;
+	int naddrs, ret = 0;
 	int i, c;
 
 	while ((c = getopt(argc, argv, "l:w:s:")) != -1) {
@@ -236,6 +254,17 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
+	/* check all of the addresses before touching any of them */
+	naddrs = argc - optind;
+	if (naddrs > MAX_ADDRESSES) {
+		error("Too many addresses, %d is the limit\n", MAX_ADDRESSES);
+		return 1;
+	}
+
+	for (i = 0; i < naddrs; i++)
+		if (!parse_address(argv[optind + i], width, &addrs[i]))
+			return 1;
+
 	if (!setarg) {
 		block = mmap(NULL, MAX_LENGTH, PROT_READ | PROT_WRITE,
 			     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -252,20 +281,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	for (i = optind; i < argc; i++) {
-		unsigned long addr;
-
-		if (!parse_ul(argv[i], 0, &addr)) {
-			error("Not an address: %s\n", argv[i]);
-			ret = 1;
-			continue;
-		}
-
-		if (addr % width) {
-			error("0x%lx isn't %lu byte aligned\n", addr, width);
-			ret = 1;
-			continue;
-		}
+	for (i = 0; i < naddrs; i++) {
+		unsigned long addr = addrs[i];
 
 		if (setarg) {
 			if (!write_block(fd, addr, length, width, value))
