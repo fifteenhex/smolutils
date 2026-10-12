@@ -86,6 +86,7 @@ HEADERS = config.h \
 	  sysfs.h \
 	  dhcpc.h \
 	  later.h \
+	  dungeon.h \
 	  memfd.h \
 	  multicall.h
 
