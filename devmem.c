@@ -10,7 +10,9 @@
 #define DEFAULT_LENGTH	4
 #define MAX_LENGTH	4096
 
-#define USAGE_TEXT	"usage: devmem [-l <length>] [-w <width>] <address>...\n"
+#define USAGE_TEXT \
+	"usage: devmem [-l <length>] [-w <width>] [-s <value>] <address>...\n" \
+	"       -s writes <value> to each address instead of reading\n"
 
 static uint8_t *block;
 
@@ -79,6 +81,27 @@ static void read_one(volatile void *at, uint8_t *to, unsigned int width)
 	}
 }
 
+static void write_one(volatile void *at, uint64_t value, unsigned int width)
+{
+	switch (width) {
+	case 1:
+		*(volatile uint8_t *) at = value;
+		break;
+
+	case 2:
+		*(volatile uint16_t *) at = value;
+		break;
+
+	case 8:
+		*(volatile uint64_t *) at = value;
+		break;
+
+	default:
+		*(volatile uint32_t *) at = value;
+		break;
+	}
+}
+
 static bool read_block(int fd, unsigned long addr, unsigned int len,
 		       unsigned int width)
 {
@@ -90,6 +113,21 @@ static bool read_block(int fd, unsigned long addr, unsigned int len,
 
 	for (i = 0; i < len; i += width)
 		read_one(m.at + i, block + i, width);
+
+	return true;
+}
+
+static bool write_block(int fd, unsigned long addr, unsigned int len,
+			unsigned int width, uint64_t value)
+{
+	struct mapping __cleanup_mapping m = { .mapped = MAP_FAILED };
+	unsigned int i;
+
+	if (!map_block(fd, addr, len, PROT_READ | PROT_WRITE, &m))
+		return false;
+
+	for (i = 0; i < len; i += width)
+		write_one(m.at + i, value, width);
 
 	return true;
 }
@@ -135,12 +173,15 @@ static bool show(unsigned long addr, unsigned int len)
 int main (int argc, char **argv, char **envp)
 {
 	unsigned long length = DEFAULT_LENGTH;
+	unsigned long long value = 0;
+	const char *setarg = NULL;
+	bool have_length = false;
 	int __cleanup_fd fd = -1;
 	unsigned long width = 4;
 	int ret = 0;
 	int i, c;
 
-	while ((c = getopt(argc, argv, "l:w:")) != -1) {
+	while ((c = getopt(argc, argv, "l:w:s:")) != -1) {
 		switch (c) {
 		case 'l':
 			if (!parse_ul(optarg, 0, &length) || !length ||
@@ -148,6 +189,15 @@ int main (int argc, char **argv, char **envp)
 				usage("Not a length: %s\n", optarg);
 				return 1;
 			}
+			have_length = true;
+			break;
+
+		case 's':
+			if (!parse_ull(optarg, 0, &value)) {
+				usage("Not a value: %s\n", optarg);
+				return 1;
+			}
+			setarg = optarg;
 			break;
 
 		case 'w':
@@ -170,20 +220,33 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
+	if (setarg) {
+		if (!have_length)
+			length = width;
+
+		if (width < 8 && (value >> (width * 8))) {
+			error("%s doesn't fit in %lu bytes\n", setarg, width);
+			return 1;
+		}
+	}
+
 	if (length % width) {
-		usage("A length of %lu isn't a whole number of %lu byte reads\n",
+		usage("A length of %lu isn't a whole number of %lu byte accesses\n",
 		      length, width);
 		return 1;
 	}
 
-	block = mmap(NULL, MAX_LENGTH, PROT_READ | PROT_WRITE,
-		     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (block == MAP_FAILED) {
-		error("No room for a %d byte buffer: %d\n", MAX_LENGTH, errno);
-		return 1;
+	if (!setarg) {
+		block = mmap(NULL, MAX_LENGTH, PROT_READ | PROT_WRITE,
+			     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		if (block == MAP_FAILED) {
+			error("No room for a %d byte buffer: %d\n", MAX_LENGTH,
+			      errno);
+			return 1;
+		}
 	}
 
-	fd = open(DEVMEM_PATH, O_RDONLY);
+	fd = open(DEVMEM_PATH, setarg ? O_RDWR : O_RDONLY);
 	if (fd < 0) {
 		error("Failed to open %s: %d\n", DEVMEM_PATH, errno);
 		return 1;
@@ -201,6 +264,12 @@ int main (int argc, char **argv, char **envp)
 		if (addr % width) {
 			error("0x%lx isn't %lu byte aligned\n", addr, width);
 			ret = 1;
+			continue;
+		}
+
+		if (setarg) {
+			if (!write_block(fd, addr, length, width, value))
+				ret = 1;
 			continue;
 		}
 
