@@ -10,6 +10,8 @@
 #define DEFAULT_LENGTH	4
 #define MAX_LENGTH	4096
 
+#define USAGE_TEXT	"usage: devmem [-l <length>] [-w <width>] <address>...\n"
+
 static uint8_t *block;
 
 struct mapping {
@@ -156,13 +158,13 @@ int main (int argc, char **argv, char **envp)
 			break;
 
 		default:
-			usage("usage: devmem [-l <length>] [-w <width>] <address>...\n");
+			usage(USAGE_TEXT);
 			return 1;
 		}
 	}
 
 	if (optind == argc) {
-		usage("usage: devmem [-l <length>] [-w <width>] <address>...\n");
+		usage(USAGE_TEXT);
 		return 1;
 	}
 
