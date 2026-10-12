@@ -6,6 +6,10 @@
 /* State directory for managed, backgrounded processes */
 #define DUNGEON_DIR	SMOL_RUN_DIR "/dungeon"
 
+/* These might need tweaking in the future, these will be passed by the kernel cmdline */
+#define DUNGEON_ARGS	16
+#define DUNGEON_CMD_MAX	256
+
 /* create pre-process directory */
 static inline int dungeon_make_dir(char *dir, size_t len, const char *path)
 {
@@ -79,6 +83,62 @@ static inline bool dungeon_alive(pid_t pid)
 		return false;
 
 	return !kill(pid, 0) || errno == EPERM;
+}
+
+/* Save argv one line per entry */
+static inline void dungeon_write_cmd(const char *dir, char * const argv[])
+{
+	char buf[DUNGEON_CMD_MAX];
+	char path[160];
+	size_t len = 0;
+	int i;
+
+	for (i = 0; argv[i]; i++) {
+		int n = snprintf(buf + len, sizeof(buf) - len, "%s\n", argv[i]);
+
+		if (n < 0 || len + n >= sizeof(buf)) {
+			error("Command too long for %s\n", dir);
+			return;
+		}
+
+		len += n;
+	}
+
+	path_join(path, sizeof(path), dir, "cmd");
+	write_file(path, buf, len);
+}
+
+/* Load argv from one line per entry */
+static inline int dungeon_read_cmd(const char *dir, char *buf, size_t len,
+				   char **argv, int max)
+{
+	char path[160];
+	char *p = buf;
+	int num = 0;
+
+	path_join(path, sizeof(path), dir, "cmd");
+
+	if (!read_file(path, buf, len))
+		return -1;
+
+	while (*p) {
+		char *nl = strchr(p, '\n');
+
+		if (num == max)
+			return -1;
+
+		argv[num++] = p;
+
+		if (!nl)
+			break;
+
+		*nl = '\0';
+		p = nl + 1;
+	}
+
+	argv[num] = NULL;
+
+	return num;
 }
 
 #endif /* _SMOLUTILS_DUNGEON_H */
