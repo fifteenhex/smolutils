@@ -62,4 +62,23 @@ static inline int dungeon_open_stdio(const char *dir, int *fds)
 	return 0;
 }
 
+static inline pid_t dungeon_read_pid(const char *dir)
+{
+	unsigned long pid;
+
+	if (!read_number_in(dir, "pid", &pid))
+		return -ENOENT;
+
+	return pid;
+}
+
+/* ping a pid, EPERM means the pid is valid but its not ours */
+static inline bool dungeon_alive(pid_t pid)
+{
+	if (pid <= 0)
+		return false;
+
+	return !kill(pid, 0) || errno == EPERM;
+}
+
 #endif /* _SMOLUTILS_DUNGEON_H */
