@@ -64,6 +64,7 @@ static bool parse_cmdline_telnetd(const char *arg)
 struct minion {
 	char *argv[DUNGEON_ARGS + 1];
 	pid_t pid;
+	uint32_t started;
 };
 
 static struct minion minions[8];
@@ -212,8 +213,15 @@ static int spawn_minion(struct minion *minion)
 		return -1;
 
 	minion->pid = dungeon_spawn(dir, minion->argv, environ, false);
+	if (minion->pid < 0)
+		return -1;
 
-	return minion->pid < 0 ? -1 : 0;
+	minion->started = later_now();
+
+	/* record the owner as init, this might need to be moved to the dungeon header */
+	write_number_in(dir, "keptby", getpid());
+
+	return 0;
 }
 
 static void start_minions(void)
@@ -226,6 +234,54 @@ static void start_minions(void)
 	for (i = 0; i < num_minions; i++)
 		if (spawn_minion(&minions[i]))
 			error("Failed to start %s\n", minions[i].argv[0]);
+}
+
+static bool minion_restartable(struct minion *minion, int status)
+{
+	/*
+	 * minions killed by a signal can restart immediately
+	 * otherwise killing one within the timeout would perma-kill it.
+	 */
+	if (WIFSIGNALED(status))
+		return true;
+
+	/*
+	 * For everything else if it died within the timeout don't restart
+	 * if it died shortly after starting to avoid constantly restarting
+	 * something that is broken or crashing.
+	 */
+	if (later_now() - minion->started < 1) {
+		error("%s insta-died, not restarting\n", minion->argv[0]);
+		return false;
+	}
+
+	return true;
+}
+
+/* Restart a minion but avoid something that insta-dies from constantly restarting */
+static void minion_exited(pid_t pid, int status)
+{
+	unsigned i;
+
+	if (!is_enabled(CONFIG_MINIONS))
+		return;
+
+	for (i = 0; i < num_minions; i++) {
+		struct minion *minion = &minions[i];
+
+		if (minion->pid != pid)
+			continue;
+
+		if (!minion_restartable(minion, status)) {
+			minion->pid = -1;
+			return;
+		}
+
+		if (spawn_minion(minion))
+			error("Failed to restart %s\n", minion->argv[0]);
+
+		return;
+	}
 }
 
 /* Empty on purpose, it just has to interrupt wait() */
@@ -467,6 +523,8 @@ static int prog_init(int argc, char **argv, char **envp)
 				break;
 			}
 		}
+
+		minion_exited(pid, status);
 	}
 
 	return 0;
