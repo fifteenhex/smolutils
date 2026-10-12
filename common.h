@@ -326,6 +326,46 @@ static inline const char *path_basename(const char *path)
 	return slash ? slash + 1 : path;
 }
 
+static inline bool read_file_in(const char *dir, const char *name,
+				char *out, size_t len)
+{
+	char path[256];
+
+	if (!path_join(path, sizeof(path), dir, name))
+		return false;
+
+	return read_file(path, out, len);
+}
+
+static inline bool read_number_in(const char *dir, const char *name,
+				  unsigned long *out)
+{
+	char tmp[128];
+	char *end;
+
+	if (!read_file_in(dir, name, tmp, sizeof(tmp)))
+		return false;
+
+	*out = strtoul(tmp, &end, 0);
+
+	return end != tmp;
+}
+
+static inline bool write_number_in(const char *dir, const char *name,
+				   unsigned long value)
+{
+	char path[256];
+	char buf[32];
+	int len;
+
+	if (!path_join(path, sizeof(path), dir, name))
+		return false;
+
+	len = snprintf(buf, sizeof(buf), "%lu\n", value);
+
+	return !write_file(path, buf, len);
+}
+
 /* String matching */
 
 /* Does a string start with this char array? */
