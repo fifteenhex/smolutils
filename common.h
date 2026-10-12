@@ -209,6 +209,25 @@ static inline bool read_file(const char *path, char *out, size_t len)
 	return true;
 }
 
+/* Create a file (if needed) and jam a buffer into it */
+static int write_file(const char *path, const void *what, size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd < 0) {
+		error("Failed to open %s: %d\n", path, errno);
+		return -1;
+	}
+
+	if (write(fd, what, len) != (int) len) {
+		error("Failed to write %s: %d\n", path, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
 /* Read a file line by line, calling cb() for each */
 static inline int read_lines(const char *path, char *buf, size_t len,
 			     void (*cb)(char *line, void *priv), void *priv)

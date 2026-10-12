@@ -498,24 +498,6 @@ static int find_opt_u8(struct dhcp_packet *p, uint8_t code, uint8_t *opt)
 	return 0;
 }
 
-static int write_file(const char *path, const void *what, size_t len)
-{
-	int __cleanup_fd fd = -1;
-
-	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
-		return -1;
-	}
-
-	if (write(fd, what, len) != (int) len) {
-		error("Failed to write %s: %d\n", path, errno);
-		return -1;
-	}
-
-	return 0;
-}
-
 /* Write out a state file for nosey processes to look at */
 static void write_state(const struct config *config)
 {
