@@ -343,10 +343,10 @@ static inline const char *path_basename(const char *path)
  *
  * returns a pid or -1 to the caller.
  */
-static __attribute__((noinline)) int spawn_redirect(const char *path,
-						    char * const argv[],
-						    char * const envp[],
-						    const int *fds)
+static __attribute__((noinline)) int __spawn(const char *path,
+					     char * const argv[],
+					     char * const envp[],
+					     const int *fds, bool detach)
 {
 	volatile pid_t pid;
 
@@ -358,6 +358,9 @@ static __attribute__((noinline)) int spawn_redirect(const char *path,
 	if (!pid) {
 		int i;
 
+		if (detach)
+			setsid();
+
 		for (i = 0; fds && i < 3; i++) {
 			if (fds[i] >= 0 && fds[i] != i)
 				dup2(fds[i], i);
@@ -368,6 +371,18 @@ static __attribute__((noinline)) int spawn_redirect(const char *path,
 	}
 
 	return pid;
+}
+
+static int spawn_redirect(const char *path, char * const argv[],
+			  char * const envp[], const int *fds)
+{
+	return __spawn(path, argv, envp, fds, false);
+}
+
+static int spawn_detached(const char *path, char * const argv[],
+			  char * const envp[], const int *fds)
+{
+	return __spawn(path, argv, envp, fds, true);
 }
 
 static int spawn(const char *path, char * const argv[], char * const envp[])
