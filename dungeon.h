@@ -141,4 +141,32 @@ static inline int dungeon_read_cmd(const char *dir, char *buf, size_t len,
 	return num;
 }
 
+/* spawn a process inside a dungeon */
+static inline pid_t dungeon_spawn(const char *dir, char * const argv[],
+				  char * const envp[], bool detach)
+{
+	int fds[3];
+	pid_t pid;
+
+	if (dungeon_open_stdio(dir, fds))
+		return -1;
+
+	if (detach)
+		pid = spawn_detached(argv[0], argv, envp, fds);
+	else
+		pid = spawn_redirect(argv[0], argv, envp, fds);
+
+	dungeon_close_stdio(fds);
+
+	if (pid < 0) {
+		error("Failed to run %s: %d\n", argv[0], errno);
+		return -1;
+	}
+
+	dungeon_write_cmd(dir, argv);
+	write_number_in(dir, "pid", pid);
+
+	return pid;
+}
+
 #endif /* _SMOLUTILS_DUNGEON_H */
