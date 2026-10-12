@@ -12,27 +12,52 @@
 
 static uint8_t *block;
 
-static bool read_block(int fd, unsigned long addr, unsigned int len,
-		       unsigned int width)
+struct mapping {
+	volatile char *at;
+	void *mapped;
+	unsigned long span;
+};
+
+static void cleanup_mapping(struct mapping *m)
+{
+	if (m->mapped != MAP_FAILED)
+		munmap(m->mapped, m->span);
+}
+
+#define __cleanup_mapping __attribute__((cleanup(cleanup_mapping)))
+
+static bool map_block(int fd, unsigned long addr, unsigned int len, int prot,
+		      struct mapping *m)
 {
 	unsigned long page = getpagesize();
 	unsigned long base = addr & ~(page - 1);
 	unsigned long into = addr - base;
-	unsigned long span = into + len;
-	volatile void *mapped;
-	unsigned int i;
 
-	span = (span + page - 1) & ~(page - 1);
+	m->span = (into + len + page - 1) & ~(page - 1);
 
-	mapped = mmap(NULL, span, PROT_READ, MAP_SHARED, fd, base);
-	if (mapped == MAP_FAILED) {
+	m->mapped = mmap(NULL, m->span, prot, MAP_SHARED, fd, base);
+	if (m->mapped == MAP_FAILED) {
 		error("Failed to map %s at 0x%lx: %d\n",
 		      DEVMEM_PATH, base, errno);
 		return false;
 	}
 
+	m->at = (volatile char *) m->mapped + into;
+
+	return true;
+}
+
+static bool read_block(int fd, unsigned long addr, unsigned int len,
+		       unsigned int width)
+{
+	struct mapping __cleanup_mapping m = { .mapped = MAP_FAILED };
+	unsigned int i;
+
+	if (!map_block(fd, addr, len, PROT_READ, &m))
+		return false;
+
 	for (i = 0; i < len; i += width) {
-		volatile void *at = (volatile char *) mapped + into + i;
+		volatile void *at = m.at + i;
 
 		switch (width) {
 		case 1:
@@ -61,8 +86,6 @@ static bool read_block(int fd, unsigned long addr, unsigned int len,
 		}
 		}
 	}
-
-	munmap((void *) mapped, span);
 
 	return true;
 }
