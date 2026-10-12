@@ -7,6 +7,7 @@
 #include "common.h"
 #include "cmdline.h"
 #include "later.h"
+#include "dungeon.h"
 #include "multicall.h"
 
 /* Signals for controlling halt, poweroff, reboot, matches busybox */
@@ -28,6 +29,7 @@ static volatile int shutdown_cmd;
 /* The rest of them are startup's, it gets handed the same list */
 static const char cmdline_opt_getty[] = "getty=";
 static const char cmdline_opt_telnetd[] = "telnetd=";
+static const char cmdline_opt_minion[] = "minion=";
 
 struct getty {
 	const char *tty_path;
@@ -55,6 +57,56 @@ static bool parse_cmdline_telnetd(const char *arg)
 	telnetd_port = *val ? val : "23";
 
 	verbose("Will start telnetd on port %s\n", telnetd_port);
+
+	return true;
+}
+
+struct minion {
+	char *argv[DUNGEON_ARGS + 1];
+	pid_t pid;
+};
+
+static struct minion minions[8];
+static unsigned num_minions = 0;
+
+static bool parse_cmdline_minion(const char *arg)
+{
+	struct minion *minion;
+	const char *val;
+	char *pos, *field;
+	int num = 0;
+
+	if (!is_enabled(CONFIG_MINIONS))
+		return false;
+
+	val = cmdline_option(arg, cmdline_opt_minion);
+	if (!val)
+		return false;
+
+	if (num_minions >= ARRAY_SIZE(minions)) {
+		error("Too many minions\n");
+		return true;
+	}
+
+	minion = &minions[num_minions];
+
+	pos = (char *) val;
+	while ((field = next_field(&pos))) {
+		if (num == DUNGEON_ARGS) {
+			error("Too many arguments: %s\n", val);
+			return true;
+		}
+
+		minion->argv[num++] = field;
+	}
+
+	if (!num) {
+		error("Nothing to run: %s\n", arg);
+		return true;
+	}
+
+	verbose("minion created for %s\n", minion->argv[0]);
+	num_minions++;
 
 	return true;
 }
@@ -89,6 +141,9 @@ static void parse_cmdline(int argc, char **argv)
 		}
 
 		if (parse_cmdline_telnetd(arg))
+			continue;
+
+		if (parse_cmdline_minion(arg))
 			continue;
 	}
 }
@@ -145,6 +200,32 @@ static int spawn_telnetd(void)
 	telnetd_pid = spawn(TELNETD_PATH, newargv, environ);
 
 	return telnetd_pid < 0 ? -1 : 0;
+}
+
+static int spawn_minion(struct minion *minion)
+{
+	char dir[128];
+
+	minion->pid = -1;
+
+	if (dungeon_make_dir(dir, sizeof(dir), minion->argv[0]))
+		return -1;
+
+	minion->pid = dungeon_spawn(dir, minion->argv, environ, false);
+
+	return minion->pid < 0 ? -1 : 0;
+}
+
+static void start_minions(void)
+{
+	unsigned i;
+
+	if (!is_enabled(CONFIG_MINIONS))
+		return;
+
+	for (i = 0; i < num_minions; i++)
+		if (spawn_minion(&minions[i]))
+			error("Failed to start %s\n", minions[i].argv[0]);
 }
 
 /* Empty on purpose, it just has to interrupt wait() */
@@ -329,6 +410,8 @@ static int prog_init(int argc, char **argv, char **envp)
 
 	if (telnetd_port && spawn_telnetd())
 		debug("Failed to spawn telnetd\n");
+
+	start_minions();
 
 	/* Now sit in wait for one of the gettys to exit */
 	while (true) {

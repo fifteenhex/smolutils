@@ -70,6 +70,7 @@ Even for the mmu enjoyers out there:
 
 - net       - Add networking utils
 - modules   - Add modules support
+- minions   - Init managed background processes
 - initramfs - Support for running as an initramfs
 
 ### No config files
@@ -88,6 +89,7 @@ Currently these parameters are implemented:
 - `smolinit.hostname=<string>`          - Set the hostname, only the first instance is used.
 - `smolinit.insmod=<module>`            - Causes a module to be insmod'd, this can be specificed multiple times and happens before dhcp etc
 - `smolinit.dhcpif=<network interface>` - Causes DHCP to be used to configure this interface, for now only the first instance is used
+- `smolinit.minion="<program> [args]"`  - A program to start backgrounds and managed (restarted) by init.
 
 ### DNS resolver
 

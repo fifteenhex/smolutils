@@ -29,6 +29,11 @@
 #define CONFIG_TELNETD	y
 #endif
 
+/* Init managed background processes */
+#ifndef CONFIG_MINIONS
+#define CONFIG_MINIONS	y
+#endif
+
 /* Wait on dhcp to finish during startup */
 #ifndef CONFIG_DHCP_WAIT
 #define CONFIG_DHCP_WAIT	y
