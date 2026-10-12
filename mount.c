@@ -18,6 +18,12 @@ struct mount_option {
 static const struct mount_option mount_options[] = {
 	{ "ro", MS_RDONLY },
 	{ "rw", MS_RDONLY, true },
+	{ "remount", MS_REMOUNT },
+	{ "noatime", MS_NOATIME },
+	{ "nodev", MS_NODEV },
+	{ "noexec", MS_NOEXEC },
+	{ "nosuid", MS_NOSUID },
+	{ "sync", MS_SYNCHRONOUS },
 };
 
 static const struct mount_option *find_option(const char *name, int len)
