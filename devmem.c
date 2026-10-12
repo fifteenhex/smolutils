@@ -49,6 +49,36 @@ static bool map_block(int fd, unsigned long addr, unsigned int len, int prot,
 	return true;
 }
 
+static void read_one(volatile void *at, uint8_t *to, unsigned int width)
+{
+	switch (width) {
+	case 1:
+		*to = *(volatile uint8_t *) at;
+		break;
+
+	case 2: {
+		uint16_t v = *(volatile uint16_t *) at;
+
+		memcpy(to, &v, sizeof(v));
+		break;
+	}
+
+	case 8: {
+		uint64_t v = *(volatile uint64_t *) at;
+
+		memcpy(to, &v, sizeof(v));
+		break;
+	}
+
+	default: {
+		uint32_t v = *(volatile uint32_t *) at;
+
+		memcpy(to, &v, sizeof(v));
+		break;
+	}
+	}
+}
+
 static bool read_block(int fd, unsigned long addr, unsigned int len,
 		       unsigned int width)
 {
@@ -58,36 +88,8 @@ static bool read_block(int fd, unsigned long addr, unsigned int len,
 	if (!map_block(fd, addr, len, PROT_READ, &m))
 		return false;
 
-	for (i = 0; i < len; i += width) {
-		volatile void *at = m.at + i;
-
-		switch (width) {
-		case 1:
-			block[i] = *(volatile uint8_t *) at;
-			break;
-
-		case 2: {
-			uint16_t v = *(volatile uint16_t *) at;
-
-			memcpy(block + i, &v, sizeof(v));
-			break;
-		}
-
-		case 8: {
-			uint64_t v = *(volatile uint64_t *) at;
-
-			memcpy(block + i, &v, sizeof(v));
-			break;
-		}
-
-		default: {
-			uint32_t v = *(volatile uint32_t *) at;
-
-			memcpy(block + i, &v, sizeof(v));
-			break;
-		}
-		}
-	}
+	for (i = 0; i < len; i += width)
+		read_one(m.at + i, block + i, width);
 
 	return true;
 }
