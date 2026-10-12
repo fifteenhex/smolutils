@@ -3,6 +3,8 @@
 #include "config.h"
 #include "common.h"
 
+#include <linux/fs.h>
+
 #define LONESHA256_STATIC
 #include "thirdparty/lonesha256.h"
 
@@ -25,6 +27,7 @@ int main (int argc, char **argv, char **envp)
 {
 	unsigned char out[32] = {0};
 	struct stat st;
+	size_t size;
 	char *path;
 
 	if (argc != 2)
@@ -43,12 +46,23 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	if (!S_ISREG(st.st_mode)) {
-		error("%s isn't a regular file\n", path);
+	if (S_ISREG(st.st_mode)) {
+		size = st.st_size;
+	} else if (S_ISBLK(st.st_mode)) {
+		unsigned long long blksize;
+
+		if (ioctl(fd, BLKGETSIZE64, &blksize)) {
+			verbose("Failed to size block device %s: %d\n", path, errno);
+			return 1;
+		}
+
+		size = blksize;
+	} else {
+		error("%s isn't a file or a block device\n", path);
 		return 1;
 	}
 
-	if (lonesha256_stream(out, read_block, st.st_size)) {
+	if (lonesha256_stream(out, read_block, size)) {
 		error("Failed to read %s: %d\n", path, errno);
 		return 1;
 	}
