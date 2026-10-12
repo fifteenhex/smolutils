@@ -62,6 +62,10 @@
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
+					"mknod": {
+						"type": "symlink",
+						"target": "/lib/smol/files"
+					},
 					"kill": {
 						"type": "symlink",
 						"target": "/lib/smol/process"

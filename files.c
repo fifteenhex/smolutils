@@ -206,6 +206,54 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#ifndef makedev
+/* nolibc doesn't have this, copy glibc */
+#define makedev(_ma, _mi)		\
+	((((_ma) & 0xfff) << 8) |	\
+	 ((_mi) & 0xff) |		\
+	 (((_mi) & ~0xff) << 12))
+#endif
+
+static int prog_mknod(int argc, char **argv, char **envp)
+{
+	unsigned long major, minor;
+	const char *path;
+	mode_t mode;
+
+	if (argc != 5) {
+		usage("usage: mknod <path> b|c <major> <minor>\n");
+		return 1;
+	}
+
+	path = argv[1];
+
+	if (!strcmp(argv[2], "b"))
+		mode = S_IFBLK;
+	else if (!strcmp(argv[2], "c"))
+		mode = S_IFCHR;
+	else {
+		error("Not a node type: %s\n", argv[2]);
+		return 1;
+	}
+
+	if (!parse_ul(argv[3], 0, &major)) {
+		error("Couldn't parse major: %s\n", argv[3]);
+		return 1;
+	}
+
+	if (!parse_ul(argv[4], 0, &minor)) {
+		error("Couldn't parse minor: %s\n", argv[4]);
+		return 1;
+	}
+
+	if (mknod(path, mode | 0600, makedev(major, minor))) {
+		error("mknod(%s) failed: %d\n", path, errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int cat_fd(int fd)
 {
 	char buf[4096];
@@ -339,6 +387,7 @@ static const struct multicall_prog progs[] = {
 	{ "ln", prog_ln },
 	{ "mv", prog_mv },
 	{ "mkdir", prog_mkdir },
+	{ "mknod", prog_mknod },
 	{ "rm", prog_rm },
 	{ "rmdir", prog_rmdir },
 	{ "cat", prog_cat },
