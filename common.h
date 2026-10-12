@@ -313,6 +313,15 @@ static inline bool parse_ul(const char *s, int base, unsigned long *out)
 	return end != s && *end == '\0';
 }
 
+static inline bool parse_ull(const char *s, int base, unsigned long long *out)
+{
+	char *end;
+
+	*out = strtoull(s, &end, base);
+
+	return end != s && *end == '\0';
+}
+
 static inline bool path_join(char *buf, size_t len, const char *dir,
 			     const char *name)
 {
