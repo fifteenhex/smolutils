@@ -76,6 +76,16 @@ static inline pid_t dungeon_read_pid(const char *dir)
 	return pid;
 }
 
+static inline pid_t dungeon_read_keptby(const char *dir)
+{
+	unsigned long pid;
+
+	if (!read_number_in(dir, "keptby", &pid))
+		return -ENOENT;
+
+	return pid;
+}
+
 /* ping a pid, EPERM means the pid is valid but its not ours */
 static inline bool dungeon_alive(pid_t pid)
 {
@@ -165,6 +175,9 @@ static inline pid_t dungeon_spawn(const char *dir, char * const argv[],
 
 	dungeon_write_cmd(dir, argv);
 	write_number_in(dir, "pid", pid);
+
+	/* What pid is looking after this process */
+	write_number_in(dir, "keptby", detach ? 0 : getpid());
 
 	return pid;
 }

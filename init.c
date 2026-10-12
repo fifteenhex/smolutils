@@ -218,9 +218,6 @@ static int spawn_minion(struct minion *minion)
 
 	minion->started = later_now();
 
-	/* record the owner as init, this might need to be moved to the dungeon header */
-	write_number_in(dir, "keptby", getpid());
-
 	return 0;
 }
 
