@@ -34,6 +34,11 @@
 #define CONFIG_MINIONS	y
 #endif
 
+/* keeper, start background processes from the shell */
+#ifndef CONFIG_KEEPER
+#define CONFIG_KEEPER	y
+#endif
+
 /* Wait on dhcp to finish during startup */
 #ifndef CONFIG_DHCP_WAIT
 #define CONFIG_DHCP_WAIT	y

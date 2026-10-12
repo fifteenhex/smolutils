@@ -171,6 +171,9 @@
 				},
 				"entities": {
 					"getty": { },
+					"keeper": {
+						"feature": "keeper"
+					},
 					"insmod": {
 						"type": "symlink",
 						"target": "/lib/smol/modules",

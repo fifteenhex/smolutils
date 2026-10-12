@@ -35,6 +35,7 @@ Even for the mmu enjoyers out there:
 | init      |          |                            |                     |
 | insmod    |          | modules                    |                     |
 | ip        |          |                            |                     |
+| keeper    |          |                            | daemonise a program |
 | kill      |          | process                    |                     |
 | less      | stub     |                            |                     |
 | ln        |          | files                      |                     |
@@ -71,6 +72,7 @@ Even for the mmu enjoyers out there:
 - net       - Add networking utils
 - modules   - Add modules support
 - minions   - Init managed background processes
+- keeper    - Start background processes as a user
 - initramfs - Support for running as an initramfs
 
 ### No config files

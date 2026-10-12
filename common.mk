@@ -74,6 +74,13 @@ ifneq ($(filter minions,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_MINIONS=n
 endif
 
+ifneq ($(filter keeper,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_KEEPER=n
+else
+PROGS_SYSTEM += keeper
+_TARWAKFEATURES += -fkeeper
+endif
+
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
 	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
 
