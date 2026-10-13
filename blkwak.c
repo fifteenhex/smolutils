@@ -9,12 +9,14 @@
 #include <linux/fs.h>
 
 #define DEFAULT_BS	(64 * 1024)
+#define MAX_BS		(1024 * 1024)
 #define SECTOR		512
 
 #define USAGE \
-	"usage: blkwak <command> <dev> ...\n" \
+	"usage: blkwak [-b <bs>] <command> <dev> ...\n" \
 	"       info <dev>\n" \
-	"       read <dev> <file> [off] [len]      device -> file\n"
+	"       read <dev> <file> [off] [len]      device -> file\n" \
+	"       -b read/write buffer size\n"
 
 struct blk {
 	unsigned long long size;
@@ -187,17 +189,36 @@ int main (int argc, char **argv, char **envp)
 {
 	struct blk __cleanup_blk b = { .fd = -1 };
 	const struct command *cmd = NULL;
-	if (argc < 3) {
+	unsigned long long v;
+	int c;
+
+	while ((c = getopt(argc, argv, "b:")) != -1) {
+		switch (c) {
+		case 'b':
+			if (!parse_size(optarg, &v) || !v || v > MAX_BS) {
+				error("Not a buffer size: %s\n", optarg);
+				return 1;
+			}
+			bs = v;
+			break;
+
+		default:
+			usage(USAGE);
+			return 1;
+		}
+	}
+
+	if (argc - optind < 2) {
 		usage(USAGE);
 		return 1;
 	}
 
 	foreach(cmdp, commands)
-		if (!strcmp(cmdp->name, argv[1]))
+		if (!strcmp(cmdp->name, argv[optind]))
 			cmd = cmdp;
 
 	if (!cmd) {
-		error("Unknown command: %s\n", argv[1]);
+		error("Unknown command: %s\n", argv[optind]);
 		return 1;
 	}
 
@@ -207,8 +228,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	if (open_blk(&b, argv[2], cmd->writes ? O_RDWR : O_RDONLY))
+	if (open_blk(&b, argv[optind + 1], cmd->writes ? O_RDWR : O_RDONLY))
 		return 1;
 
-	return cmd->run(&b, argc - 3, argv + 3);
+	return cmd->run(&b, argc - optind - 2, argv + optind + 2);
 }
