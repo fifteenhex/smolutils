@@ -63,6 +63,17 @@
 #define usage(...)
 #endif
 
+/* Overflow safe(TM) bounds etc checking helpers */
+
+/* Does (_off + _len) fit into _total, taking care that (_off + _len) didn't overflow */
+#define off_len_fits(_off, _len, _total)				\
+({									\
+	__typeof__((_total) + 0) __olf_end;				\
+									\
+	!__builtin_add_overflow((_off), (_len), &__olf_end) &&		\
+	__olf_end <= (_total);						\
+})
+
 /* File stuff */
 
 static off_t file_size(int fd) {
