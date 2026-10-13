@@ -8,11 +8,13 @@
 
 #include <linux/fs.h>
 
+#define DEFAULT_BS	(64 * 1024)
 #define SECTOR		512
 
 #define USAGE \
 	"usage: blkwak <command> <dev> ...\n" \
-	"       info <dev>\n"
+	"       info <dev>\n" \
+	"       read <dev> <file>                  device -> file\n"
 
 struct blk {
 	unsigned long long size;
@@ -26,6 +28,9 @@ static void cleanup_blk(struct blk *b)
 }
 
 #define __cleanup_blk __attribute__((cleanup(cleanup_blk)))
+
+static unsigned int bs = DEFAULT_BS;
+static uint8_t *buf;
 
 static int open_blk(struct blk *b, const char *path, int flags)
 {
@@ -57,6 +62,25 @@ static int open_blk(struct blk *b, const char *path, int flags)
 	return 0;
 }
 
+static int read_at(const struct blk *b, unsigned long long off, unsigned int n)
+{
+	int got;
+
+	if (lseek(b->fd, off, SEEK_SET) != (off_t) off) {
+		error("Failed to seek to 0x%llx: %d\n", off, errno);
+		return -1;
+	}
+
+	got = read_full(b->fd, buf, n);
+	if (got != (int) n) {
+		error("Short read at 0x%llx: wanted %u got %d, errno %d\n",
+		      off, n, got, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int cmd_info(struct blk *b, int argc, char **argv)
 {
 	int sector = 0;
@@ -77,6 +101,41 @@ static int cmd_info(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static int cmd_read(struct blk *b, int argc, char **argv)
+{
+	unsigned long long done = 0;
+	int __cleanup_fd out = -1;
+
+	if (argc != 1) {
+		usage(USAGE);
+		return 1;
+	}
+
+	out = open(argv[0], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (out < 0) {
+		error("Failed to open %s: %d\n", argv[0], errno);
+		return 1;
+	}
+
+	while (done < b->size) {
+		unsigned int n = b->size - done > bs ? bs : b->size - done;
+
+		if (read_at(b, done, n))
+			return 1;
+
+		if (write_full(out, buf, n)) {
+			error("Failed to write %s: %d\n", argv[0], errno);
+			return 1;
+		}
+
+		done += n;
+	}
+
+	info("read %llu bytes\n", done);
+
+	return 0;
+}
+
 struct command {
 	const char *name;
 	int (*run)(struct blk *b, int argc, char **argv);
@@ -85,13 +144,13 @@ struct command {
 
 static const struct command commands[] = {
 	{ "info", cmd_info, false },
+	{ "read", cmd_read, false },
 };
 
 int main (int argc, char **argv, char **envp)
 {
 	struct blk __cleanup_blk b = { .fd = -1 };
 	const struct command *cmd = NULL;
-
 	if (argc < 3) {
 		usage(USAGE);
 		return 1;
@@ -103,6 +162,12 @@ int main (int argc, char **argv, char **envp)
 
 	if (!cmd) {
 		error("Unknown command: %s\n", argv[1]);
+		return 1;
+	}
+
+	buf = malloc(bs);
+	if (!buf) {
+		error("No room for a %u byte buffer\n", bs);
 		return 1;
 	}
 
