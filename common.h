@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_COMMON_H
 #define _SMOLUTILS_COMMON_H
 
+#define __smol_always_inline inline __attribute__((always_inline))
+
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof(_a[0]))
 
 #define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
