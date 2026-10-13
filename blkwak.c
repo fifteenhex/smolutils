@@ -93,7 +93,7 @@ static bool parse_region(const struct blk *b, int argc, char **argv,
 	if (!*len)
 		*len = b->size - *off;
 
-	if (*off + *len > b->size) {
+	if (!off_len_fits(*off, *len, b->size)) {
 		error("0x%llx + 0x%llx is past the end\n", *off, *len);
 		return false;
 	}
@@ -225,7 +225,7 @@ static int compare_image(const struct blk *b, int in, unsigned long long off)
 	while ((got = read_full(in, data, bs)) > 0) {
 		unsigned int i;
 
-		if (off + done + got > b->size) {
+		if (!off_len_fits(off + done, got, b->size)) {
 			error("0x%llx + %u is past the end of the device\n",
 			      off + done, got);
 			goto out;
@@ -279,7 +279,7 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 		return 1;
 
 	while ((got = read_full(in, buf, bs)) > 0) {
-		if (off + done + got > b->size) {
+		if (!off_len_fits(off + done, got, b->size)) {
 			error("0x%llx + %u is past the end of the device\n",
 			      off + done, got);
 			return 1;
