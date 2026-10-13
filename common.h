@@ -97,6 +97,21 @@ static bool is_chardev(int fd)
 	return S_ISCHR(st.st_mode);
 }
 
+static __smol_always_inline bool __is_regfile(struct stat *st)
+{
+	return S_ISREG(st->st_mode);
+}
+
+static inline bool is_regfile(int fd)
+{
+	struct stat st;
+
+	if (fstat(fd, &st) == -1)
+		return false;
+
+	return __is_regfile(&st);
+}
+
 /* Do two fd's point to the same file? */
 static bool __same_file(struct stat *sa, struct stat *sb)
 {
