@@ -184,6 +184,17 @@ static int open_img(struct img *i, const char *path, int flags, mode_t mode)
 	return 0;
 }
 
+static bool is_nonsense(struct blk *b, struct img *img)
+{
+	/* Don't bother playing games with the block and image being the same thing */
+	if (__same_file(&b->st, &img->st)) {
+		error("Don't pass the same thing for block device and image\n");
+		return true;
+	}
+
+	return false;
+}
+
 static int cmd_read(struct blk *b, int argc, char **argv)
 {
 	struct img __cleanup_img out = { .fd = -1 };
@@ -197,8 +208,17 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	if (open_img(&out, argv[0], O_WRONLY | O_CREAT | O_TRUNC, 0644))
+	if (open_img(&out, argv[0], O_WRONLY | O_CREAT, 0644))
 		return 1;
+
+	if (is_nonsense(b, &out))
+		return 1;
+
+	/* If the output is a normal file truncate it first, maybe we need a notrunc mode later? */
+	if (__is_regfile(&out.st) && ftruncate(out.fd, 0)) {
+		error("Failed to truncate %s: %d\n", argv[0], errno);
+		return 1;
+	}
 
 	while (done < len) {
 		unsigned int n = len - done > bs ? bs : len - done;
@@ -292,6 +312,9 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 	if (open_img(&in, argv[0], O_RDONLY, 0))
 		return 1;
 
+	if (is_nonsense(b, &in))
+		return 1;
+
 	while ((got = read_full(in.fd, buf, bs)) > 0) {
 		if (!off_len_fits(off + done, got, b->size)) {
 			error("0x%llx + %u is past the end of the device\n",
@@ -343,6 +366,9 @@ static int cmd_cmp(struct blk *b, int argc, char **argv)
 	}
 
 	if (open_img(&in, argv[0], O_RDONLY, 0))
+		return 1;
+
+	if (is_nonsense(b, &in))
 		return 1;
 
 	return compare_image(b, &in, off);
