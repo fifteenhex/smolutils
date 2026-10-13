@@ -16,6 +16,7 @@
 	"usage: blkwak [-b <bs>] <command> <dev> ...\n" \
 	"       info <dev>\n" \
 	"       read <dev> <file> [off] [len]      device -> file\n" \
+	"       write <dev> <file> [off]           file -> device\n" \
 	"       -b read/write buffer size\n"
 
 struct blk {
@@ -136,6 +137,33 @@ static int cmd_info(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static int write_at(const struct blk *b, unsigned long long off,
+		    const uint8_t *data, unsigned int n)
+{
+	if (lseek(b->fd, off, SEEK_SET) != (off_t) off) {
+		error("Failed to seek to 0x%llx: %d\n", off, errno);
+		return -1;
+	}
+
+	if (write_full(b->fd, data, n)) {
+		error("Write at 0x%llx failed: %d\n", off, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int open_image(const char *path)
+{
+	int fd;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		error("Failed to open %s: %d\n", path, errno);
+
+	return fd;
+}
+
 static int cmd_read(struct blk *b, int argc, char **argv)
 {
 	unsigned long long done = 0;
@@ -174,6 +202,49 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static int cmd_write(struct blk *b, int argc, char **argv)
+{
+	unsigned long long done = 0;
+	unsigned long long off = 0;
+	int __cleanup_fd in = -1;
+	int got;
+
+	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
+		usage(USAGE);
+		return 1;
+	}
+
+	in = open_image(argv[0]);
+	if (in < 0)
+		return 1;
+
+	while ((got = read_full(in, buf, bs)) > 0) {
+		if (off + done + got > b->size) {
+			error("0x%llx + %u is past the end of the device\n",
+			      off + done, got);
+			return 1;
+		}
+
+		if (write_at(b, off + done, buf, got))
+			return 1;
+		done += got;
+	}
+
+	if (got < 0) {
+		error("Failed to read %s: %d\n", argv[0], errno);
+		return 1;
+	}
+
+	if (fsync(b->fd)) {
+		error("fsync failed: %d\n", errno);
+		return 1;
+	}
+
+	info("wrote %llu bytes\n", done);
+
+	return 0;
+}
+
 struct command {
 	const char *name;
 	int (*run)(struct blk *b, int argc, char **argv);
@@ -183,6 +254,7 @@ struct command {
 static const struct command commands[] = {
 	{ "info", cmd_info, false },
 	{ "read", cmd_read, false },
+	{ "write", cmd_write, true },
 };
 
 int main (int argc, char **argv, char **envp)
