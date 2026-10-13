@@ -17,6 +17,7 @@
 	"       info <dev>\n" \
 	"       read <dev> <file> [off] [len]      device -> file\n" \
 	"       write <dev> <file> [off]           file -> device\n" \
+	"       cmp <dev> <file> [off]             compare with a file\n" \
 	"       -b read/write buffer size\n"
 
 struct blk {
@@ -202,6 +203,61 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static int compare_image(const struct blk *b, int in, unsigned long long off)
+{
+	unsigned long long first_bad = ~0ULL;
+	unsigned long long done = 0;
+	unsigned long long bad = 0;
+	uint8_t *data;
+	int ret = 1;
+	int got;
+
+	data = malloc(bs);
+	if (!data) {
+		error("No room for a second buffer\n");
+		return 1;
+	}
+
+	while ((got = read_full(in, data, bs)) > 0) {
+		unsigned int i;
+
+		if (off + done + got > b->size) {
+			error("0x%llx + %u is past the end of the device\n",
+			      off + done, got);
+			goto out;
+		}
+
+		if (read_at(b, off + done, got))
+			goto out;
+
+		for (i = 0; i < (unsigned int) got; i++)
+			if (buf[i] != data[i]) {
+				if (first_bad == ~0ULL)
+					first_bad = off + done + i;
+				bad++;
+			}
+
+		done += got;
+	}
+
+	if (got < 0) {
+		error("Failed to read the image: %d\n", errno);
+		goto out;
+	}
+
+	if (bad)
+		info("%llu of %llu bytes differ, first at 0x%llx\n", bad, done,
+		     first_bad);
+	else
+		info("%llu bytes match\n", done);
+
+	ret = bad ? 1 : 0;
+out:
+	free(data);
+
+	return ret;
+}
+
 static int cmd_write(struct blk *b, int argc, char **argv)
 {
 	unsigned long long done = 0;
@@ -245,6 +301,23 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static int cmd_cmp(struct blk *b, int argc, char **argv)
+{
+	unsigned long long off = 0;
+	int __cleanup_fd in = -1;
+
+	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
+		usage(USAGE);
+		return 1;
+	}
+
+	in = open_image(argv[0]);
+	if (in < 0)
+		return 1;
+
+	return compare_image(b, in, off);
+}
+
 struct command {
 	const char *name;
 	int (*run)(struct blk *b, int argc, char **argv);
@@ -255,6 +328,7 @@ static const struct command commands[] = {
 	{ "info", cmd_info, false },
 	{ "read", cmd_read, false },
 	{ "write", cmd_write, true },
+	{ "cmp", cmd_cmp, false },
 };
 
 int main (int argc, char **argv, char **envp)
