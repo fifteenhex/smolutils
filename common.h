@@ -95,6 +95,26 @@ static bool is_chardev(int fd)
 	return S_ISCHR(st.st_mode);
 }
 
+/* Do two fd's point to the same file? */
+static bool __same_file(struct stat *sa, struct stat *sb)
+{
+	if ((S_ISBLK(sa->st_mode) && S_ISBLK(sb->st_mode)) ||
+	    (S_ISCHR(sa->st_mode) && S_ISCHR(sb->st_mode)))
+		return sa->st_rdev == sb->st_rdev;
+
+	return sa->st_dev == sb->st_dev && sa->st_ino == sb->st_ino;
+}
+
+static bool same_file(int a, int b)
+{
+	struct stat sa, sb;
+
+	if (fstat(a, &sa) || fstat(b, &sb))
+		return false;
+
+	return __same_file(&sa, &sb);
+}
+
 /* write() with loop to make sure the full write happens */
 static inline int write_full(int fd, const void *buf, int len)
 {
