@@ -206,14 +206,6 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	return 0;
 }
 
-#ifndef makedev
-/* nolibc doesn't have this, copy glibc */
-#define makedev(_ma, _mi)		\
-	((((_ma) & 0xfff) << 8) |	\
-	 ((_mi) & 0xff) |		\
-	 (((_mi) & ~0xff) << 12))
-#endif
-
 static int prog_mknod(int argc, char **argv, char **envp)
 {
 	unsigned long major, minor;

@@ -76,22 +76,12 @@ static void print_group(uid_t gid)
 		printf("%10u", gid);
 }
 
-static unsigned int dev_major(dev_t dev)
-{
-	return (dev >> 8) & 0xfff;
-}
-
-static unsigned int dev_minor(dev_t dev)
-{
-	return (dev & 0xff) | ((dev >> 12) & 0xfff00);
-}
-
 static void print_size(const struct stat *st)
 {
 	if (is_enabled(CONFIG_LS_DETAIL) &&
 	    (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))) {
-		printf(" %4u,%5u", dev_major(st->st_rdev),
-		       dev_minor(st->st_rdev));
+		printf(" %4u,%5u", major(st->st_rdev),
+		       minor(st->st_rdev));
 		return;
 	}
 
