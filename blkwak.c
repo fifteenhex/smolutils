@@ -18,6 +18,7 @@
 	"       read <dev> <file> [off] [len]      device -> file\n" \
 	"       write <dev> <file> [off]           file -> device\n" \
 	"       cmp <dev> <file> [off]             compare with a file\n" \
+	"       rescan <dev>                       re-read the partition table\n" \
 	"       -b read/write buffer size\n" \
 	"       -v verify write\n"
 
@@ -334,6 +335,24 @@ static int cmd_cmp(struct blk *b, int argc, char **argv)
 	return compare_image(b, in, off);
 }
 
+static int cmd_rescan(struct blk *b, int argc, char **argv)
+{
+	if (argc) {
+		usage(USAGE);
+		return 1;
+	}
+
+	if (ioctl(b->fd, BLKRRPART, 0)) {
+		if (errno == EBUSY)
+			error("Device is busy\n");
+		else
+			error("Rescan failed: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 struct command {
 	const char *name;
 	int (*run)(struct blk *b, int argc, char **argv);
@@ -345,6 +364,7 @@ static const struct command commands[] = {
 	{ "read", cmd_read, false },
 	{ "write", cmd_write, true },
 	{ "cmp", cmd_cmp, false },
+	{ "rescan", cmd_rescan, false },
 };
 
 int main (int argc, char **argv, char **envp)
