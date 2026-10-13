@@ -13,12 +13,13 @@
 #define SECTOR		512
 
 #define USAGE \
-	"usage: blkwak [-b <bs>] <command> <dev> ...\n" \
+	"usage: blkwak [-b <bs>] [-v] <command> <dev> ...\n" \
 	"       info <dev>\n" \
 	"       read <dev> <file> [off] [len]      device -> file\n" \
 	"       write <dev> <file> [off]           file -> device\n" \
 	"       cmp <dev> <file> [off]             compare with a file\n" \
-	"       -b read/write buffer size\n"
+	"       -b read/write buffer size\n" \
+	"       -v verify write\n"
 
 struct blk {
 	unsigned long long size;
@@ -203,6 +204,8 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 	return 0;
 }
 
+static bool verify;
+
 static int compare_image(const struct blk *b, int in, unsigned long long off)
 {
 	unsigned long long first_bad = ~0ULL;
@@ -298,7 +301,20 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 
 	info("wrote %llu bytes\n", done);
 
-	return 0;
+	if (!verify)
+		return 0;
+
+	/* drop the caches */
+	if (ioctl(b->fd, BLKFLSBUF, 0) && errno != ENOTTY) {
+		return 1;
+	}
+
+	if (lseek(in, 0, SEEK_SET)) {
+		error("Failed to rewind %s: %d\n", argv[0], errno);
+		return 1;
+	}
+
+	return compare_image(b, in, off);
 }
 
 static int cmd_cmp(struct blk *b, int argc, char **argv)
@@ -338,7 +354,7 @@ int main (int argc, char **argv, char **envp)
 	unsigned long long v;
 	int c;
 
-	while ((c = getopt(argc, argv, "b:")) != -1) {
+	while ((c = getopt(argc, argv, "b:v")) != -1) {
 		switch (c) {
 		case 'b':
 			if (!parse_size(optarg, &v) || !v || v > MAX_BS) {
@@ -346,6 +362,10 @@ int main (int argc, char **argv, char **envp)
 				return 1;
 			}
 			bs = v;
+			break;
+
+		case 'v':
+			verify = true;
 			break;
 
 		default:
