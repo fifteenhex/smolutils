@@ -23,6 +23,7 @@
 	"       -v verify write\n"
 
 struct blk {
+	struct stat st;
 	unsigned long long size;
 	int fd;
 };
@@ -40,26 +41,24 @@ static uint8_t *buf;
 
 static int open_blk(struct blk *b, const char *path, int flags)
 {
-	struct stat st;
-
 	b->fd = open(path, flags);
 	if (b->fd < 0) {
 		error("Failed to open %s: %d\n", path, errno);
 		return -1;
 	}
 
-	if (fstat(b->fd, &st)) {
+	if (fstat(b->fd, &b->st)) {
 		error("Failed to stat %s: %d\n", path, errno);
 		return -1;
 	}
 
-	if (S_ISBLK(st.st_mode)) {
+	if (S_ISBLK(b->st.st_mode)) {
 		if (ioctl(b->fd, BLKGETSIZE64, &b->size)) {
 			error("Failed to size %s: %d\n", path, errno);
 			return -1;
 		}
-	} else if (S_ISREG(st.st_mode)) {
-		b->size = st.st_size;
+	} else if (S_ISREG(b->st.st_mode)) {
+		b->size = b->st.st_size;
 	} else {
 		error("%s isn't a block device or a file\n", path);
 		return -1;
