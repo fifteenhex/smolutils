@@ -14,7 +14,7 @@
 #define USAGE \
 	"usage: blkwak <command> <dev> ...\n" \
 	"       info <dev>\n" \
-	"       read <dev> <file>                  device -> file\n"
+	"       read <dev> <file> [off] [len]      device -> file\n"
 
 struct blk {
 	unsigned long long size;
@@ -62,6 +62,39 @@ static int open_blk(struct blk *b, const char *path, int flags)
 	return 0;
 }
 
+/* parse [off] [len] */
+static bool parse_region(const struct blk *b, int argc, char **argv,
+			 unsigned long long *off, unsigned long long *len)
+{
+	*off = 0;
+	*len = 0;
+
+	if (argc > 0 && !parse_size(argv[0], off)) {
+		error("Not an offset: %s\n", argv[0]);
+		return false;
+	}
+
+	if (argc > 1 && !parse_size(argv[1], len)) {
+		error("Not a length: %s\n", argv[1]);
+		return false;
+	}
+
+	if (*off > b->size) {
+		error("0x%llx is past the end\n", *off);
+		return false;
+	}
+
+	if (!*len)
+		*len = b->size - *off;
+
+	if (*off + *len > b->size) {
+		error("0x%llx + 0x%llx is past the end\n", *off, *len);
+		return false;
+	}
+
+	return true;
+}
+
 static int read_at(const struct blk *b, unsigned long long off, unsigned int n)
 {
 	int got;
@@ -105,8 +138,11 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 {
 	unsigned long long done = 0;
 	int __cleanup_fd out = -1;
+	unsigned long long off;
+	unsigned long long len;
 
-	if (argc != 1) {
+	if (argc < 1 || argc > 3 ||
+	    !parse_region(b, argc - 1, argv + 1, &off, &len)) {
 		usage(USAGE);
 		return 1;
 	}
@@ -117,10 +153,10 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	while (done < b->size) {
-		unsigned int n = b->size - done > bs ? bs : b->size - done;
+	while (done < len) {
+		unsigned int n = len - done > bs ? bs : len - done;
 
-		if (read_at(b, done, n))
+		if (read_at(b, off + done, n))
 			return 1;
 
 		if (write_full(out, buf, n)) {
