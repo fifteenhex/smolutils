@@ -155,21 +155,39 @@ static int write_at(const struct blk *b, unsigned long long off,
 	return 0;
 }
 
-static int open_image(const char *path)
-{
+struct img {
+	struct stat st;
 	int fd;
+};
 
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
+static void cleanup_img(struct img *i)
+{
+	if (i->fd >= 0)
+		close(i->fd);
+}
+
+#define __cleanup_img __attribute__((cleanup(cleanup_img)))
+
+static int open_img(struct img *i, const char *path, int flags, mode_t mode)
+{
+	i->fd = open(path, flags, mode);
+	if (i->fd < 0) {
 		error("Failed to open %s: %d\n", path, errno);
+		return -1;
+	}
 
-	return fd;
+	if (fstat(i->fd, &i->st)) {
+		error("Failed to stat %s: %d\n", path, errno);
+		return -1;
+	}
+
+	return 0;
 }
 
 static int cmd_read(struct blk *b, int argc, char **argv)
 {
+	struct img __cleanup_img out = { .fd = -1 };
 	unsigned long long done = 0;
-	int __cleanup_fd out = -1;
 	unsigned long long off;
 	unsigned long long len;
 
@@ -179,11 +197,8 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	out = open(argv[0], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (out < 0) {
-		error("Failed to open %s: %d\n", argv[0], errno);
+	if (open_img(&out, argv[0], O_WRONLY | O_CREAT | O_TRUNC, 0644))
 		return 1;
-	}
 
 	while (done < len) {
 		unsigned int n = len - done > bs ? bs : len - done;
@@ -191,7 +206,7 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 		if (read_at(b, off + done, n))
 			return 1;
 
-		if (write_full(out, buf, n)) {
+		if (write_full(out.fd, buf, n)) {
 			error("Failed to write %s: %d\n", argv[0], errno);
 			return 1;
 		}
@@ -206,7 +221,8 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 
 static bool verify;
 
-static int compare_image(const struct blk *b, int in, unsigned long long off)
+static int compare_image(const struct blk *b, const struct img *in,
+			 unsigned long long off)
 {
 	unsigned long long first_bad = ~0ULL;
 	unsigned long long done = 0;
@@ -221,7 +237,7 @@ static int compare_image(const struct blk *b, int in, unsigned long long off)
 		return 1;
 	}
 
-	while ((got = read_full(in, data, bs)) > 0) {
+	while ((got = read_full(in->fd, data, bs)) > 0) {
 		unsigned int i;
 
 		if (!off_len_fits(off + done, got, b->size)) {
@@ -263,9 +279,9 @@ out:
 
 static int cmd_write(struct blk *b, int argc, char **argv)
 {
+	struct img __cleanup_img in = { .fd = -1 };
 	unsigned long long done = 0;
 	unsigned long long off = 0;
-	int __cleanup_fd in = -1;
 	int got;
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
@@ -273,11 +289,10 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	in = open_image(argv[0]);
-	if (in < 0)
+	if (open_img(&in, argv[0], O_RDONLY, 0))
 		return 1;
 
-	while ((got = read_full(in, buf, bs)) > 0) {
+	while ((got = read_full(in.fd, buf, bs)) > 0) {
 		if (!off_len_fits(off + done, got, b->size)) {
 			error("0x%llx + %u is past the end of the device\n",
 			      off + done, got);
@@ -309,29 +324,28 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	if (lseek(in, 0, SEEK_SET)) {
+	if (lseek(in.fd, 0, SEEK_SET)) {
 		error("Failed to rewind %s: %d\n", argv[0], errno);
 		return 1;
 	}
 
-	return compare_image(b, in, off);
+	return compare_image(b, &in, off);
 }
 
 static int cmd_cmp(struct blk *b, int argc, char **argv)
 {
+	struct img __cleanup_img in = { .fd = -1 };
 	unsigned long long off = 0;
-	int __cleanup_fd in = -1;
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
 		usage(USAGE);
 		return 1;
 	}
 
-	in = open_image(argv[0]);
-	if (in < 0)
+	if (open_img(&in, argv[0], O_RDONLY, 0))
 		return 1;
 
-	return compare_image(b, in, off);
+	return compare_image(b, &in, off);
 }
 
 static int cmd_rescan(struct blk *b, int argc, char **argv)
