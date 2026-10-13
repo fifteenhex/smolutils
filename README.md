@@ -22,6 +22,7 @@ Even for the mmu enjoyers out there:
 
 | name      | progress | binary name (if multicall) | notes               |
 |-----------|----------|----------------------------|---------------------|
+| blkwak    |          |                            | block multi-tool    |
 | cat       |          | files                      |                     |
 | chmod     |          | files                      |                     |
 | chown     |          | files                      |                     |
