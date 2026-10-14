@@ -11,15 +11,10 @@
 static bool keeprocking = true;
 static int exit_status;
 
-/* Catch ctrl-c, don't restart syscall! */
-static void handle_sigint(int sig)
-{
-}
-
 static void setup_signals(void)
 {
 	/* No SA_RESTART: the read() at the prompt has to come back */
-	if (signal_catch(SIGINT, handle_sigint, 0))
+	if (signal_interrupt(SIGINT))
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
