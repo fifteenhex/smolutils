@@ -3,6 +3,9 @@
 #include "config.h"
 #include "common.h"
 
+#define USAGE \
+	"usage: xxd [-m <fd>] [-o <address>] [-s <skip>] [-l <length>] <file>\n"
+
 /* get an fd from our parent, for memfd based chaining */
 static int inherited_fd(const char *arg)
 {
@@ -59,16 +62,14 @@ int main (int argc, char **argv, char **envp)
 			break;
 
 		default:
-			usage("usage: xxd [-m <fd>] [-o <address>] "
-			      "[-s <skip>] [-l <length>] <file>\n");
+			usage(USAGE);
 			return 1;
 		}
 	}
 
 	if (fd < 0) {
 		if (optind != argc - 1) {
-			usage("usage: xxd [-m <fd>] [-o <address>] "
-			      "[-s <skip>] [-l <length>] <file>\n");
+			usage(USAGE);
 			return 1;
 		}
 
