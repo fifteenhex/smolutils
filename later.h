@@ -30,7 +30,6 @@ static inline int later_ask(const char *name, unsigned int secs,
 			    const char * const *argv)
 {
 	struct later_job job = { 0 };
-	int __cleanup_fd fd = -1;
 	char path[64];
 	unsigned int i;
 
@@ -55,18 +54,7 @@ static inline int later_ask(const char *name, unsigned int secs,
 		return -1;
 	}
 
-	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
-		return -1;
-	}
-
-	if (write(fd, &job, sizeof(job)) != sizeof(job)) {
-		error("Failed to write %s: %d\n", path, errno);
-		return -1;
-	}
-
-	return 0;
+	return write_file(path, &job, sizeof(job));
 }
 
 static inline int later_read(const char *path, struct later_job *job)
