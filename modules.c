@@ -10,6 +10,9 @@
 
 #include <linux/module.h>
 
+#define INSMOD_USAGE	"Usage: %s <module> [parameter=value ...]\n"
+#define RMMOD_USAGE	"Usage: %s [-f] <module>\n"
+
 /* Detect file a module is compressed by extension */
 static bool is_compressed(const char *path)
 {
@@ -31,7 +34,7 @@ static int prog_insmod(int argc, char **argv, char **envp)
 	int i;
 
 	if (argc < 2) {
-		usage("Usage: %s <module> [parameter=value ...]\n", argv[0]);
+		usage(INSMOD_USAGE, argv[0]);
 		return 1;
 	}
 
@@ -79,13 +82,13 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 			break;
 
 		default:
-			usage("Usage: %s [-f] <module>\n", argv[0]);
+			usage(RMMOD_USAGE, argv[0]);
 			return 1;
 		}
 	}
 
 	if (optind != argc - 1) {
-		usage("Usage: %s [-f] <module>\n", argv[0]);
+		usage(RMMOD_USAGE, argv[0]);
 		return 1;
 	}
 
