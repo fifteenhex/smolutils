@@ -9,11 +9,6 @@
 #include "seat.h"
 #include "users.h"
 
-/* Don't get killed by SIGINT */
-static void handle_sigint(int sig)
-{
-}
-
 #define SEAT_NODE_MAX	(SEAT_PATH_MAX + 64)
 
 #define SEAT_ENVIRON_MAX	32
@@ -145,7 +140,7 @@ static char * const *seat_environ(struct seat *seat)
 
 static void setup_signals(void)
 {
-	if (signal_catch(SIGINT, handle_sigint, SA_RESTART))
+	if (signal_catch(SIGINT, __signal_dummy_handler, SA_RESTART))
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
