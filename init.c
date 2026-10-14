@@ -281,11 +281,6 @@ static void minion_exited(pid_t pid, int status)
 	}
 }
 
-/* Empty on purpose, it just has to interrupt wait() */
-static void handle_alarm(int sig)
-{
-}
-
 static void handle_shutdown(int sig)
 {
 	switch (sig) {
@@ -310,21 +305,15 @@ static int setup_signals(void)
 		SIG_POWEROFF,
 		SIG_REBOOT,
 	};
-	struct sigaction alarm_act = {
-		.sa_handler = handle_alarm,
-	};
-	struct sigaction shutdown_act = {
-		.sa_handler = handle_shutdown,
-	};
 	unsigned i;
 	int ret;
 
-	ret = sigaction(SIGALRM, &alarm_act, NULL);
+	ret = signal_interrupt(SIGALRM);
 	if (ret)
 		verbose("Failed to setup alarm: %d\n", errno);
 
 	for (i = 0; i < ARRAY_SIZE(shutdown_signals); i++) {
-		ret = sigaction(shutdown_signals[i], &shutdown_act, NULL);
+		ret = signal_catch(shutdown_signals[i], handle_shutdown, 0);
 		if (ret)
 			verbose("failed to setup signal %d: %d\n",
 				shutdown_signals[i], errno);
