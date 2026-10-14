@@ -97,25 +97,13 @@ static void print_user(uid_t uid)
 
 static void print_process(const char *pid, const char *comm_path, uid_t uid)
 {
-	char tmp[1024];
-	int len;
-	int __cleanup_fd fd = -1;
+	char comm[1024];
 
-	fd = open(comm_path, O_RDONLY);
-	if (fd < 0)
+	if (!read_file(comm_path, comm, sizeof(comm)))
 		return;
-
-	len = read(fd, tmp, sizeof(tmp) - 1);
-	if (len <= 0)
-		return;
-
-	/* Drop the trailing newline */
-	if (tmp[len - 1] == '\n')
-		len--;
-	tmp[len] = '\0';
 
 	print_user(uid);
-	printf("\t\t%s\t\t%s\n", pid, tmp);
+	printf("\t\t%s\t\t%s\n", pid, comm);
 }
 
 static int cb(const char *name, int dir, void *priv)
