@@ -52,17 +52,9 @@ struct session {
 
 static struct session sessions[MAX_SESSIONS];
 
-static void handle_sig(int sig)
-{
-}
-
 static void setup_signals(void)
 {
-	struct sigaction act = {
-		.sa_handler = handle_sig,
-	};
-
-	if (sigaction(SIGCHLD, &act, NULL) || sigaction(SIGPIPE, &act, NULL))
+	if (signal_interrupt(SIGCHLD) || signal_interrupt(SIGPIPE))
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
