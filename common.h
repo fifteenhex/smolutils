@@ -352,6 +352,16 @@ static inline int signal_catch(int sig, void (*handler)(int), int flags)
 	return sigaction(sig, &act, NULL);
 }
 
+static void __signal_dummy_handler(int sig)
+{
+}
+
+/* Setup a signal just to interrupt something that is blocking to get control back */
+static inline int signal_interrupt(int sig)
+{
+	return signal_catch(sig, __signal_dummy_handler, 0);
+}
+
 static inline bool parse_ul(const char *s, int base, unsigned long *out)
 {
 	char *end;
