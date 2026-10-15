@@ -462,7 +462,6 @@ static int _find_opt_u32(struct dhcp_packet *p, uint8_t *from, uint8_t **pos, ui
 {
 	unsigned int len;
 	uint8_t *_opt;
-	uint32_t tmp;
 	int ret;
 
 	ret = _find_opt(p, from, code, &_opt, &len);
@@ -474,8 +473,8 @@ static int _find_opt_u32(struct dhcp_packet *p, uint8_t *from, uint8_t **pos, ui
 
 	if (pos)
 		*pos = _opt;
-	memcpy(&tmp, _opt, sizeof(tmp));
-	*opt = ntohl(tmp);
+
+	*opt = get_unaligned_be32(_opt);
 
 	return 0;
 }
@@ -635,9 +634,7 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 			if (cntx->config.num_dns == ARRAY_SIZE(cntx->config.dns))
 				break;
 
-			memcpy(&server, dns + i, sizeof(server));
-			server = ntohl(server);
-
+			server = get_unaligned_be32(dns + i);
 			cntx->config.dns[cntx->config.num_dns++] = server;
 
 			verbose("DNS server: " IPPRINT "\n", IPARGS(server));
