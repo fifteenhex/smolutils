@@ -346,6 +346,24 @@ static int tftp_get(struct tftp *t, const char *remote, int fd)
 	return 0;
 }
 
+static int tftp_read_block(struct tftp *t, int fd, uint16_t block)
+{
+	int len;
+
+	tftp_set_header(t, OP_DATA, block);
+
+	len = read_full(fd, t->tx + TFTP_HDR_LEN, t->blksize);
+	if (len < 0) {
+		error("Failed to read local file: %d\n", errno);
+		tftp_send_error(t, ERR_UNDEFINED, "read failed");
+		return -1;
+	}
+
+	t->txlen += len;
+
+	return len;
+}
+
 static int open_local(const char *path, bool get)
 {
 	int fd;
