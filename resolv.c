@@ -28,23 +28,6 @@ struct dns_hdr {
 	uint16_t arcount;
 } __attribute__((packed));
 
-/* Avoid doing unaligned accesses on 68000 */
-static uint16_t dns_get16(const uint8_t *buf)
-{
-	uint16_t v;
-
-	memcpy(&v, buf, sizeof(v));
-
-	return ntohs(v);
-}
-
-static void dns_put16(uint8_t *buf, uint16_t v)
-{
-	v = htons(v);
-
-	memcpy(buf, &v, sizeof(v));
-}
-
 static int encode_name(const char *name, uint8_t *out, int out_len)
 {
 	int off = 0;
@@ -97,10 +80,10 @@ static int build_query(const char *host, uint8_t *buf, int buf_len)
 	off += ret;
 
 	/* QTYPE  A */
-	dns_put16(buf + off, 1);
+	put_unaligned_be16(buf + off, 1);
 	off += 2;
 	/* QCLASS IN */
-	dns_put16(buf + off, 1);
+	put_unaligned_be16(buf + off, 1);
 	off += 2;
 
 	return off;
@@ -177,13 +160,13 @@ static void parse_response(const uint8_t *buf, int len,
 		if (off < 0 || off + 10 > len)
 			return;
 
-		type = dns_get16(buf + off);
+		type = get_unaligned_be16(buf + off);
 		off += 2;
 		/* class */
 		off += 2;
 		/* ttl   */
 		off += 4;
-		rdlen = dns_get16(buf + off);
+		rdlen = get_unaligned_be16(buf + off);
 		off += 2;
 
 		if ((off + rdlen) > len)
