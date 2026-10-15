@@ -14,9 +14,11 @@
 
 #define TFTP_PORT		69
 #define TFTP_TIMEOUT		3
+#define TFTP_HDR_LEN		4
 #define TFTP_DEF_BLKSIZE	512
 #define TFTP_MIN_BLKSIZE	8
 #define TFTP_MAX_BLKSIZE	1468
+#define TFTP_MODE		"octet"
 
 enum tftp_op {
 	OP_RRQ = 1,
@@ -27,15 +29,96 @@ enum tftp_op {
 	OP_OACK,
 };
 
+enum tftp_err {
+	ERR_UNDEFINED = 0,
+	ERR_NOT_FOUND,
+	ERR_ACCESS,
+	ERR_DISK_FULL,
+	ERR_ILLEGAL_OP,
+	ERR_UNKNOWN_TID,
+	ERR_EXISTS,
+	ERR_NO_USER,
+	ERR_OPTION,
+};
+
 struct tftp {
 	int sock;
 	struct sockaddr_in server;
 
 	unsigned int blksize;
 	unsigned int want_blksize;
+
+	uint8_t tx[TFTP_HDR_LEN + TFTP_MAX_BLKSIZE];
+	size_t txlen;
 };
 
 static struct tftp tftp;
+
+static int tftp_send(struct tftp *t)
+{
+	int ret;
+
+	ret = sendto(t->sock, t->tx, t->txlen, 0,
+		     (struct sockaddr *) &t->server, sizeof(t->server));
+	if (ret != (int) t->txlen) {
+		error("Failed to send: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+static void tftp_set_header(struct tftp *t, enum tftp_op op, uint16_t arg)
+{
+	put_unaligned_be16(t->tx, op);
+	put_unaligned_be16(t->tx + 2, arg);
+	t->txlen = TFTP_HDR_LEN;
+}
+
+static void tftp_send_error(struct tftp *t, enum tftp_err code,
+			    const char *msg)
+{
+	size_t len = strlen(msg) + 1;
+
+	if (len > sizeof(t->tx) - TFTP_HDR_LEN)
+		len = sizeof(t->tx) - TFTP_HDR_LEN;
+
+	tftp_set_header(t, OP_ERROR, code);
+	memcpy(t->tx + t->txlen, msg, len);
+	t->tx[t->txlen + len - 1] = '\0';
+	t->txlen += len;
+
+	tftp_send(t);
+}
+
+static bool tftp_add_string(struct tftp *t, const char *s)
+{
+	size_t len = strlen(s) + 1;
+
+	if (!off_len_fits(t->txlen, len, sizeof(t->tx)))
+		return false;
+
+	memcpy(t->tx + t->txlen, s, len);
+	t->txlen += len;
+
+	return true;
+}
+
+static int tftp_build_request(struct tftp *t, enum tftp_op op,
+			      const char *filename)
+{
+	tftp_set_header(t, op, 0);
+	t->txlen = 2;
+
+	if (!tftp_add_string(t, filename)) {
+		error("Remote filename is too long\n");
+		return -1;
+	}
+
+	tftp_add_string(t, TFTP_MODE);
+
+	return 0;
+}
 
 static int open_local(const char *path, bool get)
 {
