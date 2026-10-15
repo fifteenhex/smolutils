@@ -279,8 +279,8 @@ static const char *addr_to_str(uint32_t addr, char *buf, socklen_t len)
 static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask)
 {
 	int __cleanup_fd sock = -1;
-	struct ifreq ifr = { 0 };
 	struct sockaddr_in *sin;
+	struct ifreq ifr;
 	int ret;
 
 	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
@@ -290,7 +290,7 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	if (sock < 0)
 		return -1;
 
-	strncpy(ifr.ifr_name, iface, IFNAMSIZ - 1);
+	ifreq_init(&ifr, iface);
 
 	sin = (struct sockaddr_in *)&ifr.ifr_addr;
 	sin->sin_family = AF_INET;
@@ -378,11 +378,16 @@ static int interface_set_default_route(const char *iface, uint32_t gateway)
 static int get_mac(const char *iface, uint8_t *mac)
 {
 	int __cleanup_fd sock = -1;
-	struct ifreq ifr = { 0 };
+	struct ifreq ifr;
 	int ret;
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name) - 1);
+	if (sock < 0) {
+		error("failed to make a socket: %d\n", errno);
+		return -1;
+	}
+
+	ifreq_init(&ifr, iface);
 
 	ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
 	if (ret) {
