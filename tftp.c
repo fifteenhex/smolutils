@@ -37,11 +37,30 @@ struct tftp {
 
 static struct tftp tftp;
 
+static int open_local(const char *path, bool get)
+{
+	int fd;
+
+	if (strcmp(path, "-") == 0)
+		return dup(get ? STDOUT_FILENO : STDIN_FILENO);
+
+	if (get)
+		fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	else
+		fd = open(path, O_RDONLY);
+
+	if (fd < 0)
+		error("Failed to open %s: %d\n", path, errno);
+
+	return fd;
+}
+
 int main (int argc, char **argv, char **envp)
 {
 	unsigned long port = TFTP_PORT;
 	int __cleanup_fd sock = -1;
 	const char *remote = NULL;
+	int __cleanup_fd fd = -1;
 	const char *local = NULL;
 	struct tftp *t = &tftp;
 	unsigned long blksize;
@@ -93,6 +112,9 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
+	if (!local)
+		local = path_basename(remote);
+
 	t->server.sin_family = AF_INET;
 	t->server.sin_port = htons(port);
 	t->blksize = TFTP_DEF_BLKSIZE;
@@ -112,6 +134,10 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	t->sock = sock;
+
+	fd = open_local(local, op == OP_RRQ);
+	if (fd < 0)
+		return 1;
 
 	error("Transfers are not implemented yet\n");
 
