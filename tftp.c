@@ -20,6 +20,7 @@
 #define TFTP_MIN_BLKSIZE	8
 #define TFTP_MAX_BLKSIZE	1468
 #define TFTP_MODE		"octet"
+#define TFTP_OPT_BLKSIZE	"blksize"
 
 enum tftp_op {
 	OP_RRQ = 1,
@@ -111,6 +112,8 @@ static bool tftp_add_string(struct tftp *t, const char *s)
 static int tftp_build_request(struct tftp *t, enum tftp_op op,
 			      const char *filename)
 {
+	char blksize[8];
+
 	tftp_set_header(t, op, 0);
 	t->txlen = 2;
 
@@ -120,6 +123,69 @@ static int tftp_build_request(struct tftp *t, enum tftp_op op,
 	}
 
 	tftp_add_string(t, TFTP_MODE);
+
+	if (t->want_blksize) {
+		snprintf(blksize, sizeof(blksize), "%u", t->want_blksize);
+		tftp_add_string(t, TFTP_OPT_BLKSIZE);
+		tftp_add_string(t, blksize);
+	}
+
+	return 0;
+}
+
+static bool tftp_option_is(const char *name, const char *want)
+{
+	for (; *name && *want; name++, want++) {
+		char c = *name;
+
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+
+		if (c != *want)
+			return false;
+	}
+
+	return *name == *want;
+}
+
+static int tftp_parse_oack(struct tftp *t)
+{
+	const char *end = (const char *) t->rx + t->rxlen;
+	const char *p = (const char *) t->rx + 2;
+
+	while (p < end) {
+		const char *name = p;
+		const char *value;
+		size_t len;
+
+		len = strnlen(name, end - name);
+		if (name + len >= end)
+			break;
+		value = name + len + 1;
+
+		len = strnlen(value, end - value);
+		if (value + len >= end)
+			break;
+		p = value + len + 1;
+
+		verbose("option %s = %s\n", name, value);
+
+		if (tftp_option_is(name, TFTP_OPT_BLKSIZE)) {
+			unsigned long blksize;
+
+			/* blk size can only be smaller than what we requested */
+			if (!t->want_blksize ||
+			    !parse_ul(value, 10, &blksize) ||
+			    blksize < TFTP_MIN_BLKSIZE ||
+			    blksize > t->want_blksize) {
+				error("Server offered a bad block size: %s\n", value);
+				tftp_send_error(t, ERR_OPTION, "bad blksize");
+				return -1;
+			}
+
+			t->blksize = blksize;
+		}
+	}
 
 	return 0;
 }
