@@ -40,26 +40,29 @@ union
 	} ifr_ifru;
 };
 
+static inline void ifreq_init(struct ifreq *ifr, const char *name)
+{
+	memset(ifr, 0, sizeof(*ifr));
+	strncpy(ifr->ifr_name, name, IFNAMSIZ - 1);
+}
+
 static inline int smolutils_net_interface_set_up(const char *iface)
 {
 	int __cleanup_fd sock = -1;
-	struct ifreq ifr = { 0 };
-	int ret;
+	struct ifreq ifr;
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0)
 		return -1;
 
-	strncpy(ifr.ifr_name, iface, IFNAMSIZ - 1);
+	ifreq_init(&ifr, iface);
 
-	ret = ioctl(sock, SIOCGIFFLAGS, &ifr);
-	if (ret < 0)
+	if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0)
 		return -1;
 
 	ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
 
-	ret = ioctl(sock, SIOCSIFFLAGS, &ifr);
-	if (ret < 0)
+	if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0)
 		return -1;
 
 	return 0;
