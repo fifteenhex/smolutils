@@ -5,6 +5,8 @@
 
 #include <linux/sockios.h>
 
+#include "unaligned.h"
+
 /* This is some libc stuff that might get moved.. */
 
 /* The uapi headers don't provide these, so here it is by hand */
@@ -129,8 +131,7 @@ static inline const char *inet_ntop(int af, const void *src, char *dst, socklen_
 
 	switch(af) {
 	case AF_INET:
-		memcpy(&v4_addr, src, sizeof(v4_addr));
-		v4_addr = ntohl(v4_addr);
+		v4_addr = get_unaligned_be32(src);
 		sprintf(dst, IPPRINT, (v4_addr >> 24) & 0xff,
 		(v4_addr >> 16) & 0xff,
 		(v4_addr >> 8) & 0xff,
