@@ -116,23 +116,6 @@ static int wait_for_response(int sock, uint16_t id, uint16_t seq)
 	}
 }
 
-static int try_to_lookup_host(const char *host, struct in_addr *result)
-{
-	struct resolv_buf addresses;
-	int ret;
-
-	ret = resolv_doit(host, &addresses);
-	if (ret)
-		return ret;
-
-	if (!addresses.num_addr_v4)
-		return -1;
-
-	memcpy(result, &addresses.addr_v4[0], sizeof(*result));
-
-	return 0;
-}
-
 int main (int argc, char **argv, char **envp)
 {
 	struct timeval t0 = { 0 }, t1 = { 0 };
@@ -151,18 +134,10 @@ int main (int argc, char **argv, char **envp)
 
 	host = argv[1];
 
-	/* Do lookup if directly converting from an ipv4 address failed */
-	if (!inet_aton(host, &dst.sin_addr)) {
-		char ip[INET_ADDRSTRLEN];
-
-		ret = try_to_lookup_host(host, &dst.sin_addr);
-		if (ret) {
-			error("Failed to resolv host\n");
-			return 1;
-		}
-
-		inet_ntop(AF_INET, &dst.sin_addr, ip, sizeof(ip));
-		verbose("Resolved %s to %s\n", host, ip);
+	ret = resolv_host(host, &dst.sin_addr);
+	if (ret) {
+		error("Failed to resolv host\n");
+		return 1;
 	}
 
 	sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);

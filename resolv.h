@@ -85,4 +85,26 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 	return 0;
 }
 
+static inline int resolv_host(const char *host, struct in_addr *result)
+{
+	struct resolv_buf addresses;
+	int ret;
+
+	/* Just see if we can convert a v4 dot thingy address first */
+	if (inet_aton(host, result))
+		return 0;
+
+	/* Do an actual lookup using resolv */
+	ret = resolv_doit(host, &addresses);
+	if (ret)
+		return ret;
+
+	if (!addresses.num_addr_v4)
+		return -1;
+
+	memcpy(result, &addresses.addr_v4[0], sizeof(*result));
+
+	return 0;
+}
+
 #endif  /* _SMOLUTILS_RESOLV_H */
