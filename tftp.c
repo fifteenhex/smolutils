@@ -44,12 +44,15 @@ enum tftp_err {
 struct tftp {
 	int sock;
 	struct sockaddr_in server;
+	bool have_tid;
 
 	unsigned int blksize;
 	unsigned int want_blksize;
 
 	uint8_t tx[TFTP_HDR_LEN + TFTP_MAX_BLKSIZE];
 	size_t txlen;
+	uint8_t rx[TFTP_HDR_LEN + TFTP_MAX_BLKSIZE + 1];
+	size_t rxlen;
 };
 
 static struct tftp tftp;
@@ -118,6 +121,58 @@ static int tftp_build_request(struct tftp *t, enum tftp_op op,
 	tftp_add_string(t, TFTP_MODE);
 
 	return 0;
+}
+
+/*
+ * opcode, 0 on timeout, <0 == error.
+ */
+static int tftp_recv(struct tftp *t)
+{
+	while (true) {
+		socklen_t fromlen = sizeof(struct sockaddr_in);
+		struct sockaddr_in from;
+		ssize_t got;
+		int op;
+
+		got = recvfrom(t->sock, t->rx, sizeof(t->rx) - 1, 0,
+			       (struct sockaddr *) &from, &fromlen);
+		if (got < 0) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return 0;
+
+			error("Failed to receive: %d\n", errno);
+			return -1;
+		}
+
+		if (got < TFTP_HDR_LEN)
+			continue;
+
+		if (from.sin_addr.s_addr != t->server.sin_addr.s_addr)
+			continue;
+
+		if (t->have_tid) {
+			if (from.sin_port != t->server.sin_port) {
+				verbose("Packet from unexpected port\n");
+				continue;
+			}
+		} else {
+			t->server.sin_port = from.sin_port;
+			t->have_tid = true;
+		}
+
+		t->rxlen = got;
+		t->rx[got] = '\0';
+
+		op = get_unaligned_be16(t->rx);
+		if (op == OP_ERROR) {
+			error("Server error %d: %s\n",
+			      get_unaligned_be16(t->rx + 2),
+			      (const char *) t->rx + TFTP_HDR_LEN);
+			return -1;
+		}
+
+		return op;
+	}
 }
 
 static int open_local(const char *path, bool get)
