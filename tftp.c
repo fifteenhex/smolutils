@@ -13,6 +13,8 @@
 	      "       -l defaults to the name of the remote file, - is stdio\n"
 
 #define TFTP_PORT		69
+#define TFTP_TIMEOUT		3
+#define TFTP_DEF_BLKSIZE	512
 #define TFTP_MIN_BLKSIZE	8
 #define TFTP_MAX_BLKSIZE	1468
 
@@ -25,12 +27,24 @@ enum tftp_op {
 	OP_OACK,
 };
 
+struct tftp {
+	int sock;
+	struct sockaddr_in server;
+
+	unsigned int blksize;
+	unsigned int want_blksize;
+};
+
+static struct tftp tftp;
+
 int main (int argc, char **argv, char **envp)
 {
 	unsigned long port = TFTP_PORT;
+	int __cleanup_fd sock = -1;
 	const char *remote = NULL;
 	const char *local = NULL;
-	unsigned long blksize = 0;
+	struct tftp *t = &tftp;
+	unsigned long blksize;
 	enum tftp_op op = 0;
 	const char *host;
 	int c;
@@ -57,6 +71,7 @@ int main (int argc, char **argv, char **envp)
 				      TFTP_MIN_BLKSIZE, TFTP_MAX_BLKSIZE);
 				return 1;
 			}
+			t->want_blksize = blksize;
 			break;
 		default:
 			usage(USAGE);
@@ -78,5 +93,27 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
-	return 0;
+	t->server.sin_family = AF_INET;
+	t->server.sin_port = htons(port);
+	t->blksize = TFTP_DEF_BLKSIZE;
+
+	if (resolv_host(host, &t->server.sin_addr)) {
+		error("Failed to resolve %s\n", host);
+		return 1;
+	}
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0) {
+		error("Failed to create socket: %d\n", errno);
+		return 1;
+	}
+
+	if (smolutils_net_setsockrxtimeout(sock, TFTP_TIMEOUT))
+		return 1;
+
+	t->sock = sock;
+
+	error("Transfers are not implemented yet\n");
+
+	return 1;
 }
