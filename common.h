@@ -447,8 +447,8 @@ static inline bool read_file_in(const char *dir, const char *name,
 	return read_file(path, out, len);
 }
 
-static inline bool read_number_in(const char *dir, const char *name,
-				  unsigned long *out)
+static inline bool __read_number_in(const char *dir, const char *name,
+				    int base, unsigned long *out)
 {
 	char tmp[128];
 	char *end;
@@ -456,9 +456,21 @@ static inline bool read_number_in(const char *dir, const char *name,
 	if (!read_file_in(dir, name, tmp, sizeof(tmp)))
 		return false;
 
-	*out = strtoul(tmp, &end, 0);
+	*out = strtoul(tmp, &end, base);
 
 	return end != tmp;
+}
+
+static inline bool read_number_in(const char *dir, const char *name,
+				  unsigned long *out)
+{
+	return __read_number_in(dir, name, 0, out);
+}
+
+static inline bool read_hex_number_in(const char *dir, const char *name,
+				      unsigned long *out)
+{
+	return __read_number_in(dir, name, 16, out);
 }
 
 static inline bool write_number_in(const char *dir, const char *name,
