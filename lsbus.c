@@ -28,19 +28,6 @@ static int cb_pci(const char *name, int dir, void *priv)
 	return 0;
 }
 
-static bool read_hex(const char *dir, const char *name, unsigned long *out)
-{
-	char tmp[SYSFS_VALUE_MAX];
-	char *end;
-
-	if (!sysfs_read(dir, name, tmp, sizeof(tmp)))
-		return false;
-
-	*out = strtoul(tmp, &end, 16);
-
-	return end != tmp;
-}
-
 static int cb_usb(const char *name, int dir, void *priv)
 {
 	unsigned long bus, dev, vendor, product;
@@ -52,8 +39,8 @@ static int cb_usb(const char *name, int dir, void *priv)
 
 	if (!sysfs_read_number(path, "busnum", &bus) ||
 	    !sysfs_read_number(path, "devnum", &dev) ||
-	    !read_hex(path, "idVendor", &vendor) ||
-	    !read_hex(path, "idProduct", &product))
+	    !read_hex_number_in(path, "idVendor", &vendor) ||
+	    !read_hex_number_in(path, "idProduct", &product))
 		return 0;
 
 	printf("Bus %03lu Device %03lu: ID %04lx:%04lx", bus, dev,
