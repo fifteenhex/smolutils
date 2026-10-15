@@ -19,15 +19,6 @@ struct context {
 	enum show what;
 };
 
-static bool interface_ioctl(int sock, const char *name, unsigned long req,
-			    struct ifreq *ifr)
-{
-	memset(ifr, 0, sizeof(*ifr));
-	strncpy(ifr->ifr_name, name, IFNAMSIZ - 1);
-
-	return ioctl(sock, req, ifr) == 0;
-}
-
 static void print_flags(short flags)
 {
 	static const struct {
@@ -85,13 +76,17 @@ static void print_address(struct context *cntx, const char *name)
 	uint32_t addr;
 	unsigned int bits = 32;
 
-	if (!interface_ioctl(cntx->sock, name, SIOCGIFADDR, &ifr))
+	ifreq_init(&ifr, name);
+
+	if (ioctl(cntx->sock, SIOCGIFADDR, &ifr) < 0)
 		return;
 
 	sin = (struct sockaddr_in *) &ifr.ifr_addr;
 	addr = sin->sin_addr.s_addr;
 
-	if (interface_ioctl(cntx->sock, name, SIOCGIFNETMASK, &ifr)) {
+	ifreq_init(&ifr, name);
+
+	if (!ioctl(cntx->sock, SIOCGIFNETMASK, &ifr)) {
 		sin = (struct sockaddr_in *) &ifr.ifr_netmask;
 		bits = mask_to_bits(sin->sin_addr.s_addr);
 	}
@@ -114,7 +109,9 @@ static int cb(const char *name, int dir, void *priv)
 
 	printf("%s: ", name);
 
-	if (interface_ioctl(cntx->sock, name, SIOCGIFFLAGS, &ifr))
+	ifreq_init(&ifr, name);
+
+	if (!ioctl(cntx->sock, SIOCGIFFLAGS, &ifr))
 		print_flags(ifr.ifr_flags);
 	else
 		printf("<>");
@@ -124,7 +121,9 @@ static int cb(const char *name, int dir, void *priv)
 
 	printf("\n");
 
-	if (interface_ioctl(cntx->sock, name, SIOCGIFHWADDR, &ifr))
+	ifreq_init(&ifr, name);
+
+	if (!ioctl(cntx->sock, SIOCGIFHWADDR, &ifr))
 		print_hwaddr(&ifr);
 
 	if (cntx->what == SHOW_ADDR)
