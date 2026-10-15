@@ -276,6 +276,25 @@ static int write_file(const char *path, const void *what, size_t len)
 	return 0;
 }
 
+/*
+ * Create a directory if it does not already exist
+ * and always chmod it with the desired mode.
+ */
+static int mk_chmod_dir(const char *path, mode_t mode)
+{
+	if (mkdir(path, mode) && errno != EEXIST) {
+		error("mkdir(%s) failed: %d\n", path, errno);
+		return -1;
+	}
+
+	if (chmod(path, mode)) {
+		error("chmod(%s) failed: %d\n", path, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
 /* Read a file line by line, calling cb() for each */
 static inline int read_lines(const char *path, char *buf, size_t len,
 			     void (*cb)(char *line, void *priv), void *priv)
