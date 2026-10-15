@@ -364,6 +364,50 @@ static int tftp_read_block(struct tftp *t, int fd, uint16_t block)
 	return len;
 }
 
+static int tftp_put(struct tftp *t, const char *remote, int fd)
+{
+	unsigned long total = 0;
+	bool oack_ok = true;
+	uint16_t block = 0;
+	bool last = false;
+	int ret;
+
+	ret = tftp_build_request(t, OP_WRQ, remote);
+	if (ret)
+		return -1;
+
+	while (true) {
+		int len;
+
+		ret = tftp_transact(t, OP_ACK, block, oack_ok, false);
+		if (ret < 0)
+			return -1;
+
+		if (ret == OP_OACK && tftp_parse_oack(t))
+			return -1;
+		oack_ok = false;
+
+		if (last)
+			break;
+
+		block++;
+
+		len = tftp_read_block(t, fd, block);
+		if (len < 0)
+			return -1;
+
+		total += len;
+
+		/* A short block to signal that we are done */
+		if ((unsigned int) len < t->blksize)
+			last = true;
+	}
+
+	debug("Sent %lu bytes\n", total);
+
+	return 0;
+}
+
 static int open_local(const char *path, bool get)
 {
 	int fd;
@@ -393,6 +437,7 @@ int main (int argc, char **argv, char **envp)
 	unsigned long blksize;
 	enum tftp_op op = 0;
 	const char *host;
+	int ret;
 	int c;
 
 	while ((c = getopt(argc, argv, "gpr:l:b:")) != -1) {
@@ -466,10 +511,10 @@ int main (int argc, char **argv, char **envp)
 	if (fd < 0)
 		return 1;
 
-	if (op != OP_RRQ) {
-		error("put is not implemented yet\n");
-		return 1;
-	}
+	if (op == OP_RRQ)
+		ret = tftp_get(t, remote, fd);
+	else
+		ret = tftp_put(t, remote, fd);
 
-	return tftp_get(t, remote, fd) ? 1 : 0;
+	return ret ? 1 : 0;
 }
