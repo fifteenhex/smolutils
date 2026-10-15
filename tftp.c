@@ -14,6 +14,7 @@
 
 #define TFTP_PORT		69
 #define TFTP_TIMEOUT		3
+#define TFTP_RETRIES		5
 #define TFTP_HDR_LEN		4
 #define TFTP_DEF_BLKSIZE	512
 #define TFTP_MIN_BLKSIZE	8
@@ -173,6 +174,53 @@ static int tftp_recv(struct tftp *t)
 
 		return op;
 	}
+}
+
+static int tftp_transact(struct tftp *t, enum tftp_op op, uint16_t block,
+			 bool oack_ok, bool answer_dup)
+{
+	int tries;
+
+	for (tries = 0; tries < TFTP_RETRIES; tries++) {
+		if (tftp_send(t))
+			return -1;
+
+		while (true) {
+			int got = tftp_recv(t);
+			uint16_t got_block;
+
+			/* timeout, send it again */
+			if (got == 0)
+				break;
+
+			if (got < 0)
+				return -1;
+
+			if (got == OP_OACK && oack_ok)
+				return got;
+
+			got_block = get_unaligned_be16(t->rx + 2);
+
+			if (got == (int) op && got_block == block)
+				return got;
+
+			if (got == (int) op && got_block == (uint16_t) (block - 1) &&
+			    answer_dup) {
+				verbose("Duplicate block %d, resending\n", got_block);
+				if (tftp_send(t))
+					return -1;
+				continue;
+			}
+
+			verbose("Ignoring op %d block %d\n", got, got_block);
+		}
+
+		verbose("Timeout, retransmitting\n");
+	}
+
+	error("Timed out waiting for the server\n");
+
+	return -1;
 }
 
 static int open_local(const char *path, bool get)
