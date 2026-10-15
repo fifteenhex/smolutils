@@ -289,6 +289,63 @@ static int tftp_transact(struct tftp *t, enum tftp_op op, uint16_t block,
 	return -1;
 }
 
+static int tftp_get(struct tftp *t, const char *remote, int fd)
+{
+	unsigned long total = 0;
+	bool oack_ok = true;
+	uint16_t block = 1;
+	int ret;
+
+	ret = tftp_build_request(t, OP_RRQ, remote);
+	if (ret)
+		return -1;
+
+	while (true) {
+		size_t len;
+
+		ret = tftp_transact(t, OP_DATA, block, oack_ok, true);
+		if (ret < 0)
+			return -1;
+
+		if (ret == OP_OACK) {
+			if (tftp_parse_oack(t))
+				return -1;
+			tftp_set_header(t, OP_ACK, 0);
+			oack_ok = false;
+			continue;
+		}
+
+		len = t->rxlen - TFTP_HDR_LEN;
+		if (len > t->blksize) {
+			error("Block %d is too big: %u\n", block, (unsigned int) len);
+			tftp_send_error(t, ERR_ILLEGAL_OP, "block too big");
+			return -1;
+		}
+
+		if (write_full(fd, t->rx + TFTP_HDR_LEN, len)) {
+			error("Failed to write local file: %d\n", errno);
+			tftp_send_error(t, ERR_DISK_FULL, "write failed");
+			return -1;
+		}
+
+		total += len;
+		tftp_set_header(t, OP_ACK, block);
+		oack_ok = false;
+
+		/* a short block is the last one */
+		if (len < t->blksize) {
+			tftp_send(t);
+			break;
+		}
+
+		block++;
+	}
+
+	debug("Received %lu bytes\n", total);
+
+	return 0;
+}
+
 static int open_local(const char *path, bool get)
 {
 	int fd;
@@ -391,7 +448,10 @@ int main (int argc, char **argv, char **envp)
 	if (fd < 0)
 		return 1;
 
-	error("Transfers are not implemented yet\n");
+	if (op != OP_RRQ) {
+		error("put is not implemented yet\n");
+		return 1;
+	}
 
-	return 1;
+	return tftp_get(t, remote, fd) ? 1 : 0;
 }
