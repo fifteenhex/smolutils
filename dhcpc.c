@@ -558,7 +558,6 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	char subnet_str[INET_ADDRSTRLEN];
 	char router_str[INET_ADDRSTRLEN];
 	char addr_str[INET_ADDRSTRLEN];
-	char dns_str[INET_ADDRSTRLEN];
 	unsigned int dns_len;
 	uint8_t msgtype;
 	uint8_t *dns;
@@ -631,16 +630,17 @@ int do_discover(struct context *cntx, struct dhcp_packet *p)
 	cntx->config.num_dns = 0;
 	if (!find_opt(p, OPT_DNS, &dns, &dns_len)) {
 		for (i = 0; (i + 4) <= dns_len; i += 4) {
-			uint32_t tmp;
+			uint32_t server;
 
 			if (cntx->config.num_dns == ARRAY_SIZE(cntx->config.dns))
 				break;
 
-			memcpy(&tmp, dns + i, sizeof(tmp));
-			cntx->config.dns[cntx->config.num_dns++] = ntohl(tmp);
+			memcpy(&server, dns + i, sizeof(server));
+			server = ntohl(server);
 
-			inet_ntop(AF_INET, &tmp, dns_str, sizeof(dns_str));
-			verbose("DNS server: %s\n", dns_str);
+			cntx->config.dns[cntx->config.num_dns++] = server;
+
+			verbose("DNS server: " IPPRINT "\n", IPARGS(server));
 		}
 	}
 
