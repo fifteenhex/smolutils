@@ -13,20 +13,16 @@
 /* create pre-process directory */
 static inline int dungeon_make_dir(char *dir, size_t len, const char *path)
 {
-	if (mkdir(DUNGEON_DIR, 0755) && errno != EEXIST) {
-		error("Failed to mkdir(%s): %d\n", DUNGEON_DIR, errno);
+	if (mk_chmod_dir(DUNGEON_DIR, 0755))
 		return -1;
-	}
 
 	if (!path_join(dir, len, DUNGEON_DIR, path_basename(path))) {
 		error("Name too long: %s\n", path);
 		return -1;
 	}
 
-	if (mkdir(dir, 0755) && errno != EEXIST) {
-		error("Failed to mkdir(%s): %d\n", dir, errno);
+	if (mk_chmod_dir(dir, 0755))
 		return -1;
-	}
 
 	return 0;
 }
