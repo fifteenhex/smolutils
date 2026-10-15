@@ -275,16 +275,8 @@ static int mount_filesystems(void)
 	}
 
 	/* State sharing directories */
-	foreach(d, rundirs) {
-		if (mkdir(d->path, d->mode) && errno != EEXIST) {
-			error("mkdir(%s) failed: %d\n", d->path, errno);
-			continue;
-		}
-
-		/* mkdir only asks, umask decides, so say it again */
-		if (chmod(d->path, d->mode))
-			error("chmod(%s) failed: %d\n", d->path, errno);
-	}
+	foreach(d, rundirs)
+		mk_chmod_dir(d->path, d->mode);
 
 	return 0;
 
