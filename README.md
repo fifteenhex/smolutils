@@ -60,7 +60,7 @@ Even for the mmu enjoyers out there:
 | startup   |          |                            |                     |
 | su        |          |                            | no auth, dangerous! |
 | telnetd   |          |                            |                     |
-| tftp      | stub     |                            |                     |
+| tftp      |          |                            |                     |
 | touch     |          | files                      |                     |
 | umount    |          | mount                      |                     |
 | uname     |          |                            |                     |
