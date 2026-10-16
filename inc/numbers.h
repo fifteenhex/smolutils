@@ -60,6 +60,15 @@ static inline bool parse_l_range(const char *s, int base, long min, long max,
 	return *out >= min && *out <= max;
 }
 
+static inline bool parse_ul_range(const char *s, int base, unsigned long min,
+				  unsigned long max, unsigned long *out)
+{
+	if (!parse_ul(s, base, out))
+		return false;
+
+	return *out >= min && *out <= max;
+}
+
 static inline bool parse_int_range(const char *s, int base, int min, int max,
 				   int *out)
 {
