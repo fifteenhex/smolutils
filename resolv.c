@@ -6,14 +6,10 @@
 
 #include "resolv.h"
 #include "dhcpc.h"
+#include "inc/misc.h"
 
 static uint16_t dns_id;
 
-static void pick_dns_id(void)
-{
-	if (getrandom(&dns_id, sizeof(dns_id), 0) != sizeof(dns_id))
-		dns_id = (uint16_t) getpid();
-}
 #define DNS_SERVER	"8.8.8.8"
 #define DNS_PORT	53
 #define DNS_TIMEOUT	5
@@ -272,7 +268,7 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	pick_dns_id();
+	dns_id = (uint16_t) random_u32();
 
 	qlen = build_query(hostname, buf, sizeof(buf));
 	if (qlen < 0) {
