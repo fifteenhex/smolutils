@@ -162,8 +162,10 @@ static int sync_handler(int argc, char **argv, int stdout)
 
 static int exit_handler(int argc, char **argv, int stdout)
 {
-	if (argc > 1)
-		exit_status = atoi(argv[1]);
+	if (argc > 1 && !parse_int_range(argv[1], 10, 0, 255, &exit_status)) {
+		usage("usage: exit [0-255]\n");
+		return 1;
+	}
 
 	keeprocking = false;
 
