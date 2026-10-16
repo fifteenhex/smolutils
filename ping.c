@@ -142,14 +142,8 @@ static int prog_ping(int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	if (sock < 0) {
-		error("Failed to create socket: %d\n", errno);
-		return 1;
-	}
-
-	ret = smolutils_net_setsockrxtimeout(sock, TIMEOUT);
-	if (ret)
+	sock = smolutils_net_socket_timeout(SOCK_RAW, IPPROTO_ICMP, TIMEOUT);
+	if (sock < 0)
 		return 1;
 
 	id = (uint16_t) random_u32();
