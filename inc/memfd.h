@@ -40,4 +40,11 @@ static inline int memfd_from_buffer(const char *name, const void *buf,
 	return keep_fd(&memfd);
 }
 
+#define FD_ARG_LEN 12
+
+static inline void fd_to_arg(char arg[FD_ARG_LEN], int fd)
+{
+	snprintf(arg, FD_ARG_LEN, "%d", fd);
+}
+
 #endif  /* _SMOLUTILS_MEMFD_H */
