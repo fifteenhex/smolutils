@@ -492,13 +492,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) {
-		error("Failed to create socket: %d\n", errno);
-		return 1;
-	}
-
-	if (smolutils_net_setsockrxtimeout(sock, TFTP_TIMEOUT))
+	sock = smolutils_net_udp_socket(TFTP_TIMEOUT);
+	if (sock < 0)
 		return 1;
 
 	t->sock = sock;
