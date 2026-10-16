@@ -257,12 +257,8 @@ int main (int argc, char **argv, char **envp)
 
 	num_servers = dns_servers(servers, ARRAY_SIZE(servers));
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = smolutils_net_udp_socket(DNS_TIMEOUT);
 	if (sock < 0)
-		return 1;
-
-	ret = smolutils_net_setsockrxtimeout(sock, DNS_TIMEOUT);
-	if (ret)
 		return 1;
 
 	dns_id = (uint16_t) random_u32();
