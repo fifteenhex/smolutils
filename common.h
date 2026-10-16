@@ -215,6 +215,16 @@ static inline int open_with_msgs(const char *path, int flags, mode_t mode)
 	return fd;
 }
 
+static inline bool parse_fd_with_msgs(const char *s, int *out)
+{
+	if (parse_fd(s, out))
+		return true;
+
+	error("Not an fd: %s\n", s);
+
+	return false;
+}
+
 /* Create a file (if needed) and jam a buffer into it */
 static int write_file(const char *path, const void *what, size_t len)
 {
