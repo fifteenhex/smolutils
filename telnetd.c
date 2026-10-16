@@ -262,20 +262,19 @@ int main (int argc, char **argv, char **envp)
 {
 	struct pollfd fds[POLLFDS_NUM];
 	int __cleanup_fd listener = -1;
-	int port = DEFAULT_PORT;
+	uint16_t port = DEFAULT_PORT;
 	int i, c;
 
 	while ((c = getopt(argc, argv, "p:")) != -1) {
 		switch (c) {
 		case 'p':
-			port = atoi(optarg);
-			break;
+			if (parse_port(optarg, &port))
+				break;
+			/* fall through */
+		default:
+			usage("usage: telnetd [-p port]\n");
+			return 1;
 		}
-	}
-
-	if (port <= 0 || port > 65535) {
-		usage("usage: telnetd [-p port]\n");
-		return 1;
 	}
 
 	for (i = 0; i < MAX_SESSIONS; i++)
