@@ -103,6 +103,7 @@ HEADERS = config.h \
 	  memfd.h \
 	  multicall.h \
 	  inc/cleanup.h \
+	  inc/io.h \
 	  inc/misc.h
 
 # This allows you to extend the rootfs with tarballs containing extra
