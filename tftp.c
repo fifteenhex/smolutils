@@ -425,7 +425,7 @@ static int open_local(const char *path, bool get)
 
 int main (int argc, char **argv, char **envp)
 {
-	unsigned long port = TFTP_PORT;
+	uint16_t port = TFTP_PORT;
 	int __cleanup_fd sock = -1;
 	const char *remote = NULL;
 	int __cleanup_fd fd = -1;
@@ -475,7 +475,7 @@ int main (int argc, char **argv, char **envp)
 	host = argv[optind];
 
 	if (optind + 1 < argc) {
-		if (!parse_ul(argv[optind + 1], 0, &port) || !port || port > 0xffff) {
+		if (!parse_port(argv[optind + 1], &port)) {
 			error("Not a port: %s\n", argv[optind + 1]);
 			return 1;
 		}
