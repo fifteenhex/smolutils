@@ -3,7 +3,7 @@
 #ifndef _SMOLUTILS_RESOLV_H
 #define _SMOLUTILS_RESOLV_H
 
-#include "memfd.h"
+#include "inc/memfd.h"
 
 #define RESOLV_MAX_RESULTS 8
 

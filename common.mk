@@ -98,9 +98,9 @@ HEADERS = config.h \
 	  dhcpc.h \
 	  later.h \
 	  dungeon.h \
-	  memfd.h \
 	  inc/cleanup.h \
 	  inc/io.h \
+	  inc/memfd.h \
 	  inc/misc.h \
 	  inc/multicall.h \
 	  inc/net.h \

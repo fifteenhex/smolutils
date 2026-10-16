@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "common.h"
-#include "memfd.h"
+#include "inc/memfd.h"
 
 #define DEVMEM_PATH	"/dev/mem"
 #define XXD_PATH	"/bin/xxd"
