@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_CLEANUP_H
 #define _SMOLUTILS_CLEANUP_H
 
+#include "util.h"
+
 static void cleanup_fd(const int *_fd)
 {
 	int fd = *_fd;
@@ -12,6 +14,19 @@ static void cleanup_fd(const int *_fd)
 }
 
 #define __cleanup_fd __attribute__((cleanup(cleanup_fd)))
+
+/*
+ * Take a reference to an fd that you don't want cleaned up,
+ * fd cannot be the variable you place the return value into!
+ */
+static inline __warn_if_unused int keep_fd(int *fd)
+{
+	int kept = *fd;
+
+	*fd = -1;
+
+	return kept;
+}
 
 static void cleanup_dir(DIR **_dir)
 {
