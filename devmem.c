@@ -114,8 +114,8 @@ static bool write_block(int fd, unsigned long addr, unsigned int len,
 static bool show(unsigned long addr, unsigned int len)
 {
 	int __cleanup_fd memfd = -1;
+	char fdarg[FD_ARG_LEN];
 	char addrarg[32];
-	char fdarg[16];
 	char * const argv[] = {
 		"xxd",
 		"-m",
@@ -125,20 +125,13 @@ static bool show(unsigned long addr, unsigned int len)
 		NULL
 	};
 
-	if (memfd_create_and_size("devmem", &memfd, 0) < 0) {
-		verbose("Failed to make a memfd: %d\n", errno);
+	memfd = memfd_from_buffer("devmem", block, len);
+	if (memfd < 0) {
+		verbose("Failed to make a memfd out of block: %d\n", errno);
 		return false;
 	}
 
-	if (write(memfd, block, len) != (int) len) {
-		verbose("Failed to fill the memfd: %d\n", errno);
-		return false;
-	}
-
-	if (lseek(memfd, 0, SEEK_SET) < 0)
-		return false;
-
-	snprintf(fdarg, sizeof(fdarg), "%d", memfd);
+	fd_to_arg(fdarg, memfd);
 	snprintf(addrarg, sizeof(addrarg), "0x%lx", addr);
 
 	if (spawn_and_wait_args(XXD_PATH, argv) < 0) {
