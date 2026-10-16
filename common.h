@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_COMMON_H
 #define _SMOLUTILS_COMMON_H
 
+#include "inc/cleanup.h"
+
 #define __smol_always_inline inline __attribute__((always_inline))
 
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof(_a[0]))
@@ -167,26 +169,6 @@ static inline int read_full(int fd, void *buf, int len)
 
 	return got;
 }
-
-static void cleanup_fd(int *_fd)
-{
-        int fd = *_fd;
-
-        if (fd >= 0)
-                close(fd);
-}
-
-#define __cleanup_fd __attribute__((cleanup(cleanup_fd)))
-
-static void cleanup_dir(DIR **_dir)
-{
-	DIR *dir = *_dir;
-
-	if (dir)
-		closedir(dir);
-}
-
-#define __cleanup_dir __attribute__((cleanup(cleanup_dir)))
 
 /*
  * Iterate over a directory calling cb() for each element,
