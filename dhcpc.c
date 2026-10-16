@@ -223,11 +223,9 @@ static int setup_socket(struct context *cntx)
 
 	sockaddr_in_init(&client_addr, INADDR_ANY, CLIENT_PORT);
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) {
-		error("Failed to create socket\n");
+	sock = smolutils_net_udp_socket(3);
+	if (sock < 0)
 		return -1;
-	}
 
 	ret = smolutils_net_setsockbroadcast(sock);
 	if (ret)
@@ -239,10 +237,6 @@ static int setup_socket(struct context *cntx)
 		error("Failed to bind\n");
 		return -1;
 	}
-
-	ret = smolutils_net_setsockrxtimeout(sock, 3);
-	if (ret)
-		return -1;
 
 	ret = bind(sock, (struct sockaddr *)&client_addr, sizeof client_addr);
 	if (ret < 0) {
