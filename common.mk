@@ -102,6 +102,7 @@ HEADERS = config.h \
 	  inc/io.h \
 	  inc/memfd.h \
 	  inc/misc.h \
+	  inc/mmap.h \
 	  inc/multicall.h \
 	  inc/net.h \
 	  inc/numbers.h \
