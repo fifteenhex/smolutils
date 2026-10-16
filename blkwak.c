@@ -41,11 +41,9 @@ static uint8_t *buf;
 
 static int open_blk(struct blk *b, const char *path, int flags)
 {
-	b->fd = open(path, flags);
-	if (b->fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
+	b->fd = open_with_msgs(path, flags, 0);
+	if (b->fd < 0)
 		return -1;
-	}
 
 	if (fstat(b->fd, &b->st)) {
 		error("Failed to stat %s: %d\n", path, errno);
@@ -170,11 +168,9 @@ static void cleanup_img(struct img *i)
 
 static int open_img(struct img *i, const char *path, int flags, mode_t mode)
 {
-	i->fd = open(path, flags, mode);
-	if (i->fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
+	i->fd = open_with_msgs(path, flags, mode);
+	if (i->fd < 0)
 		return -1;
-	}
 
 	if (fstat(i->fd, &i->st)) {
 		error("Failed to stat %s: %d\n", path, errno);

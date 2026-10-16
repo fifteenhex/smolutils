@@ -75,11 +75,9 @@ int main (int argc, char **argv, char **envp)
 
 		path = argv[optind];
 
-		fd = open(path, O_RDONLY);
-		if (fd < 0) {
-			error("Failed to open: %s\n", path);
+		fd = open_with_msgs(path, O_RDONLY, 0);
+		if (fd < 0)
 			return 1;
-		}
 	}
 
 	if (skip && lseek(fd, (off_t) skip, SEEK_SET) < 0) {

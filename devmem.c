@@ -275,11 +275,9 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
-	fd = open(DEVMEM_PATH, setarg ? O_RDWR : O_RDONLY);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", DEVMEM_PATH, errno);
+	fd = open_with_msgs(DEVMEM_PATH, setarg ? O_RDWR : O_RDONLY, 0);
+	if (fd < 0)
 		return 1;
-	}
 
 	for (i = 0; i < naddrs; i++) {
 		unsigned long addr = addrs[i];

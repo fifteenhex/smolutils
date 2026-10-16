@@ -425,11 +425,9 @@ static int open_redirects(struct command *cmd, int *fds)
 		else
 			flags |= cmd->append[i] ? O_APPEND : O_TRUNC;
 
-		fd = open(cmd->redir[i], flags, 0644);
-		if (fd < 0) {
-			error("Failed to open %s: %d\n", cmd->redir[i], errno);
+		fd = open_with_msgs(cmd->redir[i], flags, 0644);
+		if (fd < 0)
 			return -1;
-		}
 
 		fds[i] = fd;
 	}

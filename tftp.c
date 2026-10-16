@@ -416,12 +416,9 @@ static int open_local(const char *path, bool get)
 		return dup(get ? STDOUT_FILENO : STDIN_FILENO);
 
 	if (get)
-		fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		fd = open_with_msgs(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	else
-		fd = open(path, O_RDONLY);
-
-	if (fd < 0)
-		error("Failed to open %s: %d\n", path, errno);
+		fd = open_with_msgs(path, O_RDONLY, 0);
 
 	return fd;
 }

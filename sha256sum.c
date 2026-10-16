@@ -35,11 +35,9 @@ int main (int argc, char **argv, char **envp)
 
 	path = argv[1];
 
-	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
+	fd = open_with_msgs(path, O_RDONLY, 0);
+	if (fd < 0)
 		return 1;
-	}
 
 	if (fstat(fd, &st)) {
 		error("Failed to size %s: %d\n", path, errno);

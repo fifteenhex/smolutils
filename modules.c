@@ -49,11 +49,9 @@ static int prog_insmod(int argc, char **argv, char **envp)
 		}
 	}
 
-	fd = open(argv[1], O_RDONLY);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", argv[1], errno);
+	fd = open_with_msgs(argv[1], O_RDONLY, 0);
+	if (fd < 0)
 		return 1;
-	}
 
 	if (is_compressed(argv[1]))
 		flags |= MODULE_INIT_COMPRESSED_FILE;

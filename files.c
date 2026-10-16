@@ -76,11 +76,9 @@ static int copy_file(const char *src, const char *dst)
 	struct stat st;
 	off_t left;
 
-	src_fd = open(src, O_RDONLY);
-	if (src_fd < 0) {
-		error("Failed to open %s: %d\n", src, errno);
+	src_fd = open_with_msgs(src, O_RDONLY, 0);
+	if (src_fd < 0)
 		return 1;
-	}
 
 	if (fstat(src_fd, &st)) {
 		error("Failed to stat %s: %d\n", src, errno);
@@ -275,9 +273,8 @@ static int prog_cat(int argc, char **argv, char **envp)
 	for (i = 1; i < argc; i++) {
 		int __cleanup_fd fd = -1;
 
-		fd = open(argv[i], O_RDONLY);
+		fd = open_with_msgs(argv[i], O_RDONLY, 0);
 		if (fd < 0) {
-			error("Failed to open %s: %d\n", argv[i], errno);
 			ret = 1;
 			continue;
 		}
