@@ -8,7 +8,7 @@
 
 #define TOOL_NAME	"sntp"
 #include "inc/tool.h"
-#include "net.h"
+#include "inc/net.h"
 #include "resolv.h"
 
 #define NTP_SERVER	"pool.ntp.org"

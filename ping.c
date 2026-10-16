@@ -6,7 +6,7 @@
 #define TOOL_NAME	"ping"
 #define TOOL_USAGE	"<host>"
 #include "inc/tool.h"
-#include "net.h"
+#include "inc/net.h"
 #include "resolv.h"
 #include "inc/misc.h"
 

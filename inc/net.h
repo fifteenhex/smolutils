@@ -5,7 +5,7 @@
 
 #include <linux/sockios.h>
 
-#include "inc/unaligned.h"
+#include "unaligned.h"
 
 /* This is some libc stuff that might get moved.. */
 

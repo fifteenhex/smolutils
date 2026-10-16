@@ -5,7 +5,7 @@
 #define TAG "dhcpc"
 
 #include "common.h"
-#include "net.h"
+#include "inc/net.h"
 #include "inc/misc.h"
 
 #include "dhcpc.h"

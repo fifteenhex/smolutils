@@ -13,7 +13,7 @@
 #include "later.h"
 
 #if is_enabled(CONFIG_NETWORK)
-#include "net.h"
+#include "inc/net.h"
 #endif
 
 #include <linux/capability.h>

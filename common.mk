@@ -91,7 +91,6 @@ HEADERS = config.h \
 	  cmdline.h \
 	  users.h \
 	  seat.h \
-	  net.h \
 	  readln.h \
 	  resolv.h \
 	  colour.h \
@@ -104,6 +103,7 @@ HEADERS = config.h \
 	  inc/io.h \
 	  inc/misc.h \
 	  inc/multicall.h \
+	  inc/net.h \
 	  inc/tool.h \
 	  inc/unaligned.h \
 	  inc/util.h

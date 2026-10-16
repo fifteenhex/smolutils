@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "common.h"
-#include "net.h"
+#include "inc/net.h"
 #include "sysfs.h"
 
 #include <linux/sockios.h>

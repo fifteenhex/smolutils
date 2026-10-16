@@ -5,7 +5,7 @@
 #define TAG "telnetd"
 
 #include "common.h"
-#include "net.h"
+#include "inc/net.h"
 #include "pts.h"
 #include "users.h"
 

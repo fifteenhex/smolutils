@@ -5,7 +5,7 @@
 #define TAG "tftp"
 
 #include "common.h"
-#include "net.h"
+#include "inc/net.h"
 #include "resolv.h"
 
 #define USAGE "usage: tftp -g|-p -r <remote file> [-l <local file>] " \
