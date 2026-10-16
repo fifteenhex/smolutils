@@ -5,6 +5,10 @@
 #define TAG "getty"
 
 #include "common.h"
+
+#define TOOL_NAME	"getty"
+#define TOOL_USAGE	"<tty> <shell>"
+#include "inc/tool.h"
 #include "auth.h"
 #include "seat.h"
 #include "users.h"
@@ -144,7 +148,7 @@ static void setup_signals(void)
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
-int main(int argc, char **argv, char **envp)
+static int prog_getty(int argc, char **argv, char **envp)
 {
 	char * const newargv[] = { "sh", NULL };
 	const char *shell_path;
@@ -153,9 +157,6 @@ int main(int argc, char **argv, char **envp)
 	struct seat seat;
 	int ret = 0;
 	int tty_fd;
-
-	if (argc != 3)
-		return 1;
 
 	tty_path = argv[1];
 	shell_path = argv[2];
@@ -218,3 +219,5 @@ int main(int argc, char **argv, char **envp)
 
 	return ret;
 }
+
+TOOL_SIMPLE_MAIN(2, 2, prog_getty)

@@ -2,6 +2,9 @@
 
 #include "config.h"
 #include "common.h"
+
+#define TOOL_NAME	"dmesg"
+#include "inc/tool.h"
 #include "colour.h"
 
 #define MSG_MAX 2048
@@ -68,7 +71,7 @@ bad_record:
 
 static char tmp[MSG_MAX + 1];
 
-int main (int argc, char **argv, char **envp)
+static int prog_dmesg(int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
 
@@ -93,3 +96,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 0;
 }
+
+TOOL_SIMPLE_MAIN(0, 0, prog_dmesg)

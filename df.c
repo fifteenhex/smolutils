@@ -3,6 +3,9 @@
 #include "config.h"
 #include "common.h"
 
+#define TOOL_NAME	"df"
+#include "inc/tool.h"
+
 #define PROC_MOUNTS "/proc/mounts"
 
 typedef long long df_size_t;
@@ -140,7 +143,7 @@ static void df_line(char *line, void *priv)
 		*ret = process_line(line);
 }
 
-int main (int argc, char **argv, char **envp)
+static int prog_df(int argc, char **argv, char **envp)
 {
 	int lineret = 0;
 	int dropped;
@@ -167,3 +170,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 0;
 }
+
+TOOL_SIMPLE_MAIN(0, 0, prog_df)

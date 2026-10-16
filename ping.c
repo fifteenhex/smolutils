@@ -2,6 +2,10 @@
 
 #include "config.h"
 #include "common.h"
+
+#define TOOL_NAME	"ping"
+#define TOOL_USAGE	"<host>"
+#include "inc/tool.h"
 #include "net.h"
 #include "resolv.h"
 #include "inc/misc.h"
@@ -117,7 +121,7 @@ static int wait_for_response(int sock, uint16_t id, uint16_t seq)
 	}
 }
 
-int main (int argc, char **argv, char **envp)
+static int prog_ping(int argc, char **argv, char **envp)
 {
 	struct timeval t0 = { 0 }, t1 = { 0 };
 	int __cleanup_fd sock = -1;
@@ -127,9 +131,6 @@ int main (int argc, char **argv, char **envp)
 	int replies;
 	int ret;
 	int i;
-
-	if (argc != 2)
-		return 1;
 
 	host = argv[1];
 
@@ -189,3 +190,5 @@ int main (int argc, char **argv, char **envp)
 
 	return replies ? 0 : 1;
 }
+
+TOOL_SIMPLE_MAIN(1, 1, prog_ping)

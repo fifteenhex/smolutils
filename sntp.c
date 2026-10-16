@@ -5,6 +5,9 @@
 #define TAG "sntp"
 
 #include "common.h"
+
+#define TOOL_NAME	"sntp"
+#include "inc/tool.h"
 #include "net.h"
 #include "resolv.h"
 
@@ -83,7 +86,7 @@ static int do_sntp(int sock, struct sockaddr_in *addr)
 	return 0;
 }
 
-int main (int argc, char **argv, char **envp)
+static int prog_sntp(int argc, char **argv, char **envp)
 {
 	struct resolv_buf server_addresses;
 	struct sockaddr_in addr;
@@ -117,3 +120,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 1;
 }
+
+TOOL_SIMPLE_MAIN(0, 0, prog_sntp)

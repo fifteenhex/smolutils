@@ -3,6 +3,10 @@
 #include "config.h"
 #include "common.h"
 
+#define TOOL_NAME	"sha256sum"
+#define TOOL_USAGE	"<file>"
+#include "inc/tool.h"
+
 #include <linux/fs.h>
 
 #define LONESHA256_STATIC
@@ -23,15 +27,12 @@ static int read_block(unsigned char *in)
 	return 0;
 }
 
-int main (int argc, char **argv, char **envp)
+static int prog_sha256sum(int argc, char **argv, char **envp)
 {
 	unsigned char out[32] = {0};
 	struct stat st;
 	size_t size;
 	char *path;
-
-	if (argc != 2)
-		return 1;
 
 	path = argv[1];
 
@@ -71,3 +72,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 0;
 }
+
+TOOL_SIMPLE_MAIN(1, 1, prog_sha256sum)

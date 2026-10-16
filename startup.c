@@ -5,6 +5,10 @@
 #define TAG "startup"
 
 #include "common.h"
+
+#define TOOL_NAME	"startup"
+#define TOOL_USAGE	"[smolinit.<option>=<value> ...]"
+#include "inc/tool.h"
 #include "cmdline.h"
 #include "later.h"
 
@@ -328,7 +332,7 @@ static void delete_self(void)
 		verbose("Failed to remove %s: %d\n", STARTUP_PATH, errno);
 }
 
-int main (int argc, char **argv, char **envp)
+static int prog_startup(int argc, char **argv, char **envp)
 {
 	parse_cmdline(argc, argv);
 
@@ -357,3 +361,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 0;
 }
+
+TOOL_SIMPLE_MAIN(0, TOOL_ARGS_ANY, prog_startup)

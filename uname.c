@@ -3,7 +3,10 @@
 #include "config.h"
 #include "common.h"
 
-int main (int argc, char **argv, char **envp)
+#define TOOL_NAME	"uname"
+#include "inc/tool.h"
+
+static int prog_uname(int argc, char **argv, char **envp)
 {
 	struct utsname u;
 
@@ -15,3 +18,5 @@ int main (int argc, char **argv, char **envp)
 
 	return 0;
 }
+
+TOOL_SIMPLE_MAIN(0, 0, prog_uname)
