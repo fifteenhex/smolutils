@@ -4,6 +4,7 @@
 #include "common.h"
 #include "net.h"
 #include "resolv.h"
+#include "inc/misc.h"
 
 #define TIMEOUT 2
 #define ICMP_ECHO 8
@@ -150,7 +151,7 @@ int main (int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	id = (uint16_t) getpid();
+	id = (uint16_t) random_u32();
 	replies = 0;
 
 	for (i = 0; i < 10; i++)
