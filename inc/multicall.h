@@ -19,4 +19,14 @@ struct multicall_prog {
 	}								\
 }
 
+#define MULTICALL_MAIN(_progs)						\
+int main(int argc, char **argv, char **envp)				\
+{									\
+	MULTICALL_DISPATCH(argv[0], _progs);				\
+									\
+	error("%s isn't a program in this binary\n", argv[0]);		\
+									\
+	return 1;							\
+}
+
 #endif  /* _SMOLUTILS_MULTICALL_H */
