@@ -204,16 +204,25 @@ static inline bool read_file(const char *path, char *out, size_t len)
 	return true;
 }
 
+/* open() that prints the error so you don't need to copy/paste this string */
+static inline int open_with_msgs(const char *path, int flags, mode_t mode)
+{
+	int fd = open(path, flags, mode);
+
+	if (fd < 0)
+		error("Failed to open %s: %d\n", path, errno);
+
+	return fd;
+}
+
 /* Create a file (if needed) and jam a buffer into it */
 static int write_file(const char *path, const void *what, size_t len)
 {
 	int __cleanup_fd fd = -1;
 
-	fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd < 0) {
-		error("Failed to open %s: %d\n", path, errno);
+	fd = open_with_msgs(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd < 0)
 		return -1;
-	}
 
 	if (write(fd, what, len) != (int) len) {
 		error("Failed to write %s: %d\n", path, errno);
