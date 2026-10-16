@@ -143,14 +143,14 @@ static int prog_ps(int argc, char **argv, char **envp)
 static int prog_kill(int argc, char **argv, char **envp)
 {
 	int sig = SIGTERM;
-	char *end;
-	long pid;
+	int pid;
 	int i = 1;
 
 	if (argc > 1 && argv[1][0] == '-') {
-		sig = strtol(argv[1] + 1, &end, 10);
-		if (*end != '\0')
+		if (!parse_int_range(argv[1] + 1, 10, 0, INT_MAX, &sig)) {
+			error("Not a signal: %s\n", argv[1] + 1);
 			return 1;
+		}
 		i++;
 	}
 
@@ -159,14 +159,8 @@ static int prog_kill(int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	pid = strtol(argv[i], &end, 10);
-
-	/*
-         * pid_t is 32 bits but the value we just parsed might get
-         * truncated resulting in badness so we do a cast to check
-         * for truncation.
-         */
-	if (*end != '\0' || pid < 1 || (long) (pid_t) pid != pid) {
+	/* pid_t is an int, so this can't be truncated on the way through */
+	if (!parse_int_range(argv[i], 10, 1, INT_MAX, &pid)) {
 		error("Not a pid: %s\n", argv[i]);
 		return 1;
 	}
