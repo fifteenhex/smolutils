@@ -6,21 +6,6 @@
 #define USAGE \
 	"usage: xxd [-m <fd>] [-o <address>] [-s <skip>] [-l <length>] <file>\n"
 
-/* get an fd from our parent, for memfd based chaining */
-static int inherited_fd(const char *arg)
-{
-	char *endptr;
-	long fd;
-
-	fd = strtol(arg, &endptr, 10);
-	if (endptr == arg || *endptr != '\0' || fd < 0) {
-		error("Not an fd: %s\n", arg);
-		return -1;
-	}
-
-	return fd;
-}
-
 int main (int argc, char **argv, char **envp)
 {
 	int __cleanup_fd fd = -1;
@@ -35,8 +20,7 @@ int main (int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "m:o:s:l:")) != -1) {
 		switch (c) {
 		case 'm':
-			fd = inherited_fd(optarg);
-			if (fd < 0)
+			if (!parse_fd_with_msgs(optarg, &fd))
 				return 1;
 			break;
 
