@@ -72,6 +72,15 @@ static inline int smolutils_net_interface_set_up(const char *iface)
 
 #define SOCK_CLOEXEC	O_CLOEXEC
 
+static inline void sockaddr_in_init(struct sockaddr_in *sin, uint32_t addr_be,
+				    uint16_t port)
+{
+	memset(sin, 0, sizeof(*sin));
+	sin->sin_family = AF_INET;
+	sin->sin_port = htons(port);
+	sin->sin_addr.s_addr = addr_be;
+}
+
 #define INET_ADDRSTRLEN		16
 #define INET6_ADDRSTRLEN	48
 
@@ -190,11 +199,10 @@ static inline int smolutils_net_setsockreuseaddr(int sock)
 
 static inline int smolutils_net_listen_tcp(int port, int backlog)
 {
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(port),
-	};
+	struct sockaddr_in addr;
 	int sock;
+
+	sockaddr_in_init(&addr, INADDR_ANY, port);
 
 	sock = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
 	if (sock < 0) {
