@@ -59,18 +59,9 @@ static inline int later_ask(const char *name, unsigned int secs,
 
 static inline int later_read(const char *path, struct later_job *job)
 {
-	int __cleanup_fd fd = -1;
-	struct stat st;
 	unsigned int i;
 
-	fd = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
-	if (fd < 0)
-		return -1;
-
-	if (fstat(fd, &st) || !S_ISREG(st.st_mode))
-		return -1;
-
-	if (read(fd, job, sizeof(*job)) != sizeof(*job))
+	if (read_struct(path, job))
 		return -1;
 
 	for (i = 0; i < LATER_ARGS; i++)
