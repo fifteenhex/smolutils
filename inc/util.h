@@ -14,4 +14,8 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]) + __must_be_array(_a))
 
+/* round up/down to a power of 2 */
+#define round_down(_x, _align) ((_x) & ~((__typeof__(_x)) (_align) - 1))
+#define round_up(_x, _align) round_down((_x) + (_align) - 1, _align)
+
 #endif /* _SMOLUTILS_UTIL_H */
