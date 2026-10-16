@@ -60,6 +60,24 @@ static inline bool parse_l_range(const char *s, int base, long min, long max,
 	return *out >= min && *out <= max;
 }
 
+static inline bool parse_int_range(const char *s, int base, int min, int max,
+				   int *out)
+{
+	long v;
+
+	if (!parse_l_range(s, base, min, max, &v))
+		return false;
+
+	*out = v;
+
+	return true;
+}
+
+static inline bool parse_int(const char *s, int base, int *out)
+{
+	return parse_int_range(s, base, INT_MIN, INT_MAX, out);
+}
+
 static inline bool parse_size(const char *s, unsigned long long *out)
 {
 	char *end;
