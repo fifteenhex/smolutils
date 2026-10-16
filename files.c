@@ -329,9 +329,9 @@ static int prog_chmod(int argc, char **argv, char **envp)
 
 static int prog_chown(int argc, char **argv, char **envp)
 {
-	gid_t gid = (gid_t) -1;
-	uid_t uid;
-	char *end;
+	unsigned long gid = (gid_t) -1;
+	unsigned long uid;
+	char *group;
 	int ret = 0;
 	int i;
 
@@ -340,24 +340,18 @@ static int prog_chown(int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	uid = strtoul(argv[1], &end, 10);
-	if (end == argv[1]) {
+	/* Work out where the gid is and terminate the uid */
+	group = strchr(argv[1], ':');
+	if (group)
+		*group++ = '\0';
+
+	if (!parse_ul_range(argv[1], 10, 0, UINT_MAX, &uid)) {
 		error("Not a uid: %s\n", argv[1]);
 		return 1;
 	}
 
-	if (*end == ':') {
-		char *group = end + 1;
-
-		gid = strtoul(group, &end, 10);
-		if (end == group) {
-			error("Not a gid: %s\n", group);
-			return 1;
-		}
-	}
-
-	if (*end != '\0') {
-		error("Not a uid: %s\n", argv[1]);
+	if (group && !parse_ul_range(group, 10, 0, UINT_MAX, &gid)) {
+		error("Not a gid: %s\n", group);
 		return 1;
 	}
 
