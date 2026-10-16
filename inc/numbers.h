@@ -78,6 +78,12 @@ static inline bool parse_int(const char *s, int base, int *out)
 	return parse_int_range(s, base, INT_MIN, INT_MAX, out);
 }
 
+/* Parse a file descriptor passed as a string, guessing this is always decimal */
+static inline bool parse_fd(const char *s, int *out)
+{
+	return parse_int_range(s, 10, 0, INT_MAX, out);
+}
+
 static inline bool parse_size(const char *s, unsigned long long *out)
 {
 	char *end;
