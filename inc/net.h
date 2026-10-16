@@ -182,6 +182,28 @@ static inline int smolutils_net_setsockrxtimeout(int sock, int timeout)
 	return 0;
 }
 
+static inline int smolutils_net_socket_timeout(int type, int protocol,
+					       int timeout)
+{
+	int __cleanup_fd sock = -1;
+
+	sock = socket(AF_INET, type, protocol);
+	if (sock < 0) {
+		error("Failed to create socket: %d\n", errno);
+		return -1;
+	}
+
+	if (smolutils_net_setsockrxtimeout(sock, timeout))
+		return -1;
+
+	return keep_fd(&sock);
+}
+
+static inline int smolutils_net_udp_socket(int timeout)
+{
+	return smolutils_net_socket_timeout(SOCK_DGRAM, 0, timeout);
+}
+
 static inline int smolutils_net_setsockreuseaddr(int sock)
 {
 	int sock_opt = 1;
