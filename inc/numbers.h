@@ -3,6 +3,10 @@
 #ifndef _SMOLUTILS_NUMBERS_H
 #define _SMOLUTILS_NUMBERS_H
 
+#ifndef UINT_MAX
+#define UINT_MAX (~0U)
+#endif
+
 /* Did we parse the whole string into a number without trailing junk? */
 static inline bool __whole_number(const char *s, const char *end)
 {
