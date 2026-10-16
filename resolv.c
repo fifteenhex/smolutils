@@ -182,13 +182,10 @@ static void parse_response(const uint8_t *buf, int len,
 static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
 {
 	size_t mapsz = sizeof(struct resolv_buf);
-	unsigned long tmp;
 	int memfd;
 
-	if (!parse_ul(memfd_str, 10, &tmp))
+	if (!parse_fd_with_msgs(memfd_str, &memfd))
 		return -1;
-
-	memfd = tmp;
 
 	if (resolv_mapbuf(memfd, resolv_buf))
 		return -1;
