@@ -5,6 +5,7 @@
 
 #include "inc/cleanup.h"
 #include "inc/io.h"
+#include "inc/numbers.h"
 #include "inc/util.h"
 
 #define __smol_always_inline inline __attribute__((always_inline))
@@ -334,48 +335,6 @@ static void __signal_dummy_handler(int sig)
 static inline int signal_interrupt(int sig)
 {
 	return signal_catch(sig, __signal_dummy_handler, 0);
-}
-
-static inline bool parse_ul(const char *s, int base, unsigned long *out)
-{
-	char *end;
-
-	*out = strtoul(s, &end, base);
-
-	return end != s && *end == '\0';
-}
-
-static inline bool parse_ull(const char *s, int base, unsigned long long *out)
-{
-	char *end;
-
-	*out = strtoull(s, &end, base);
-
-	return end != s && *end == '\0';
-}
-
-static inline bool parse_size(const char *s, unsigned long long *out)
-{
-	char *end;
-
-	*out = strtoull(s, &end, 0);
-	if (end == s)
-		return false;
-
-	switch (*end) {
-	case 'G':
-		*out <<= 10;
-		/* fallthrough */
-	case 'M':
-		*out <<= 10;
-		/* fallthrough */
-	case 'K':
-		*out <<= 10;
-		end++;
-		break;
-	}
-
-	return *end == '\0';
 }
 
 static inline bool path_join(char *buf, size_t len, const char *dir,

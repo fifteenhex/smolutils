@@ -104,6 +104,7 @@ HEADERS = config.h \
 	  inc/misc.h \
 	  inc/multicall.h \
 	  inc/net.h \
+	  inc/numbers.h \
 	  inc/tool.h \
 	  inc/unaligned.h \
 	  inc/util.h
