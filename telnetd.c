@@ -72,8 +72,9 @@ static void session_end(struct session *s)
 	session_init(s);
 }
 
-static void session_start(struct session *s, int sock)
+static void session_start(struct session *s, int *sock)
 {
+	int __cleanup_fd master = -1;
 	char slave[32];
 	char * const args[] = {
 		GETTY_NAME,
@@ -82,11 +83,9 @@ static void session_start(struct session *s, int sock)
 		NULL
 	};
 
-	s->master = smolutils_pts_open(slave, sizeof(slave));
-	if (s->master < 0) {
-		close(sock);
+	master = smolutils_pts_open(slave, sizeof(slave));
+	if (master < 0)
 		return;
-	}
 
 	/* TODO: This only works for the one normal user we currently have */
 	if (chown(slave, SMOLUTILS_USERS_NORMAL_MIN,
@@ -95,16 +94,14 @@ static void session_start(struct session *s, int sock)
 
 	if (spawn(GETTY_PATH, args, environ) < 0) {
 		error("Failed to run %s\n", GETTY_PATH);
-		close(s->master);
-		close(sock);
-		s->master = -1;
 		return;
 	}
 
-	s->sock = sock;
+	s->master = keep_fd(&master);
+	s->sock = keep_fd(sock);
 	s->state = IAC_DATA;
 
-	write_full(sock, hello, sizeof(hello));
+	write_full(s->sock, hello, sizeof(hello));
 }
 
 /*
@@ -239,21 +236,21 @@ static void service(struct session *s, struct pollfd *sock,
 
 static void accept_one(int listener)
 {
-	int sock = accept4(listener, NULL, NULL, SOCK_CLOEXEC);
+	int __cleanup_fd sock = -1;
 	int i;
 
+	sock = accept4(listener, NULL, NULL, SOCK_CLOEXEC);
 	if (sock < 0)
 		return;
 
 	for (i = 0; i < MAX_SESSIONS; i++) {
 		if (sessions[i].sock < 0) {
-			session_start(&sessions[i], sock);
+			session_start(&sessions[i], &sock);
 			return;
 		}
 	}
 
 	verbose("Dropping incoming telnet connection, no room\n");
-	close(sock);
 }
 
 #define POLLFDS_NUM (1 + (MAX_SESSIONS * 2))
