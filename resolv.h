@@ -4,6 +4,7 @@
 #define _SMOLUTILS_RESOLV_H
 
 #include "inc/memfd.h"
+#include "inc/mmap.h"
 
 #define RESOLV_MAX_RESULTS 8
 
@@ -12,26 +13,21 @@ struct resolv_buf {
 	unsigned int num_addr_v4;
 };
 
-static inline int resolv_mapbuf(int memfd, struct resolv_buf **buf)
+static inline bool resolv_mapbuf(struct mapping *m, int memfd)
 {
-	size_t mapsz = sizeof(struct resolv_buf);
-	void *mapped;
-
-	mapped = mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_SHARED, memfd, 0);
-	if (mapped == MAP_FAILED) {
+	if (!mapping_map(m, memfd, 0, sizeof(struct resolv_buf),
+			 PROT_READ | PROT_WRITE, MAP_SHARED)) {
 		error("Failed to mmap() memfd: %d\n", errno);
-		return -1;
-        }
+		return false;
+	}
 
-	*buf = (struct resolv_buf *) mapped;
-
-	return 0;
+	return true;
 }
 
 static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 {
 	size_t mapsz = sizeof(*result);
-	char memfd_str[16] = { 0 };
+	char memfd_str[FD_ARG_LEN];
 	char * const newargv[] = {
 		"resolv",
 		"-m", /* memfd mode */
@@ -39,32 +35,20 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 		(char *) hostname,
 		NULL
 	};
+	struct mapping __cleanup_mapping map = MAPPING_NONE;
 	int __cleanup_fd memfd = -1;
-	struct resolv_buf *mapped;
 	int ret;
 
-	ret = memfd_create_and_size("resolv_buf", &memfd, sizeof(*mapped));
-	if (ret) {
-		verbose("failed to create memfd to capture resolv result: %d:%d\n", ret, errno);
-		return ret;
-	}
-
-#if 0 /* Until nolibc ftruncate appears .. */
-	ret = ftruncate(memfd, mapsz);
-	if (ret) {
-		verbose("failed to expand memfd to size of result\n");
-		return ret;
-	}
-#else
+	/* An empty result for resolv to fill in */
 	memset(result, 0, mapsz);
-	ret = write(memfd, result, mapsz);
-	if (ret != mapsz) {
-		verbose("failed to write tmp into memfd");
+	memfd = memfd_from_buffer("resolv_buf", result, mapsz);
+	if (memfd < 0) {
+		verbose("failed to create memfd to capture resolv result: %d\n",
+			errno);
+		return -1;
 	}
-	lseek(memfd, 0, SEEK_SET);
-#endif
 
-	sprintf(memfd_str, "%d", memfd);
+	fd_to_arg(memfd_str, memfd);
 
 	ret = spawn_and_wait_args("/bin/resolv", newargv);
 	if (ret) {
@@ -72,13 +56,10 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 		return -1;
 	}
 
-	ret = resolv_mapbuf(memfd, &mapped);
-	if (ret)
+	if (!resolv_mapbuf(&map, memfd))
 		return -1;
 
-	memcpy(result, mapped, mapsz);
-
-	munmap(mapped, mapsz);
+	memcpy(result, map.at, mapsz);
 
 	verbose("got %d results from resolv\n", result->num_addr_v4);
 

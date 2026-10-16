@@ -179,18 +179,17 @@ static void parse_response(const uint8_t *buf, int len,
 	}
 }
 
-static int setup_memfd(const char *memfd_str, struct resolv_buf **resolv_buf)
+static int setup_memfd(const char *memfd_str, struct mapping *map)
 {
-	size_t mapsz = sizeof(struct resolv_buf);
 	int memfd;
 
 	if (!parse_fd_with_msgs(memfd_str, &memfd))
 		return -1;
 
-	if (resolv_mapbuf(memfd, resolv_buf))
+	if (!resolv_mapbuf(map, memfd))
 		return -1;
 
-	memset(*resolv_buf, 0, mapsz);
+	memset(map->at, 0, sizeof(struct resolv_buf));
 
 	return 0;
 }
@@ -232,8 +231,8 @@ int main (int argc, char **argv, char **envp)
 	int len;
 	int c;
 
+	struct mapping __cleanup_mapping result_map = MAPPING_NONE;
 	bool memfd_mode = false;
-	struct resolv_buf *resolv_buf;
 
 	/* Fix this.. */
 	if (argc < 2)
@@ -242,7 +241,7 @@ int main (int argc, char **argv, char **envp)
         while ((c = getopt(argc, argv, "m:")) != -1) {
                 switch (c) {
                 case 'm':
-			ret = setup_memfd(optarg, &resolv_buf);
+			ret = setup_memfd(optarg, &result_map);
 			if (ret)
 				return 1;
 			memfd_mode = true;
@@ -284,7 +283,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	if (memfd_mode)
-		parse_response(buf, len, parse_response_cb_memfd, resolv_buf);
+		parse_response(buf, len, parse_response_cb_memfd,
+			       result_map.at);
 	else
 		parse_response(buf, len, parse_response_cb_stdout, NULL);
 
