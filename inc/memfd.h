@@ -3,6 +3,9 @@
 #ifndef _SMOLUTILS_MEMFD_H
 #define _SMOLUTILS_MEMFD_H
 
+#include "cleanup.h"
+#include "io.h"
+
 static inline int memfd_create_and_size(const char *name, int *memfd, size_t sz)
 {
 
@@ -19,4 +22,22 @@ static inline int memfd_create_and_size(const char *name, int *memfd, size_t sz)
 
 	return 0;
 }
+
+static inline int memfd_from_buffer(const char *name, const void *buf,
+				    size_t len)
+{
+	int __cleanup_fd memfd = -1;
+
+	if (memfd_create_and_size(name, &memfd, len))
+		return -1;
+
+	if (write_full(memfd, buf, len))
+		return -1;
+
+	if (lseek(memfd, 0, SEEK_SET) < 0)
+		return -1;
+
+	return keep_fd(&memfd);
+}
+
 #endif  /* _SMOLUTILS_MEMFD_H */
