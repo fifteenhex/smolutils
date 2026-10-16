@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "net.h"
+#include "inc/misc.h"
 
 #include "dhcpc.h"
 #include "later.h"
@@ -700,7 +701,7 @@ int main(int argc, char **argv, char **envp)
 		}
 	}
 
-	cntx.xid = (uint32_t) time(NULL) ^ (uint32_t) getpid();
+	cntx.xid = random_u32();
 
 	verbose("Bringing %s up\n", cntx.interface);
 	ret = smolutils_net_interface_set_up(cntx.interface);
