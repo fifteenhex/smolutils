@@ -95,7 +95,6 @@ HEADERS = config.h \
 	  readln.h \
 	  resolv.h \
 	  colour.h \
-	  unaligned.h \
 	  sysfs.h \
 	  dhcpc.h \
 	  later.h \
@@ -106,6 +105,7 @@ HEADERS = config.h \
 	  inc/misc.h \
 	  inc/multicall.h \
 	  inc/tool.h \
+	  inc/unaligned.h \
 	  inc/util.h
 
 # This allows you to extend the rootfs with tarballs containing extra
