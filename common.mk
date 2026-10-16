@@ -104,7 +104,8 @@ HEADERS = config.h \
 	  inc/cleanup.h \
 	  inc/io.h \
 	  inc/misc.h \
-	  inc/multicall.h
+	  inc/multicall.h \
+	  inc/tool.h
 
 # This allows you to extend the rootfs with tarballs containing extra
 # goodies but the configuration from rootfs.tarwak.json applies, probably
