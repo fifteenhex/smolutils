@@ -7,8 +7,8 @@
 
 static inline int smolutils_pts_open(char *slave, size_t len)
 {
+	int __cleanup_fd master = -1;
 	int unlock = 0;
-	int master;
 	int idx;
 
 	master = open("/dev/ptmx", O_RDWR | O_CLOEXEC);
@@ -20,13 +20,12 @@ static inline int smolutils_pts_open(char *slave, size_t len)
 	if (ioctl(master, TIOCSPTLCK, &unlock) ||
 	    ioctl(master, TIOCGPTN, &idx)) {
 		error("Failed to get a pty: %d\n", errno);
-		close(master);
 		return -1;
 	}
 
 	snprintf(slave, len, "/dev/pts/%d", idx);
 
-	return master;
+	return keep_fd(&master);
 }
 
 #endif /* _SMOLUTILS_PTS_H */

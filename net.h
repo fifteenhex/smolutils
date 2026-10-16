@@ -199,8 +199,8 @@ static inline int smolutils_net_setsockreuseaddr(int sock)
 
 static inline int smolutils_net_listen_tcp(int port, int backlog)
 {
+	int __cleanup_fd sock = -1;
 	struct sockaddr_in addr;
-	int sock;
 
 	sockaddr_in_init(&addr, INADDR_ANY, port);
 
@@ -214,17 +214,15 @@ static inline int smolutils_net_listen_tcp(int port, int backlog)
 
 	if (bind(sock, (struct sockaddr *) &addr, sizeof(addr))) {
 		error("Failed to bind to port %d: %d\n", port, errno);
-		close(sock);
 		return -1;
 	}
 
 	if (listen(sock, backlog)) {
 		error("Failed to listen: %d\n", errno);
-		close(sock);
 		return -1;
 	}
 
-	return sock;
+	return keep_fd(&sock);
 }
 
 #endif /* _SMOLUTILS_NET_H */

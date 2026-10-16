@@ -22,7 +22,8 @@ static bool auth_is_secure(int fd)
 static int auth_say(const char *who, const char *code)
 {
 	char line[AUTH_CODE_LEN + 96];
-	int len, fd;
+	int __cleanup_fd fd = -1;
+	int len;
 
 	fd = open(SMOL_SECURETTY_PATH, O_WRONLY | O_NOCTTY);
 	if (fd < 0)
@@ -33,8 +34,6 @@ static int auth_say(const char *who, const char *code)
 
 	if (len > 0)
 		write_full(fd, line, len);
-
-	close(fd);
 
 	return 0;
 }

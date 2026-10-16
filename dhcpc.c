@@ -218,7 +218,7 @@ static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 static int setup_socket(struct context *cntx)
 {
 	struct sockaddr_in client_addr;
-	int sock;
+	int __cleanup_fd sock = -1;
 	int ret;
 
 	sockaddr_in_init(&client_addr, INADDR_ANY, CLIENT_PORT);
@@ -250,7 +250,7 @@ static int setup_socket(struct context *cntx)
 		return -1;
 	}
 
-	cntx->sock = sock;
+	cntx->sock = keep_fd(&sock);
 
 	return 0;
 }
