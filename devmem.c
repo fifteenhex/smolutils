@@ -3,6 +3,7 @@
 #include "config.h"
 #include "common.h"
 #include "inc/memfd.h"
+#include "inc/mmap.h"
 
 #define DEVMEM_PATH	"/dev/mem"
 #define XXD_PATH	"/bin/xxd"
@@ -17,37 +18,14 @@
 
 static uint8_t *block;
 
-struct mapping {
-	volatile char *at;
-	void *mapped;
-	unsigned long span;
-};
-
-static void cleanup_mapping(struct mapping *m)
-{
-	if (m->mapped != MAP_FAILED)
-		munmap(m->mapped, m->span);
-}
-
-#define __cleanup_mapping __attribute__((cleanup(cleanup_mapping)))
-
 static bool map_block(int fd, unsigned long addr, unsigned int len, int prot,
 		      struct mapping *m)
 {
-	unsigned long page = getpagesize();
-	unsigned long base = addr & ~(page - 1);
-	unsigned long into = addr - base;
-
-	m->span = (into + len + page - 1) & ~(page - 1);
-
-	m->mapped = mmap(NULL, m->span, prot, MAP_SHARED, fd, base);
-	if (m->mapped == MAP_FAILED) {
-		error("Failed to map %s at 0x%lx: %d\n",
-		      DEVMEM_PATH, base, errno);
+	if (!mapping_map(m, fd, addr, len, prot, MAP_SHARED)) {
+		error("Failed to map %s at 0x%lx: %d\n", DEVMEM_PATH, addr,
+		      errno);
 		return false;
 	}
-
-	m->at = (volatile char *) m->mapped + into;
 
 	return true;
 }
@@ -106,14 +84,14 @@ static void write_one(volatile void *at, uint64_t value, unsigned int width)
 static bool read_block(int fd, unsigned long addr, unsigned int len,
 		       unsigned int width)
 {
-	struct mapping __cleanup_mapping m = { .mapped = MAP_FAILED };
+	struct mapping __cleanup_mapping m = MAPPING_NONE;
 	unsigned int i;
 
 	if (!map_block(fd, addr, len, PROT_READ, &m))
 		return false;
 
 	for (i = 0; i < len; i += width)
-		read_one(m.at + i, block + i, width);
+		read_one(map_at(&m, i), block + i, width);
 
 	return true;
 }
@@ -121,14 +99,14 @@ static bool read_block(int fd, unsigned long addr, unsigned int len,
 static bool write_block(int fd, unsigned long addr, unsigned int len,
 			unsigned int width, uint64_t value)
 {
-	struct mapping __cleanup_mapping m = { .mapped = MAP_FAILED };
+	struct mapping __cleanup_mapping m = MAPPING_NONE;
 	unsigned int i;
 
 	if (!map_block(fd, addr, len, PROT_READ | PROT_WRITE, &m))
 		return false;
 
 	for (i = 0; i < len; i += width)
-		write_one(m.at + i, value, width);
+		write_one(map_at(&m, i), value, width);
 
 	return true;
 }
