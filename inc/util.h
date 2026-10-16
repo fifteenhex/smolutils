@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_UTIL_H
 #define _SMOLUTILS_UTIL_H
 
+#define __warn_if_unused __attribute__((warn_unused_result))
+
 /* Linux kernel trick to force a build failure */
 #define __build_bug_on_zero(_e) ((int) sizeof(struct { int : (-!!(_e)); }))
 
