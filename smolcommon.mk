@@ -136,10 +136,9 @@ LIBC_WOPTS ?= -Wall -Wextra
 	$(MSG) STRIP $*
 	$(Q)$(HOSTSTRIP) $< -o $@
 
-# Formatting, to the style in .clang-format next to this. Only what's at the
-# top level: anything vendored under a subdirectory is left as it came.
+# Clang format but only on our files
 CLANG_FORMAT ?= clang-format
-SMOL_FORMAT_FILES ?= $(wildcard *.c *.h)
+SMOL_FORMAT_FILES ?= $(wildcard *.c *.h inc/*.h)
 
 .PHONY: clang-format
 clang-format:
