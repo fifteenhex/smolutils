@@ -16,6 +16,7 @@
 #define NTP_VERSION	4
 #define NTP_MODE_CLIENT	3
 #define NTP_PACKET_SIZE	48
+#define NTP_TIMEOUT	5
 #define NTP_UNIX_DELTA	2208988800UL
 
 struct ntp_packet {
@@ -98,12 +99,8 @@ static int prog_sntp(int argc, char **argv, char **envp)
 	if (ret)
 		return 1;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = smolutils_net_udp_socket(NTP_TIMEOUT);
 	if (sock < 0)
-		return 1;
-
-	ret = smolutils_net_setsockrxtimeout(sock, 5);
-	if (ret)
 		return 1;
 
 	for (i = 0; i < server_addresses.num_addr_v4; i++) {
