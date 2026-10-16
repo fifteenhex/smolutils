@@ -3,7 +3,7 @@
 #include "config.h"
 #include "common.h"
 
-#include "multicall.h"
+#include "inc/multicall.h"
 
 #include <linux/mount.h>
 

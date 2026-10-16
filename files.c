@@ -3,7 +3,7 @@
 #include "config.h"
 #include "common.h"
 
-#include "multicall.h"
+#include "inc/multicall.h"
 
 static int prog_touch(int argc, char **argv, char **envp)
 {

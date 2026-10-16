@@ -6,7 +6,7 @@
 
 #include "common.h"
 
-#include "multicall.h"
+#include "inc/multicall.h"
 
 #include <linux/module.h>
 

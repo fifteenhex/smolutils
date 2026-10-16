@@ -8,7 +8,7 @@
 #include "cmdline.h"
 #include "later.h"
 #include "dungeon.h"
-#include "multicall.h"
+#include "inc/multicall.h"
 
 /* Signals for controlling halt, poweroff, reboot, matches busybox */
 #define SIG_HALT	SIGUSR1

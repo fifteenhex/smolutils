@@ -4,7 +4,7 @@
 #include "common.h"
 #include "sysfs.h"
 
-#include "multicall.h"
+#include "inc/multicall.h"
 
 #define PCI_DEVICES "/sys/bus/pci/devices"
 #define USB_DEVICES "/sys/bus/usb/devices"

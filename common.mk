@@ -101,10 +101,10 @@ HEADERS = config.h \
 	  later.h \
 	  dungeon.h \
 	  memfd.h \
-	  multicall.h \
 	  inc/cleanup.h \
 	  inc/io.h \
-	  inc/misc.h
+	  inc/misc.h \
+	  inc/multicall.h
 
 # This allows you to extend the rootfs with tarballs containing extra
 # goodies but the configuration from rootfs.tarwak.json applies, probably

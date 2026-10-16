@@ -4,7 +4,7 @@
 #include "common.h"
 #include "users.h"
 
-#include "multicall.h"
+#include "inc/multicall.h"
 
 static const char *proc_path = "/proc";
 
