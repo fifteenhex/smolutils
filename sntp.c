@@ -85,11 +85,8 @@ static int do_sntp(int sock, struct sockaddr_in *addr)
 
 int main (int argc, char **argv, char **envp)
 {
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(NTP_PORT)
-	};
 	struct resolv_buf server_addresses;
+	struct sockaddr_in addr;
 	int __cleanup_fd sock = -1;
 	int ret;
 	int i;
@@ -107,7 +104,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	for (i = 0; i < server_addresses.num_addr_v4; i++) {
-		memcpy(&addr.sin_addr.s_addr, &server_addresses.addr_v4[i], sizeof(addr.sin_addr.s_addr));
+		sockaddr_in_init(&addr, server_addresses.addr_v4[i].s_addr,
+				 NTP_PORT);
 		ret = do_sntp(sock, &addr);
 
 		/* success */

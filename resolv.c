@@ -223,11 +223,8 @@ static unsigned int dns_servers(uint32_t *servers, unsigned int max)
 
 int main (int argc, char **argv, char **envp)
 {
-	struct sockaddr_in srv = {
-		.sin_family = AF_INET,
-		.sin_port   = htons(DNS_PORT),
-	};
 	uint32_t servers[DHCPC_MAX_DNS];
+	struct sockaddr_in srv;
 	int __cleanup_fd sock = -1;
 	unsigned int num_servers;
 	const char *hostname;
@@ -278,7 +275,7 @@ int main (int argc, char **argv, char **envp)
 
 	/* Ask each one in turn, the first to answer wins */
 	for (i = 0, len = 0; i < num_servers && len < 1; i++) {
-		srv.sin_addr.s_addr = servers[i];
+		sockaddr_in_init(&srv, servers[i], DNS_PORT);
 
 		if (connect(sock, (struct sockaddr *)&srv, sizeof(srv)))
 			continue;

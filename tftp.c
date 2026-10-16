@@ -484,8 +484,7 @@ int main (int argc, char **argv, char **envp)
 	if (!local)
 		local = path_basename(remote);
 
-	t->server.sin_family = AF_INET;
-	t->server.sin_port = htons(port);
+	sockaddr_in_init(&t->server, INADDR_ANY, port);
 	t->blksize = TFTP_DEF_BLKSIZE;
 
 	if (resolv_host(host, &t->server.sin_addr)) {

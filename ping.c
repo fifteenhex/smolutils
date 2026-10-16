@@ -120,10 +120,8 @@ static int wait_for_response(int sock, uint16_t id, uint16_t seq)
 int main (int argc, char **argv, char **envp)
 {
 	struct timeval t0 = { 0 }, t1 = { 0 };
-	struct sockaddr_in dst = {
-		.sin_family = AF_INET,
-	};
 	int __cleanup_fd sock = -1;
+	struct sockaddr_in dst;
 	const char *host;
 	uint16_t id;
 	int replies;
@@ -134,6 +132,8 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	host = argv[1];
+
+	sockaddr_in_init(&dst, INADDR_ANY, 0);
 
 	ret = resolv_host(host, &dst.sin_addr);
 	if (ret) {

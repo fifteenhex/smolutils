@@ -117,13 +117,11 @@ static int build_discover(struct dhcp_packet *p,
 
 static int send_discover(struct context *cntx, struct dhcp_packet *p)
 {
-	struct sockaddr_in dst = {
-		.sin_family = AF_INET,
-		.sin_port = htons(SERVER_PORT),
-		.sin_addr.s_addr = INADDR_BROADCAST,
-	};
+	struct sockaddr_in dst;
 	int len;
 	int ret;
+
+	sockaddr_in_init(&dst, INADDR_BROADCAST, SERVER_PORT);
 
 	len = build_discover(p, cntx->xid, cntx->mac);
 
@@ -168,13 +166,11 @@ static int build_request(struct dhcp_packet *p,
 
 static int send_request(struct context *cntx, struct dhcp_packet *p)
 {
-	struct sockaddr_in dst = {
-		.sin_family = AF_INET,
-		.sin_port = htons(SERVER_PORT),
-		.sin_addr.s_addr = INADDR_BROADCAST,
-	};
+	struct sockaddr_in dst;
 	int len;
 	int ret;
+
+	sockaddr_in_init(&dst, INADDR_BROADCAST, SERVER_PORT);
 
 	len = build_request(p, cntx->xid, cntx->mac,
 			    htonl(cntx->config.address),
@@ -192,12 +188,8 @@ static int send_request(struct context *cntx, struct dhcp_packet *p)
 
 static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 {
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(SERVER_PORT),
-		.sin_addr.s_addr = INADDR_BROADCAST,
-	};
-	socklen_t addr_len = sizeof(addr);
+	socklen_t addr_len = sizeof(struct sockaddr_in);
+	struct sockaddr_in addr;
 	ssize_t recvd;
 
 	verbose("Waiting for packet ...\n");
@@ -225,18 +217,11 @@ static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 
 static int setup_socket(struct context *cntx)
 {
-	const struct sockaddr_in client_addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(CLIENT_PORT),
-		.sin_addr.s_addr = INADDR_ANY,
-	};
-	const struct sockaddr_in bcast = {
-		.sin_family = AF_INET,
-		.sin_port = htons(SERVER_PORT),
-		.sin_addr.s_addr = INADDR_BROADCAST,
-	};
+	struct sockaddr_in client_addr;
 	int sock;
 	int ret;
+
+	sockaddr_in_init(&client_addr, INADDR_ANY, CLIENT_PORT);
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0) {
@@ -294,8 +279,7 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	ifreq_init(&ifr, iface);
 
 	sin = (struct sockaddr_in *)&ifr.ifr_addr;
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = htonl(addr);
+	sockaddr_in_init(sin, htonl(addr), 0);
 
 	ret = ioctl(sock, SIOCSIFADDR, &ifr);
 	if (ret < 0) {
@@ -308,10 +292,9 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	 * but go through the motions.
 	 */
 	sin = (struct sockaddr_in *)&ifr.ifr_netmask;
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = htonl(mask);
+	sockaddr_in_init(sin, htonl(mask), 0);
 
-        ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
+	ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
 	if (ret < 0) {
 		verbose("Failed to set subnet mask\n");
 		return -1;
@@ -353,16 +336,13 @@ static int interface_set_default_route(const char *iface, uint32_t gateway)
 		return -1;
 
 	sin = (struct sockaddr_in *)&rt.rt_dst;
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = INADDR_ANY;
+	sockaddr_in_init(sin, INADDR_ANY, 0);
 
 	sin = (struct sockaddr_in *)&rt.rt_genmask;
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = INADDR_ANY;
+	sockaddr_in_init(sin, INADDR_ANY, 0);
 
 	sin = (struct sockaddr_in *)&rt.rt_gateway;
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = htonl(gateway);
+	sockaddr_in_init(sin, htonl(gateway), 0);
 
 	rt.rt_flags = RTF_UP | RTF_GATEWAY;
 	rt.rt_dev = (char *)iface;
