@@ -206,7 +206,7 @@ static unsigned int dns_servers(uint32_t *servers, unsigned int max)
 	unsigned int num = 0;
 	unsigned int i;
 
-	if (!dhcpc_read_state(DHCPC_DNS_PATH, &dns, sizeof(dns)))
+	if (!read_struct(DHCPC_DNS_PATH, &dns))
 		for (i = 0; i < dns.num && i < DHCPC_MAX_DNS && num < max; i++)
 			servers[num++] = htonl(dns.server[i]);
 

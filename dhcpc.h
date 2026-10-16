@@ -21,20 +21,4 @@ struct dhcpc_dns {
 	uint32_t num;
 };
 
-static inline int dhcpc_read_state(const char *path, void *out, size_t len)
-{
-	int __cleanup_fd fd = -1;
-	int ret;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		return -1;
-
-	ret = read(fd, out, len);
-	if (ret != (int) len)
-		return -1;
-
-	return 0;
-}
-
 #endif /* _SMOLUTILS_DHCPC_H */
