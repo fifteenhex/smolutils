@@ -9,9 +9,21 @@ static inline bool __whole_number(const char *s, const char *end)
 	return end != s && *end == '\0';
 }
 
+/* explictly check if there is a sign before parsing the number */
+static inline bool __has_sign(const char *s)
+{
+	while (isspace((unsigned char) *s))
+		s++;
+
+	return *s == '-';
+}
+
 static inline bool parse_ul(const char *s, int base, unsigned long *out)
 {
 	char *end;
+
+	if (__has_sign(s))
+		return false;
 
 	*out = strtoul(s, &end, base);
 
@@ -22,6 +34,9 @@ static inline bool parse_ull(const char *s, int base, unsigned long long *out)
 {
 	char *end;
 
+	if (__has_sign(s))
+		return false;
+
 	*out = strtoull(s, &end, base);
 
 	return __whole_number(s, end);
@@ -30,6 +45,9 @@ static inline bool parse_ull(const char *s, int base, unsigned long long *out)
 static inline bool parse_size(const char *s, unsigned long long *out)
 {
 	char *end;
+
+	if (__has_sign(s))
+		return false;
 
 	*out = strtoull(s, &end, 0);
 	if (end == s)
