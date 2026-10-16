@@ -42,6 +42,24 @@ static inline bool parse_ull(const char *s, int base, unsigned long long *out)
 	return __whole_number(s, end);
 }
 
+static inline bool parse_l(const char *s, int base, long *out)
+{
+	char *end;
+
+	*out = strtol(s, &end, base);
+
+	return __whole_number(s, end);
+}
+
+static inline bool parse_l_range(const char *s, int base, long min, long max,
+				 long *out)
+{
+	if (!parse_l(s, base, out))
+		return false;
+
+	return *out >= min && *out <= max;
+}
+
 static inline bool parse_size(const char *s, unsigned long long *out)
 {
 	char *end;
