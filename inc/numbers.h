@@ -3,13 +3,19 @@
 #ifndef _SMOLUTILS_NUMBERS_H
 #define _SMOLUTILS_NUMBERS_H
 
+/* Did we parse the whole string into a number without trailing junk? */
+static inline bool __whole_number(const char *s, const char *end)
+{
+	return end != s && *end == '\0';
+}
+
 static inline bool parse_ul(const char *s, int base, unsigned long *out)
 {
 	char *end;
 
 	*out = strtoul(s, &end, base);
 
-	return end != s && *end == '\0';
+	return __whole_number(s, end);
 }
 
 static inline bool parse_ull(const char *s, int base, unsigned long long *out)
@@ -18,7 +24,7 @@ static inline bool parse_ull(const char *s, int base, unsigned long long *out)
 
 	*out = strtoull(s, &end, base);
 
-	return end != s && *end == '\0';
+	return __whole_number(s, end);
 }
 
 static inline bool parse_size(const char *s, unsigned long long *out)
@@ -42,7 +48,7 @@ static inline bool parse_size(const char *s, unsigned long long *out)
 		break;
 	}
 
-	return *end == '\0';
+	return __whole_number(s, end);
 }
 
 #endif /* _SMOLUTILS_NUMBERS_H */
