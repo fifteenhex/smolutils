@@ -97,6 +97,19 @@ static inline bool parse_fd(const char *s, int *out)
 	return parse_int_range(s, 10, 0, INT_MAX, out);
 }
 
+/* Parse a valid TCP/UDP port number */
+static inline bool parse_port(const char *s, uint16_t *out)
+{
+	unsigned long v;
+
+	if (!parse_ul_range(s, 0, 1, 0xffff, &v))
+		return false;
+
+	*out = v;
+
+	return true;
+}
+
 static inline bool parse_size(const char *s, unsigned long long *out)
 {
 	char *end;
