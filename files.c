@@ -388,9 +388,4 @@ static const struct multicall_prog progs[] = {
 	{ "chown", prog_chown },
 };
 
-int main (int argc, char **argv, char **envp)
-{
-	MULTICALL_DISPATCH(argv[0], progs);
-
-	return 1;
-}
+MULTICALL_MAIN(progs)
