@@ -3,6 +3,9 @@
 #ifndef _SMOLUTILS_AUTH_H
 #define _SMOLUTILS_AUTH_H
 
+#include "cleanup.h"
+#include "io.h"
+#include "printing.h"
 #include "readln.h"
 
 #define AUTH_CODE_BYTES	3

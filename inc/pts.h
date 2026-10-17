@@ -3,6 +3,9 @@
 #ifndef _SMOLUTILS_PTS_H
 #define _SMOLUTILS_PTS_H
 
+#include "cleanup.h"
+#include "printing.h"
+
 #include <asm/ioctls.h>
 
 static inline int smolutils_pts_open(char *slave, size_t len)

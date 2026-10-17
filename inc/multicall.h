@@ -3,6 +3,10 @@
 #ifndef _SMOLUTILS_MULTICALL_H
 #define _SMOLUTILS_MULTICALL_H
 
+#include "printing.h"
+#include "paths.h"
+#include "util.h"
+
 struct multicall_prog {
 	const char *progname;
 	int (*progcb)(int argc, char **argv, char **envp);

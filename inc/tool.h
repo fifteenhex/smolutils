@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_TOOL_H
 #define _SMOLUTILS_TOOL_H
 
+#include "printing.h"
+
 #ifndef TOOL_NAME
 #error "TOOL_NAME not defined"
 #endif

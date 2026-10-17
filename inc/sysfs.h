@@ -3,6 +3,7 @@
 #ifndef _SMOLUTILS_SYSFS_H
 #define _SMOLUTILS_SYSFS_H
 
+#include "fs.h"
 #include "kernfs.h"
 
 #define SYSFS_VALUE_MAX 128

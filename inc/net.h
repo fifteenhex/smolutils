@@ -3,6 +3,9 @@
 #ifndef _SMOLUTILS_NET_H
 #define _SMOLUTILS_NET_H
 
+#include "cleanup.h"
+#include "printing.h"
+
 #include <linux/sockios.h>
 
 #include "unaligned.h"
