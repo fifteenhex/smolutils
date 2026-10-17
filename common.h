@@ -10,6 +10,7 @@
 #include "inc/numbers.h"
 #include "inc/paths.h"
 #include "inc/printing.h"
+#include "inc/signals.h"
 #include "inc/strings.h"
 #include "inc/util.h"
 
@@ -20,26 +21,6 @@
 
 /* A tty we trust with important stuff */
 #define SMOL_SECURETTY_PATH SMOL_RUN_PRIVATE_DIR "/securetty"
-
-static inline int signal_catch(int sig, void (*handler)(int), int flags)
-{
-	struct sigaction act = {
-		.sa_handler = handler,
-		.sa_flags = flags,
-	};
-
-	return sigaction(sig, &act, NULL);
-}
-
-static void __signal_dummy_handler(int sig)
-{
-}
-
-/* Setup a signal just to interrupt something that is blocking to get control back */
-static inline int signal_interrupt(int sig)
-{
-	return signal_catch(sig, __signal_dummy_handler, 0);
-}
 
 /* Process stuff */
 
