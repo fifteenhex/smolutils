@@ -50,6 +50,10 @@
 						"type": "symlink",
 						"target": "/lib/smol/i2c"
 					},
+					"i2cdetect": {
+						"type": "symlink",
+						"target": "/lib/smol/i2c"
+					},
 					"hwclock": {
 						"type": "symlink",
 						"target": "/lib/smol/rtc"

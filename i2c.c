@@ -14,6 +14,9 @@
 #define I2C_FIRST_ADDR	0x03
 #define I2C_LAST_ADDR	0x77
 
+#define I2C_GRID_HEADER \
+	"     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f"
+
 static int open_bus(const char *arg)
 {
 	char path[sizeof(I2C_DEV_PATH) + 20];
@@ -270,7 +273,73 @@ static int prog_i2cset(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define I2CDETECT_USAGE \
+	"usage: i2cdetect [-y] [-r] <bus> [<first> <last>]\n"
+
+/* Read probe, addresses a driver owns show as UU */
+static int prog_i2cdetect(int argc, char **argv, char **envp)
+{
+	unsigned int first_addr = I2C_FIRST_ADDR;
+	unsigned int last_addr = I2C_LAST_ADDR;
+	int __cleanup_fd fd = -1;
+	bool force = false;
+	unsigned int row;
+	unsigned int col;
+	int first;
+
+	first = parse_options(argc, argv, "r", &force);
+	if (first < 0 || (argc - first != 1 && argc - first != 3)) {
+		usage(I2CDETECT_USAGE);
+		return 1;
+	}
+	argv += first;
+	argc -= first;
+
+	if (argc == 3) {
+		if (!parse_chip(argv[1], &first_addr))
+			return 1;
+
+		if (!parse_chip(argv[2], &last_addr))
+			return 1;
+
+		if (first_addr > last_addr) {
+			error("Not an address range: %s %s\n",
+			      argv[1], argv[2]);
+			return 1;
+		}
+	}
+
+	fd = open_bus(argv[0]);
+	if (fd < 0)
+		return 1;
+
+	printf(I2C_GRID_HEADER "\n");
+
+	for (row = 0; row < 0x80; row += 16) {
+		printf("%02x:", row);
+
+		for (col = 0; col < 16; col++) {
+			unsigned int addr = row + col;
+			uint8_t b;
+
+			if (addr < first_addr || addr > last_addr)
+				printf("   ");
+			else if (ioctl(fd, I2C_SLAVE, addr) && errno == EBUSY)
+				printf(" UU");
+			else if (!xfer(fd, addr, NULL, 0, &b, 1))
+				printf(" %02x", addr);
+			else
+				printf(" --");
+		}
+
+		printf("\n");
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
+	{ "i2cdetect", prog_i2cdetect },
 	{ "i2cget", prog_i2cget },
 	{ "i2cset", prog_i2cset },
 };
