@@ -13,6 +13,8 @@
 
 #include <linux/sockios.h>
 
+#define USAGE "usage: dhcpc [-i <interface>]\n"
+
 #define DHCPC_PATH	"/sbin/dhcpc"
 
 #define RENEW_FRACTION	2
@@ -672,6 +674,10 @@ int main(int argc, char **argv, char **envp)
 		case 'i':
 			cntx.interface = optarg;
 			break;
+
+		default:
+			usage(USAGE);
+			return 1;
 		}
 	}
 
