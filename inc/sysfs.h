@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_SYSFS_H
 #define _SMOLUTILS_SYSFS_H
 
+#include "kernfs.h"
+
 #define SYSFS_VALUE_MAX 128
 
 #define sysfs_read(_dir, _name, _out, _len)	read_file_in(_dir, _name, _out, _len)

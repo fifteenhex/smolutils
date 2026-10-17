@@ -97,6 +97,7 @@ HEADERS = config.h \
 	  inc/colour.h \
 	  inc/fs.h \
 	  inc/io.h \
+	  inc/kernfs.h \
 	  inc/memfd.h \
 	  inc/misc.h \
 	  inc/mmap.h \
