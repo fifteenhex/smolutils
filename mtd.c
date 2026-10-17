@@ -311,10 +311,115 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define NANDWRITE_USAGE \
+	"usage: nandwrite [-p] [-s <start>] <dev> <file>\n"
+
+static int prog_nandwrite(int argc, char **argv, char **envp)
+{
+	unsigned long long start = 0;
+	struct mtd_info_user info;
+	int __cleanup_fd fd = -1;
+	int __cleanup_fd in = -1;
+	bool pad = false;
+	int c;
+
+	while ((c = getopt(argc, argv, "ps:")) != -1) {
+		switch (c) {
+		case 'p':
+			pad = true;
+			break;
+
+		case 's':
+			if (!parse_size(optarg, &start)) {
+				error("Not an offset: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		default:
+			usage(NANDWRITE_USAGE);
+			return 1;
+		}
+	}
+
+	if (argc - optind != 2) {
+		usage(NANDWRITE_USAGE);
+		return 1;
+	}
+
+	fd = open_with_msgs(argv[optind], O_RDWR, 0);
+	if (fd < 0)
+		return 1;
+
+	if (!get_info(fd, &info))
+		return 1;
+
+	if (info.writesize > CHUNK_SIZE || CHUNK_SIZE % info.writesize) {
+		error("Unsupported page size: %u\n", info.writesize);
+		return 1;
+	}
+
+	if (start % info.writesize || start >= info.size) {
+		error("0x%llx isn't a page on this device\n", start);
+		return 1;
+	}
+
+	in = open_with_msgs(argv[optind + 1], O_RDONLY, 0);
+	if (in < 0)
+		return 1;
+
+	while (true) {
+		unsigned int n = info.erasesize - (start % info.erasesize);
+		unsigned int padding;
+		int got;
+
+		if (n > CHUNK_SIZE)
+			n = CHUNK_SIZE;
+
+		got = read_full(in, chunk, n);
+		if (got < 0) {
+			error("Failed to read %s: %d\n", argv[optind + 1],
+			      errno);
+			return 1;
+		}
+		if (!got)
+			break;
+
+		padding = (info.writesize - (got % info.writesize)) %
+			  info.writesize;
+		if (padding && !pad) {
+			error("%d bytes isn't whole pages, use -p\n", got);
+			return 1;
+		}
+		memset(chunk + got, 0xff, padding);
+		got += padding;
+
+		while (start < info.size &&
+		       is_bad_block(fd, &info, start - start % info.erasesize))
+			start += info.erasesize - start % info.erasesize;
+
+		if (start + got > info.size) {
+			error("Ran out of good blocks at 0x%llx\n", start);
+			return 1;
+		}
+
+		if (lseek(fd, start, SEEK_SET) != (off_t) start ||
+		    write_full(fd, chunk, got)) {
+			error("Failed to write at 0x%llx: %d\n", start, errno);
+			return 1;
+		}
+
+		start += got;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "flash_erase", prog_flash_erase },
 	{ "mtdinfo", prog_mtdinfo },
 	{ "nanddump", prog_nanddump },
+	{ "nandwrite", prog_nandwrite },
 };
 
 MULTICALL_MAIN(progs)
