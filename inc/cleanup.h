@@ -38,4 +38,19 @@ static void cleanup_dir(DIR **_dir)
 
 #define __cleanup_dir __attribute__((cleanup(cleanup_dir)))
 
+static void cleanup_free(void *_p)
+{
+	/*
+	 * This is confusing but _p is really a ** but because of C
+	 * it needs to be a * in the function signature as otherwise
+	 * using this with uint8_t *xyz doesn't work.
+	 */
+
+	void **p = _p;
+
+	free(*p);
+}
+
+#define __cleanup_free __attribute__((cleanup(cleanup_free)))
+
 #endif /* _SMOLUTILS_CLEANUP_H */
