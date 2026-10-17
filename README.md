@@ -33,6 +33,7 @@ Even for the mmu enjoyers out there:
 | dmesg     |          |                            |                     |
 | getty     |          |                            |                     |
 | halt      |          | init                       |                     |
+| hwclock   |          | rtc                        |                     |
 | init      |          |                            |                     |
 | insmod    |          | modules                    |                     |
 | ip        |          |                            |                     |
@@ -54,6 +55,7 @@ Even for the mmu enjoyers out there:
 | rm        |          | files                      |                     |
 | rmdir     |          | files                      |                     |
 | rmmod     |          | modules                    |                     |
+| rtcwake   |          | rtc                        |                     |
 | sha256sum |          |                            |                     |
 | smolsh    |          |                            |                     |
 | sntp      |          |                            |                     |
