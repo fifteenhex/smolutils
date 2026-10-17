@@ -72,7 +72,44 @@ static int hctosys(int fd)
 	return 0;
 }
 
-#define HWCLOCK_USAGE	"usage: hwclock [-f <dev>] [-r|-s]\n"
+static void epoch_to_rtc(time_t s, struct rtc_time *t)
+{
+	struct date date;
+
+	date_from_epoch(s, &date);
+
+	memset(t, 0, sizeof(*t));
+	t->tm_year = date.year - 1900;
+	t->tm_mon = date.mon - 1;
+	t->tm_mday = date.mday;
+	t->tm_hour = date.hour;
+	t->tm_min = date.min;
+	t->tm_sec = date.sec;
+	t->tm_wday = date.wday;
+}
+
+static int systohc(int fd)
+{
+	struct timespec ts;
+	struct rtc_time t;
+
+	clock_gettime(CLOCK_REALTIME, &ts);
+	if (ts.tv_sec < 0) {
+		error("The system clock is before 1970\n");
+		return 1;
+	}
+
+	epoch_to_rtc(ts.tv_sec, &t);
+
+	if (ioctl(fd, RTC_SET_TIME, &t)) {
+		error("Failed to set the RTC: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
+#define HWCLOCK_USAGE	"usage: hwclock [-f <dev>] [-r|-s|-w]\n"
 
 static int prog_hwclock(int argc, char **argv, char **envp)
 {
@@ -81,7 +118,7 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 	char what = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "f:rs")) != -1) {
+	while ((c = getopt(argc, argv, "f:rsw")) != -1) {
 		switch (c) {
 		case 'f':
 			path = optarg;
@@ -89,6 +126,7 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 
 		case 'r':
 		case 's':
+		case 'w':
 			if (what) {
 				usage(HWCLOCK_USAGE);
 				return 1;
@@ -114,6 +152,8 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 	switch (what) {
 	case 's':
 		return hctosys(fd);
+	case 'w':
+		return systohc(fd);
 	default:
 		return show_rtc(fd);
 	}
