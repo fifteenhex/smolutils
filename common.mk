@@ -96,6 +96,7 @@ HEADERS = config.h \
 	  inc/cleanup.h \
 	  inc/cmdline.h \
 	  inc/colour.h \
+	  inc/date.h \
 	  inc/fs.h \
 	  inc/io.h \
 	  inc/kernfs.h \
