@@ -3,6 +3,7 @@
 #include "config.h"
 #include "common.h"
 
+#include "inc/date.h"
 #include "inc/multicall.h"
 
 #include <linux/rtc.h>
@@ -39,7 +40,39 @@ static int show_rtc(int fd)
 	return 0;
 }
 
-#define HWCLOCK_USAGE	"usage: hwclock [-f <dev>] [-r]\n"
+static time_t rtc_to_epoch(const struct rtc_time *t)
+{
+	struct date date = {
+		.year = t->tm_year + 1900,
+		.mon = t->tm_mon + 1,
+		.mday = t->tm_mday,
+		.hour = t->tm_hour,
+		.min = t->tm_min,
+		.sec = t->tm_sec,
+	};
+
+	return date_to_epoch(&date);
+}
+
+static int hctosys(int fd)
+{
+	struct timespec ts = { 0 };
+	struct rtc_time t;
+
+	if (read_rtc(fd, &t))
+		return 1;
+
+	ts.tv_sec = rtc_to_epoch(&t);
+
+	if (clock_settime(CLOCK_REALTIME, &ts)) {
+		error("Failed to set the system clock: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
+#define HWCLOCK_USAGE	"usage: hwclock [-f <dev>] [-r|-s]\n"
 
 static int prog_hwclock(int argc, char **argv, char **envp)
 {
@@ -48,13 +81,14 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 	char what = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "f:r")) != -1) {
+	while ((c = getopt(argc, argv, "f:rs")) != -1) {
 		switch (c) {
 		case 'f':
 			path = optarg;
 			break;
 
 		case 'r':
+		case 's':
 			if (what) {
 				usage(HWCLOCK_USAGE);
 				return 1;
@@ -77,7 +111,12 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 	if (fd < 0)
 		return 1;
 
-	return show_rtc(fd);
+	switch (what) {
+	case 's':
+		return hctosys(fd);
+	default:
+		return show_rtc(fd);
+	}
 }
 
 static const struct multicall_prog progs[] = {
