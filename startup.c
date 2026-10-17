@@ -253,7 +253,9 @@ static const struct rundir rundirs[] = {
 
 static const struct mountpoint fstab[] = {
 	{"devtmpfs", "/dev", "devtmpfs"},
+#if is_enabled(CONFIG_TELNETD)
 	{"devpts", "/dev/pts", "devpts"},
+#endif
 	{"sysfs", "/sys", "sysfs"},
 	{"proc", "/proc", "proc"},
 	{"tmp", "/tmp", "tmpfs"},
