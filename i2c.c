@@ -338,8 +338,72 @@ static int prog_i2cdetect(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define I2CDUMP_USAGE	"usage: i2cdump [-y] [-f] <bus> <chip>\n"
+
+static int prog_i2cdump(int argc, char **argv, char **envp)
+{
+	int __cleanup_fd fd = -1;
+	unsigned int failed = 0;
+	bool force = false;
+	unsigned int chip;
+	unsigned int row;
+	unsigned int col;
+	int first;
+
+	first = parse_options(argc, argv, "", &force);
+	if (first < 0 || argc - first != 2) {
+		usage(I2CDUMP_USAGE);
+		return 1;
+	}
+	argv += first;
+	argc -= first;
+
+	if (!parse_chip(argv[1], &chip))
+		return 1;
+
+	fd = open_bus(argv[0]);
+	if (fd < 0)
+		return 1;
+
+	if (check_chip(fd, chip, force))
+		return 1;
+
+	printf(I2C_GRID_HEADER "    0123456789abcdef\n");
+
+	for (row = 0; row < 0x100; row += 16) {
+		char text[17] = { 0 };
+
+		printf("%02x:", row);
+
+		for (col = 0; col < 16; col++) {
+			uint8_t reg = row + col;
+			uint8_t v;
+
+			if (xfer(fd, chip, &reg, 1, &v, 1)) {
+				printf(" XX");
+				text[col] = 'X';
+				failed++;
+				continue;
+			}
+
+			printf(" %02x", v);
+			text[col] = isprint(v) ? v : '.';
+		}
+
+		printf("    %s\n", text);
+	}
+
+	if (failed == 0x100) {
+		error("Read from 0x%02x failed: %d\n", chip, errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "i2cdetect", prog_i2cdetect },
+	{ "i2cdump", prog_i2cdump },
 	{ "i2cget", prog_i2cget },
 	{ "i2cset", prog_i2cset },
 };
