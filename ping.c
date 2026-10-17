@@ -32,6 +32,8 @@ struct icmphdr {
 	} un;
 };
 
+static_assert_size(struct icmphdr, 8);
+
 static const char payload[] = "smol4life";
 #define PACKET_LEN (sizeof(struct icmphdr) + sizeof(payload))
 
