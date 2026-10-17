@@ -3,6 +3,8 @@
 #ifndef _SMOLUTILS_NUMBERS_H
 #define _SMOLUTILS_NUMBERS_H
 
+#include "printing.h"
+
 #ifndef UINT_MAX
 #define UINT_MAX (~0U)
 #endif
@@ -135,6 +137,16 @@ static inline bool parse_size(const char *s, unsigned long long *out)
 	}
 
 	return __whole_number(s, end);
+}
+
+static inline bool parse_fd_with_msgs(const char *s, int *out)
+{
+	if (parse_fd(s, out))
+		return true;
+
+	error("Not an fd: %s\n", s);
+
+	return false;
 }
 
 #endif /* _SMOLUTILS_NUMBERS_H */
