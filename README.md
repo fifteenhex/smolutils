@@ -34,6 +34,10 @@ Even for the mmu enjoyers out there:
 | getty     |          |                            |                     |
 | halt      |          | init                       |                     |
 | hwclock   |          | rtc                        |                     |
+| i2cdetect |          | i2c                        |                     |
+| i2cdump   |          | i2c                        |                     |
+| i2cget    |          | i2c                        |                     |
+| i2cset    |          | i2c                        |                     |
 | init      |          |                            |                     |
 | insmod    |          | modules                    |                     |
 | ip        |          |                            |                     |
