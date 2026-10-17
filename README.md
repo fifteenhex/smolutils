@@ -20,57 +20,57 @@ Even for the mmu enjoyers out there:
 
 ## What
 
-| name      | progress | binary name (if multicall) | notes               |
-|-----------|----------|----------------------------|---------------------|
-| blkwak    |          |                            | block multi-tool    |
-| cat       |          | files                      |                     |
-| chmod     |          | files                      |                     |
-| chown     |          | files                      |                     |
-| cp        |          | files                      |                     |
-| devmem    |          |                            |                     |
-| df        |          |                            |                     |
-| dhcpc     |          |                            |                     |
-| dmesg     |          |                            |                     |
-| getty     |          |                            |                     |
-| halt      |          | init                       |                     |
-| hwclock   |          | rtc                        |                     |
-| i2cdetect |          | i2c                        |                     |
-| i2cdump   |          | i2c                        |                     |
-| i2cget    |          | i2c                        |                     |
-| i2cset    |          | i2c                        |                     |
-| init      |          |                            |                     |
-| insmod    |          | modules                    |                     |
-| ip        |          |                            |                     |
-| keeper    |          |                            | daemonise a program |
-| kill      |          | process                    |                     |
-| less      | stub     |                            |                     |
-| ln        |          | files                      |                     |
-| ls        |          |                            |                     |
-| lz4       | stub     |                            | not in the build    |
-| man       | stub     |                            |                     |
-| mkdir     |          | files                      |                     |
-| mount     |          |                            |                     |
-| mv        |          | files                      |                     |
-| ping      |          |                            |                     |
-| poweroff  |          | init                       |                     |
-| ps        |          | process                    |                     |
-| reboot    |          | init                       |                     |
-| resolv    |          |                            |                     |
-| rm        |          | files                      |                     |
-| rmdir     |          | files                      |                     |
-| rmmod     |          | modules                    |                     |
-| rtcwake   |          | rtc                        |                     |
-| sha256sum |          |                            |                     |
-| smolsh    |          |                            |                     |
-| sntp      |          |                            |                     |
-| startup   |          |                            |                     |
-| su        |          |                            | no auth, dangerous! |
-| telnetd   |          |                            |                     |
-| tftp      |          |                            |                     |
-| touch     |          | files                      |                     |
-| umount    |          | mount                      |                     |
-| uname     |          |                            |                     |
-| xxd       |          |                            |                     |
+| name        | progress | binary name (if multicall) | notes               |
+|-------------|----------|----------------------------|---------------------|
+| blkwak      |          |                            | block multi-tool    |
+| cat         |          | files                      |                     |
+| chmod       |          | files                      |                     |
+| chown       |          | files                      |                     |
+| cp          |          | files                      |                     |
+| devmem      |          |                            |                     |
+| df          |          |                            |                     |
+| dhcpc       |          |                            |                     |
+| dmesg       |          |                            |                     |
+| getty       |          |                            |                     |
+| halt        |          | init                       |                     |
+| hwclock     |          | rtc                        |                     |
+| i2cdetect   |          | i2c                        |                     |
+| i2cdump     |          | i2c                        |                     |
+| i2cget      |          | i2c                        |                     |
+| i2cset      |          | i2c                        |                     |
+| init        |          |                            |                     |
+| insmod      |          | modules                    |                     |
+| ip          |          |                            |                     |
+| keeper      |          |                            | daemonise a program |
+| kill        |          | process                    |                     |
+| less        | stub     |                            |                     |
+| ln          |          | files                      |                     |
+| ls          |          |                            |                     |
+| lz4         | stub     |                            | not in the build    |
+| man         | stub     |                            |                     |
+| mkdir       |          | files                      |                     |
+| mount       |          |                            |                     |
+| mv          |          | files                      |                     |
+| ping        |          |                            |                     |
+| poweroff    |          | init                       |                     |
+| ps          |          | process                    |                     |
+| reboot      |          | init                       |                     |
+| resolv      |          |                            |                     |
+| rm          |          | files                      |                     |
+| rmdir       |          | files                      |                     |
+| rmmod       |          | modules                    |                     |
+| rtcwake     |          | rtc                        |                     |
+| sha256sum   |          |                            |                     |
+| smolsh      |          |                            |                     |
+| sntp        |          |                            |                     |
+| startup     |          |                            |                     |
+| su          |          |                            | no auth, dangerous! |
+| telnetd     |          |                            |                     |
+| tftp        |          |                            |                     |
+| touch       |          | files                      |                     |
+| umount      |          | mount                      |                     |
+| uname       |          |                            |                     |
+| xxd         |          |                            |                     |
 
 ## Design
 
