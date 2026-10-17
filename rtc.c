@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "config.h"
+#include "common.h"
+
+#include "inc/multicall.h"
+
+#include <linux/rtc.h>
+
+#define RTC_PATH		"/dev/rtc0"
+
+static int read_rtc(int fd, struct rtc_time *t)
+{
+	if (ioctl(fd, RTC_RD_TIME, t)) {
+		error("Failed to read the time: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+/* No timezone support, the RTC is taken to be UTC */
+static void print_rtc(const struct rtc_time *t)
+{
+	printf("%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900,
+	       t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+}
+
+static int show_rtc(int fd)
+{
+	struct rtc_time t;
+
+	if (read_rtc(fd, &t))
+		return 1;
+
+	print_rtc(&t);
+	printf("\n");
+
+	return 0;
+}
+
+#define HWCLOCK_USAGE	"usage: hwclock [-f <dev>] [-r]\n"
+
+static int prog_hwclock(int argc, char **argv, char **envp)
+{
+	const char *path = RTC_PATH;
+	int __cleanup_fd fd = -1;
+	char what = 0;
+	int c;
+
+	while ((c = getopt(argc, argv, "f:r")) != -1) {
+		switch (c) {
+		case 'f':
+			path = optarg;
+			break;
+
+		case 'r':
+			if (what) {
+				usage(HWCLOCK_USAGE);
+				return 1;
+			}
+			what = c;
+			break;
+
+		default:
+			usage(HWCLOCK_USAGE);
+			return 1;
+		}
+	}
+
+	if (optind != argc) {
+		usage(HWCLOCK_USAGE);
+		return 1;
+	}
+
+	fd = open_with_msgs(path, O_RDONLY, 0);
+	if (fd < 0)
+		return 1;
+
+	return show_rtc(fd);
+}
+
+static const struct multicall_prog progs[] = {
+	{ "hwclock", prog_hwclock },
+};
+
+MULTICALL_MAIN(progs)

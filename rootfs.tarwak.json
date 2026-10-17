@@ -42,6 +42,10 @@
 					"df": { },
 					"dmesg": { },
 					"smolsh": { },
+					"hwclock": {
+						"type": "symlink",
+						"target": "/lib/smol/rtc"
+					},
 					"xxd": { },
 					"lspci": {
 						"type": "symlink",
@@ -159,6 +163,7 @@
 							"files": { },
 							"process": { },
 							"lsbus": { },
+							"rtc": { },
 							"modules": {
 								"mode": "0500",
 								"feature": "modules"

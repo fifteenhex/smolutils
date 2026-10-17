@@ -21,6 +21,7 @@ PROGS_USER =		\
 	xxd		\
 	devmem		\
 	lsbus		\
+	rtc		\
 	man		\
 	less		\
 	uname		\
