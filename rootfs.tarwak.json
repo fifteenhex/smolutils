@@ -46,6 +46,10 @@
 						"type": "symlink",
 						"target": "/lib/smol/rtc"
 					},
+					"rtcwake": {
+						"type": "symlink",
+						"target": "/lib/smol/rtc"
+					},
 					"xxd": { },
 					"lspci": {
 						"type": "symlink",

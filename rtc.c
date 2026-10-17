@@ -159,8 +159,84 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 	}
 }
 
+enum rtcwake_mode {
+	MODE_SHOW,
+};
+
+static const char *const rtcwake_modes[] = {
+	[MODE_SHOW] = "show",
+};
+
+static int show_alarm(int fd)
+{
+	struct rtc_wkalrm a;
+
+	if (ioctl(fd, RTC_WKALM_RD, &a)) {
+		error("Failed to read the alarm: %d\n", errno);
+		return 1;
+	}
+
+	if (!a.enabled) {
+		printf("alarm: off\n");
+		return 0;
+	}
+
+	printf("alarm: on ");
+	print_rtc(&a.time);
+	printf("\n");
+
+	return 0;
+}
+
+#define RTCWAKE_USAGE \
+	"usage: rtcwake [-d <dev>] -m <mode>\n" \
+	"       modes: show\n"
+
+static int prog_rtcwake(int argc, char **argv, char **envp)
+{
+	const char *path = RTC_PATH;
+	int __cleanup_fd fd = -1;
+	int mode = -1;
+	int c;
+
+	while ((c = getopt(argc, argv, "d:m:")) != -1) {
+		switch (c) {
+		case 'd':
+			path = optarg;
+			break;
+
+		case 'm':
+			foreach(m, rtcwake_modes) {
+				if (!strcmp(*m, optarg))
+					mode = m - rtcwake_modes;
+			}
+			if (mode < 0) {
+				error("Not a mode: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		default:
+			usage(RTCWAKE_USAGE);
+			return 1;
+		}
+	}
+
+	if (optind != argc || mode < 0) {
+		usage(RTCWAKE_USAGE);
+		return 1;
+	}
+
+	fd = open_with_msgs(path, O_RDONLY, 0);
+	if (fd < 0)
+		return 1;
+
+	return show_alarm(fd);
+}
+
 static const struct multicall_prog progs[] = {
 	{ "hwclock", prog_hwclock },
+	{ "rtcwake", prog_rtcwake },
 };
 
 MULTICALL_MAIN(progs)
