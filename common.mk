@@ -100,6 +100,7 @@ HEADERS = config.h \
 	  dhcpc.h \
 	  later.h \
 	  dungeon.h \
+	  inc/asserts.h \
 	  inc/auth.h \
 	  inc/cleanup.h \
 	  inc/cmdline.h \

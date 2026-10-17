@@ -3,6 +3,7 @@
 #ifndef _SMOLUTILS_COMMON_H
 #define _SMOLUTILS_COMMON_H
 
+#include "inc/asserts.h"
 #include "inc/cleanup.h"
 #include "inc/fs.h"
 #include "inc/io.h"
