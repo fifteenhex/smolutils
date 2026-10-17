@@ -36,7 +36,7 @@ struct ntp_packet {
 	uint32_t tx_ts_sec;
 	uint32_t tx_ts_frac;
 };
-_Static_assert(sizeof(struct ntp_packet) == NTP_PACKET_SIZE, "");
+static_assert_size(struct ntp_packet, NTP_PACKET_SIZE);
 
 static int do_sntp(int sock, struct sockaddr_in *addr)
 {
