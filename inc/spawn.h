@@ -19,6 +19,8 @@ static __attribute__((noinline)) int __spawn(const char *path,
 {
 	volatile pid_t pid;
 
+	/* There isn't much we can do if we don't have an MMU, trust me, I've tested this... */
+	/* NOLINTNEXTLINE(bugprone-unsafe-functions,clang-analyzer-security.insecureAPI.vfork) */
 	pid = vfork();
 
 	if (pid == -1)
