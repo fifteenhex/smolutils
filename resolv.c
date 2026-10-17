@@ -2,8 +2,8 @@
 
 #include "config.h"
 #include "common.h"
+#include "inc/asserts.h"
 #include "inc/net.h"
-
 #include "inc/resolv.h"
 #include "dhcpc.h"
 #include "inc/misc.h"
@@ -25,6 +25,8 @@ struct dns_hdr {
 	uint16_t nscount;
 	uint16_t arcount;
 } __attribute__((packed));
+
+static_assert_size(struct dns_hdr, 12);
 
 static int encode_name(const char *name, uint8_t *out, int out_len)
 {
