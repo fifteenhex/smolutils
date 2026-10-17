@@ -9,6 +9,7 @@
 #include <linux/rtc.h>
 
 #define RTC_PATH		"/dev/rtc0"
+#define POWER_STATE_PATH	"/sys/power/state"
 
 static int read_rtc(int fd, struct rtc_time *t)
 {
@@ -163,12 +164,16 @@ enum rtcwake_mode {
 	MODE_SHOW,
 	MODE_DISABLE,
 	MODE_NO,
+	MODE_MEM,
+	MODE_STANDBY,
 };
 
 static const char *const rtcwake_modes[] = {
 	[MODE_SHOW] = "show",
 	[MODE_DISABLE] = "disable",
 	[MODE_NO] = "no",
+	[MODE_MEM] = "mem",
+	[MODE_STANDBY] = "standby",
 };
 
 static int show_alarm(int fd)
@@ -218,7 +223,7 @@ static int set_alarm(int fd, time_t when)
 
 #define RTCWAKE_USAGE \
 	"usage: rtcwake [-d <dev>] -m <mode> [-s <seconds>|-t <epoch>]\n" \
-	"       modes: show, disable, no\n"
+	"       modes: show, disable, no, mem, standby\n"
 
 static int prog_rtcwake(int argc, char **argv, char **envp)
 {
@@ -310,6 +315,13 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 	}
 
 	if (set_alarm(fd, when))
+		return 1;
+
+	if (mode == MODE_NO)
+		return 0;
+
+	if (write_file(POWER_STATE_PATH, rtcwake_modes[mode],
+		       strlen(rtcwake_modes[mode])))
 		return 1;
 
 	return 0;
