@@ -8,6 +8,8 @@
 #include "dhcpc.h"
 #include "inc/misc.h"
 
+#define USAGE "usage: resolv [-m <memfd>] <hostname>\n"
+
 static uint16_t dns_id;
 
 #define DNS_SERVER	"8.8.8.8"
@@ -238,18 +240,22 @@ int main (int argc, char **argv, char **envp)
 	if (argc < 2)
 		return 1;
 
-        while ((c = getopt(argc, argv, "m:")) != -1) {
-                switch (c) {
-                case 'm':
+	while ((c = getopt(argc, argv, "m:")) != -1) {
+		switch (c) {
+		case 'm':
 			ret = setup_memfd(optarg, &result_map);
 			if (ret)
 				return 1;
 			memfd_mode = true;
-                        break;
-                }
-        }
+			break;
 
-        hostname = (optind < argc) ? argv[optind] : ".";
+		default:
+			usage(USAGE);
+			return 1;
+		}
+	}
+
+	hostname = (optind < argc) ? argv[optind] : ".";
 
 	num_servers = dns_servers(servers, ARRAY_SIZE(servers));
 
