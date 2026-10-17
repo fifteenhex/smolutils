@@ -34,6 +34,11 @@
 #define CONFIG_MINIONS	y
 #endif
 
+/* The mtd tools, for boards with some sort of flash */
+#ifndef CONFIG_MTD
+#define CONFIG_MTD	y
+#endif
+
 /* keeper, start background processes from the shell */
 #ifndef CONFIG_KEEPER
 #define CONFIG_KEEPER	y

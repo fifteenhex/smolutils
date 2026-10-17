@@ -42,6 +42,11 @@
 					"df": { },
 					"dmesg": { },
 					"smolsh": { },
+					"mtdinfo": {
+						"type": "symlink",
+						"target": "/lib/smol/mtd",
+						"feature": "mtd"
+					},
 					"i2cget": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c"
@@ -188,6 +193,9 @@
 							"modules": {
 								"mode": "0500",
 								"feature": "modules"
+							},
+							"mtd": {
+								"feature": "mtd"
 							}
 						}
 					}

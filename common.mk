@@ -77,6 +77,13 @@ ifneq ($(filter minions,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_MINIONS=n
 endif
 
+ifneq ($(filter mtd,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_MTD=n
+else
+PROGS_USER += mtd
+_TARWAKFEATURES += -fmtd
+endif
+
 ifneq ($(filter keeper,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_KEEPER=n
 else
