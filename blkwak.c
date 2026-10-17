@@ -241,10 +241,9 @@ static int compare_image(const struct blk *b, const struct img *in,
 			 unsigned long long off)
 {
 	unsigned long long first_bad = ~0ULL;
+	uint8_t __cleanup_free *data = NULL;
 	unsigned long long done = 0;
 	unsigned long long bad = 0;
-	uint8_t *data;
-	int ret = 1;
 	int got;
 
 	data = malloc(bs);
@@ -259,11 +258,11 @@ static int compare_image(const struct blk *b, const struct img *in,
 		if (!off_len_fits(off + done, got, b->size)) {
 			error("0x%llx + %u is past the end of the device\n",
 			      off + done, got);
-			goto out;
+			return 1;
 		}
 
 		if (read_at(b, off + done, got))
-			goto out;
+			return 1;
 
 		for (i = 0; i < (unsigned int) got; i++)
 			if (buf[i] != data[i]) {
@@ -277,7 +276,7 @@ static int compare_image(const struct blk *b, const struct img *in,
 
 	if (got < 0) {
 		error("Failed to read the image: %d\n", errno);
-		goto out;
+		return 1;
 	}
 
 	if (bad)
@@ -286,11 +285,7 @@ static int compare_image(const struct blk *b, const struct img *in,
 	else
 		info("%llu bytes match\n", done);
 
-	ret = bad ? 1 : 0;
-out:
-	free(data);
-
-	return ret;
+	return bad ? 1 : 0;
 }
 
 static int cmd_write(struct blk *b, int argc, char **argv)
