@@ -5,6 +5,8 @@
 #include "inc/colour.h"
 #include "inc/users.h"
 
+#define USAGE "usage: ls [-l] [directory]\n"
+
 static const char *colour_for(const struct stat *st)
 {
 	if (S_ISDIR(st->st_mode))
@@ -186,6 +188,10 @@ int main(int argc, char **argv, char **envp)
 		case 'l':
 			long_format = true;
 			break;
+
+		default:
+			usage(USAGE);
+			return 1;
 		}
 	}
 
