@@ -106,7 +106,110 @@ static int prog_mtdinfo(int argc, char **argv, char **envp)
 	return 0;
 }
 
+/* An ioctl failure counts as good */
+static bool is_bad_block(int fd, const struct mtd_info_user *info, off_t off)
+{
+	long long at = off;
+
+	return is_nand(info) && ioctl(fd, MEMGETBADBLOCK, &at) > 0;
+}
+
+static int erase_block(int fd, off_t off, uint32_t len)
+{
+	struct erase_info_user64 erase = { .start = off, .length = len };
+
+	if (ioctl(fd, MEMERASE64, &erase)) {
+		error("\nFailed to erase 0x%llx: %d\n",
+		      (unsigned long long) off, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+#define FLASH_ERASE_USAGE \
+	"usage: flash_erase [-q] <dev> <start> <count>\n"
+
+static int prog_flash_erase(int argc, char **argv, char **envp)
+{
+	struct mtd_info_user info;
+	unsigned long long start;
+	int __cleanup_fd fd = -1;
+	unsigned long count;
+	bool quiet = false;
+	unsigned long i;
+	int c;
+
+	while ((c = getopt(argc, argv, "q")) != -1) {
+		if (c != 'q') {
+			usage(FLASH_ERASE_USAGE);
+			return 1;
+		}
+		quiet = true;
+	}
+
+	if (argc - optind != 3) {
+		usage(FLASH_ERASE_USAGE);
+		return 1;
+	}
+
+	if (!parse_size(argv[optind + 1], &start)) {
+		error("Not an offset: %s\n", argv[optind + 1]);
+		return 1;
+	}
+
+	if (!parse_ul(argv[optind + 2], 0, &count)) {
+		error("Not a count: %s\n", argv[optind + 2]);
+		return 1;
+	}
+
+	fd = open_with_msgs(argv[optind], O_RDWR, 0);
+	if (fd < 0)
+		return 1;
+
+	if (!get_info(fd, &info))
+		return 1;
+
+	if (start % info.erasesize || start >= info.size) {
+		error("0x%llx isn't an eraseblock on this device\n", start);
+		return 1;
+	}
+
+	if (!count)
+		count = (info.size - start) / info.erasesize;
+
+	if (count > (info.size - start) / info.erasesize) {
+		error("%lu blocks from 0x%llx is past the end\n", count, start);
+		return 1;
+	}
+
+	for (i = 0; i < count; i++) {
+		off_t off = start + i * (off_t) info.erasesize;
+
+		if (is_bad_block(fd, &info, off)) {
+			if (!quiet)
+				printf("\nSkipping bad block at 0x%llx\n",
+				       (unsigned long long) off);
+			continue;
+		}
+
+		if (!quiet)
+			printf("\rErasing %u Kibyte @ %llx -- %lu %% complete",
+			       info.erasesize / 1024, (unsigned long long) off,
+			       (i + 1) * 100 / count);
+
+		if (erase_block(fd, off, info.erasesize))
+			return 1;
+	}
+
+	if (!quiet)
+		printf("\n");
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
+	{ "flash_erase", prog_flash_erase },
 	{ "mtdinfo", prog_mtdinfo },
 };
 

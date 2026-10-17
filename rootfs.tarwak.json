@@ -47,6 +47,11 @@
 						"target": "/lib/smol/mtd",
 						"feature": "mtd"
 					},
+					"flash_erase": {
+						"type": "symlink",
+						"target": "/lib/smol/mtd",
+						"feature": "mtd"
+					},
 					"i2cget": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c"
