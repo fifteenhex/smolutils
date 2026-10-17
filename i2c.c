@@ -198,8 +198,81 @@ static int prog_i2cget(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define I2CSET_USAGE \
+	"usage: i2cset [-y] [-f] <bus> <chip> <reg> <value>... [b|w|i]\n"
+
+static int prog_i2cset(int argc, char **argv, char **envp)
+{
+	uint8_t msg[1 + I2C_SMBUS_BLOCK_MAX];
+	int __cleanup_fd fd = -1;
+	bool force = false;
+	unsigned int chip;
+	char mode = 'b';
+	unsigned long v;
+	int first;
+	int len;
+	int i;
+
+	first = parse_options(argc, argv, "", &force);
+	if (first < 0 || argc - first < 4) {
+		usage(I2CSET_USAGE);
+		return 1;
+	}
+	argv += first;
+	argc -= first;
+
+	/* A single letter at the end is the mode, a value can't be one */
+	if (strlen(argv[argc - 1]) == 1 && strchr("bwi", argv[argc - 1][0])) {
+		mode = argv[argc - 1][0];
+		argc--;
+	}
+
+	len = argc - 3;
+
+	if (len < 1 || (mode != 'i' && len != 1) || len > I2C_SMBUS_BLOCK_MAX) {
+		usage(I2CSET_USAGE);
+		return 1;
+	}
+
+	if (!parse_chip(argv[1], &chip))
+		return 1;
+
+	if (!parse_byte(argv[2], "register", &msg[0]))
+		return 1;
+
+	if (mode == 'w') {
+		if (!parse_ul_range(argv[3], 0, 0, 0xffff, &v)) {
+			error("Not a word: %s\n", argv[3]);
+			return 1;
+		}
+		msg[1] = v;
+		msg[2] = v >> 8;
+		len = 2;
+	} else {
+		for (i = 0; i < len; i++) {
+			if (!parse_byte(argv[3 + i], "byte", &msg[1 + i]))
+				return 1;
+		}
+	}
+
+	fd = open_bus(argv[0]);
+	if (fd < 0)
+		return 1;
+
+	if (check_chip(fd, chip, force))
+		return 1;
+
+	if (xfer(fd, chip, msg, 1 + len, NULL, 0)) {
+		error("Write to 0x%02x failed: %d\n", chip, errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "i2cget", prog_i2cget },
+	{ "i2cset", prog_i2cset },
 };
 
 MULTICALL_MAIN(progs)
