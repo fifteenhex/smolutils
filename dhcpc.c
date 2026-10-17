@@ -238,13 +238,13 @@ static int setup_socket(struct context *cntx)
 	ret = setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE,
 			 (void *) cntx->interface, strlen(cntx->interface) + 1);
 	if (ret < 0) {
-		error("Failed to bind\n");
+		error("Failed to bind to %s: %d\n", cntx->interface, errno);
 		return -1;
 	}
 
 	ret = bind(sock, (struct sockaddr *)&client_addr, sizeof client_addr);
 	if (ret < 0) {
-		error("Failed to bind socket\n");
+		error("Failed to bind socket: %d\n", errno);
 		return -1;
 	}
 
