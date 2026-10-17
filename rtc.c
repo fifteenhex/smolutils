@@ -162,11 +162,13 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 enum rtcwake_mode {
 	MODE_SHOW,
 	MODE_DISABLE,
+	MODE_NO,
 };
 
 static const char *const rtcwake_modes[] = {
 	[MODE_SHOW] = "show",
 	[MODE_DISABLE] = "disable",
+	[MODE_NO] = "no",
 };
 
 static int show_alarm(int fd)
@@ -200,18 +202,38 @@ static int disable_alarm(int fd)
 	return 0;
 }
 
+static int set_alarm(int fd, time_t when)
+{
+	struct rtc_wkalrm a = { .enabled = 1 };
+
+	epoch_to_rtc(when, &a.time);
+
+	if (ioctl(fd, RTC_WKALM_SET, &a)) {
+		error("Failed to set the alarm: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 #define RTCWAKE_USAGE \
-	"usage: rtcwake [-d <dev>] -m <mode>\n" \
-	"       modes: show, disable\n"
+	"usage: rtcwake [-d <dev>] -m <mode> [-s <seconds>|-t <epoch>]\n" \
+	"       modes: show, disable, no\n"
 
 static int prog_rtcwake(int argc, char **argv, char **envp)
 {
+	unsigned long long epoch = 0;
 	const char *path = RTC_PATH;
+	unsigned long seconds = 0;
 	int __cleanup_fd fd = -1;
+	struct rtc_time now;
+	struct timespec ts;
+	time_t rtc_now;
 	int mode = -1;
+	time_t when;
 	int c;
 
-	while ((c = getopt(argc, argv, "d:m:")) != -1) {
+	while ((c = getopt(argc, argv, "d:m:s:t:")) != -1) {
 		switch (c) {
 		case 'd':
 			path = optarg;
@@ -228,14 +250,34 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 			}
 			break;
 
+		case 's':
+			if (!parse_ul_range(optarg, 0, 1, ULONG_MAX,
+					    &seconds)) {
+				error("Bad number of seconds: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		case 't':
+			if (!parse_ull(optarg, 0, &epoch) || !epoch) {
+				error("Bad time: %s\n", optarg);
+				return 1;
+			}
+			break;
+
 		default:
 			usage(RTCWAKE_USAGE);
 			return 1;
 		}
 	}
 
-	if (optind != argc || mode < 0) {
+	if (optind != argc || mode < 0 || (seconds && epoch)) {
 		usage(RTCWAKE_USAGE);
+		return 1;
+	}
+
+	if (mode >= MODE_NO && !seconds && !epoch) {
+		error("Need -s or -t to say when\n");
 		return 1;
 	}
 
@@ -246,7 +288,31 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 	if (mode == MODE_SHOW)
 		return show_alarm(fd);
 
-	return disable_alarm(fd);
+	if (mode == MODE_DISABLE)
+		return disable_alarm(fd);
+
+	/* The alarm is compared against the RTC, not the system clock */
+	if (read_rtc(fd, &now))
+		return 1;
+
+	rtc_now = rtc_to_epoch(&now);
+
+	if (seconds) {
+		when = rtc_now + seconds;
+	} else {
+		clock_gettime(CLOCK_REALTIME, &ts);
+		when = epoch - ts.tv_sec + rtc_now;
+	}
+
+	if (when <= rtc_now) {
+		error("The alarm would be in the past\n");
+		return 1;
+	}
+
+	if (set_alarm(fd, when))
+		return 1;
+
+	return 0;
 }
 
 static const struct multicall_prog progs[] = {
