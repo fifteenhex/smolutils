@@ -106,6 +106,7 @@ HEADERS = config.h \
 	  inc/pts.h \
 	  inc/readln.h \
 	  inc/resolv.h \
+	  inc/strings.h \
 	  inc/sysfs.h \
 	  inc/tool.h \
 	  inc/unaligned.h \

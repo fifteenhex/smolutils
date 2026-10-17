@@ -7,9 +7,8 @@
 #include "inc/io.h"
 #include "inc/printing.h"
 #include "inc/numbers.h"
+#include "inc/strings.h"
 #include "inc/util.h"
-
-#define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
 
 /* Shared state directories, tmpfs abuse */
 #define SMOL_RUN_DIR		"/run/smol"
@@ -246,27 +245,6 @@ static inline int read_lines(const char *path, char *buf, size_t len,
 	return dropped;
 }
 
-/* get the next whitespace separated field from a string and terminate it */
-static inline char *next_field(char **pos)
-{
-	char *start = *pos;
-	char *end;
-
-	while (*start == ' ' || *start == '\t')
-		start++;
-
-	if (!*start)
-		return NULL;
-
-	for (end = start; *end && *end != ' ' && *end != '\t'; end++)
-		;
-
-	*pos = *end ? end + 1 : end;
-	*end = '\0';
-
-	return start;
-}
-
 static inline int signal_catch(int sig, void (*handler)(int), int flags)
 {
 	struct sigaction act = {
@@ -351,12 +329,6 @@ static inline bool write_number_in(const char *dir, const char *name,
 
 	return !write_file(path, buf, len);
 }
-
-/* String matching */
-
-/* Does a string start with this char array? */
-#define STARTS_WITH(_string, _chararray) \
-	(strncmp(_string, _chararray, STRLEN(_chararray)) == 0)
 
 /* Process stuff */
 
