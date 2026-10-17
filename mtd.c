@@ -10,6 +10,10 @@
 
 #define SYSFS_CHAR_PATH	"/sys/dev/char"
 
+/* 16K is the biggest NAND page, reads and writes go through this */
+#define CHUNK_SIZE	(16 * 1024)
+static uint8_t chunk[CHUNK_SIZE];
+
 static bool get_info(int fd, struct mtd_info_user *info)
 {
 	if (ioctl(fd, MEMGETINFO, info)) {
@@ -208,9 +212,109 @@ static int prog_flash_erase(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define NANDDUMP_USAGE \
+	"usage: nanddump [-f <file>] [-s <start>] [-l <length>] <dev>\n"
+
+static int prog_nanddump(int argc, char **argv, char **envp)
+{
+	unsigned long long length = 0;
+	unsigned long long start = 0;
+	struct mtd_info_user info;
+	int __cleanup_fd out = -1;
+	int __cleanup_fd fd = -1;
+	const char *file = NULL;
+	bool bad = false;
+	int c;
+
+	while ((c = getopt(argc, argv, "f:s:l:")) != -1) {
+		switch (c) {
+		case 'f':
+			file = optarg;
+			break;
+
+		case 's':
+			if (!parse_size(optarg, &start)) {
+				error("Not an offset: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		case 'l':
+			if (!parse_size(optarg, &length)) {
+				error("Not a length: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		default:
+			usage(NANDDUMP_USAGE);
+			return 1;
+		}
+	}
+
+	if (argc - optind != 1) {
+		usage(NANDDUMP_USAGE);
+		return 1;
+	}
+
+	fd = open_with_msgs(argv[optind], O_RDONLY, 0);
+	if (fd < 0)
+		return 1;
+
+	if (!get_info(fd, &info))
+		return 1;
+
+	if (start >= info.size || length > info.size - start) {
+		error("0x%llx + 0x%llx is past the end\n", start, length);
+		return 1;
+	}
+
+	if (!length)
+		length = info.size - start;
+
+	if (file)
+		out = open_with_msgs(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	else
+		out = dup(STDOUT_FILENO);
+	if (out < 0)
+		return 1;
+
+	while (length) {
+		unsigned int n = info.erasesize - (start % info.erasesize);
+
+		if (n > CHUNK_SIZE)
+			n = CHUNK_SIZE;
+		if (n > length)
+			n = length;
+
+		if (!(start % info.erasesize) || start == 0)
+			bad = is_bad_block(fd, &info,
+					   start - (start % info.erasesize));
+
+		if (bad) {
+			memset(chunk, 0xff, n);
+		} else if (lseek(fd, start, SEEK_SET) != (off_t) start ||
+			   read_full(fd, chunk, n) != (int) n) {
+			error("Failed to read at 0x%llx: %d\n", start, errno);
+			return 1;
+		}
+
+		if (write_full(out, chunk, n)) {
+			error("Failed to write: %d\n", errno);
+			return 1;
+		}
+
+		start += n;
+		length -= n;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "flash_erase", prog_flash_erase },
 	{ "mtdinfo", prog_mtdinfo },
+	{ "nanddump", prog_nanddump },
 };
 
 MULTICALL_MAIN(progs)
