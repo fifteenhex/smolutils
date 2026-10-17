@@ -139,6 +139,26 @@ static inline bool parse_size(const char *s, unsigned long long *out)
 	return __whole_number(s, end);
 }
 
+static inline void format_size(char *buf, size_t len,
+			       unsigned long long bytes)
+{
+	const char *unit = "KiB";
+	unsigned int shift = 10;
+	unsigned int frac;
+
+	if (bytes >= (1ULL << 30)) {
+		unit = "GiB";
+		shift = 30;
+	} else if (bytes >= (1ULL << 20)) {
+		unit = "MiB";
+		shift = 20;
+	}
+
+	frac = (((bytes & ((1ULL << shift) - 1)) >> (shift - 4)) * 10) >> 4;
+
+	snprintf(buf, len, "%llu.%u %s", bytes >> shift, frac, unit);
+}
+
 static inline bool parse_fd_with_msgs(const char *s, int *out)
 {
 	if (parse_fd(s, out))
