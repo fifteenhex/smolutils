@@ -110,6 +110,7 @@ HEADERS = config.h \
 	  inc/readln.h \
 	  inc/resolv.h \
 	  inc/signals.h \
+	  inc/spawn.h \
 	  inc/strings.h \
 	  inc/sysfs.h \
 	  inc/tool.h \
