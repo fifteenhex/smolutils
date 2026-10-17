@@ -31,6 +31,8 @@ Even for the mmu enjoyers out there:
 | df          |          |                            |                     |
 | dhcpc       |          |                            |                     |
 | dmesg       |          |                            |                     |
+| flash_erase |          | mtd                        |                     |
+| flashcp     |          | mtd                        |                     |
 | getty       |          |                            |                     |
 | halt        |          | init                       |                     |
 | hwclock     |          | rtc                        |                     |
@@ -50,7 +52,10 @@ Even for the mmu enjoyers out there:
 | man         | stub     |                            |                     |
 | mkdir       |          | files                      |                     |
 | mount       |          |                            |                     |
+| mtdinfo     |          | mtd                        |                     |
 | mv          |          | files                      |                     |
+| nanddump    |          | mtd                        |                     |
+| nandwrite   |          | mtd                        |                     |
 | ping        |          |                            |                     |
 | poweroff    |          | init                       |                     |
 | ps          |          | process                    |                     |
@@ -80,6 +85,7 @@ Even for the mmu enjoyers out there:
 - modules   - Add modules support
 - minions   - Init managed background processes
 - keeper    - Start background processes as a user
+- mtd       - Raw flash tools, an mtd-utils subset
 - initramfs - Support for running as an initramfs
 
 ### No config files
