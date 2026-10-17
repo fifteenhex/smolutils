@@ -18,4 +18,21 @@
 #define round_down(_x, _align) ((_x) & ~((__typeof__(_x)) (_align) - 1))
 #define round_up(_x, _align) round_down((_x) + (_align) - 1, _align)
 
+#define __smol_always_inline inline __attribute__((always_inline))
+
+/* for each item in an array */
+#define foreach(_p, _array)						\
+	for (__typeof__(&(_array)[0]) _p = (_array);			\
+	     _p < (_array) + ARRAY_SIZE(_array);			\
+	     _p++)
+
+/* Does (_off + _len) fit into _total, taking care that (_off + _len) didn't overflow */
+#define off_len_fits(_off, _len, _total)				\
+({									\
+	__typeof__((_total) + 0) __olf_end;				\
+									\
+	!__builtin_add_overflow((_off), (_len), &__olf_end) &&		\
+	__olf_end <= (_total);						\
+})
+
 #endif /* _SMOLUTILS_UTIL_H */

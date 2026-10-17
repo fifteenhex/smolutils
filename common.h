@@ -9,15 +9,7 @@
 #include "inc/numbers.h"
 #include "inc/util.h"
 
-#define __smol_always_inline inline __attribute__((always_inline))
-
 #define STRLEN(_s) (ARRAY_SIZE(_s) - 1)
-
-/* for each item in an array */
-#define foreach(_p, _array)						\
-	for (__typeof__(&(_array)[0]) _p = (_array);			\
-	     _p < (_array) + ARRAY_SIZE(_array);			\
-	     _p++)
 
 /* Shared state directories, tmpfs abuse */
 #define SMOL_RUN_DIR		"/run/smol"
@@ -26,17 +18,6 @@
 
 /* A tty we trust with important stuff */
 #define SMOL_SECURETTY_PATH SMOL_RUN_PRIVATE_DIR "/securetty"
-
-/* Overflow safe(TM) bounds etc checking helpers */
-
-/* Does (_off + _len) fit into _total, taking care that (_off + _len) didn't overflow */
-#define off_len_fits(_off, _len, _total)				\
-({									\
-	__typeof__((_total) + 0) __olf_end;				\
-									\
-	!__builtin_add_overflow((_off), (_len), &__olf_end) &&		\
-	__olf_end <= (_total);						\
-})
 
 /* File stuff */
 
