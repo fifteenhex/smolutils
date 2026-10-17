@@ -81,6 +81,8 @@ struct dhcp_packet {
 	uint8_t  options[308];
 } __attribute__((packed));
 
+static_assert_size(struct dhcp_packet, 548);
+
 static void clear_packet_create_header(struct dhcp_packet *p,
 				       uint32_t xid, const uint8_t *mac)
 {
