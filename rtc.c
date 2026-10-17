@@ -161,10 +161,12 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 
 enum rtcwake_mode {
 	MODE_SHOW,
+	MODE_DISABLE,
 };
 
 static const char *const rtcwake_modes[] = {
 	[MODE_SHOW] = "show",
+	[MODE_DISABLE] = "disable",
 };
 
 static int show_alarm(int fd)
@@ -188,9 +190,19 @@ static int show_alarm(int fd)
 	return 0;
 }
 
+static int disable_alarm(int fd)
+{
+	if (ioctl(fd, RTC_AIE_OFF, 0)) {
+		error("Failed to disable the alarm: %d\n", errno);
+		return 1;
+	}
+
+	return 0;
+}
+
 #define RTCWAKE_USAGE \
 	"usage: rtcwake [-d <dev>] -m <mode>\n" \
-	"       modes: show\n"
+	"       modes: show, disable\n"
 
 static int prog_rtcwake(int argc, char **argv, char **envp)
 {
@@ -231,7 +243,10 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 	if (fd < 0)
 		return 1;
 
-	return show_alarm(fd);
+	if (mode == MODE_SHOW)
+		return show_alarm(fd);
+
+	return disable_alarm(fd);
 }
 
 static const struct multicall_prog progs[] = {
