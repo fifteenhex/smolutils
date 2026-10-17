@@ -42,6 +42,10 @@
 					"df": { },
 					"dmesg": { },
 					"smolsh": { },
+					"i2cget": {
+						"type": "symlink",
+						"target": "/lib/smol/i2c"
+					},
 					"hwclock": {
 						"type": "symlink",
 						"target": "/lib/smol/rtc"
@@ -168,6 +172,7 @@
 							"process": { },
 							"lsbus": { },
 							"rtc": { },
+							"i2c": { },
 							"modules": {
 								"mode": "0500",
 								"feature": "modules"
