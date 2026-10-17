@@ -102,6 +102,7 @@ HEADERS = config.h \
 	  inc/multicall.h \
 	  inc/net.h \
 	  inc/numbers.h \
+	  inc/paths.h \
 	  inc/printing.h \
 	  inc/pts.h \
 	  inc/readln.h \

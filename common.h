@@ -5,8 +5,9 @@
 
 #include "inc/cleanup.h"
 #include "inc/io.h"
-#include "inc/printing.h"
 #include "inc/numbers.h"
+#include "inc/paths.h"
+#include "inc/printing.h"
 #include "inc/strings.h"
 #include "inc/util.h"
 
@@ -263,19 +264,6 @@ static void __signal_dummy_handler(int sig)
 static inline int signal_interrupt(int sig)
 {
 	return signal_catch(sig, __signal_dummy_handler, 0);
-}
-
-static inline bool path_join(char *buf, size_t len, const char *dir,
-			     const char *name)
-{
-	return (size_t) snprintf(buf, len, "%s/%s", dir, name) < len;
-}
-
-static inline const char *path_basename(const char *path)
-{
-	const char *slash = strrchr(path, '/');
-
-	return slash ? slash + 1 : path;
 }
 
 static inline bool read_file_in(const char *dir, const char *name,
