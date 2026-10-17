@@ -6,7 +6,7 @@
 
 #include "common.h"
 #include "inc/net.h"
-#include "resolv.h"
+#include "inc/resolv.h"
 
 #define USAGE "usage: tftp -g|-p -r <remote file> [-l <local file>] " \
 	      "[-b <block size>] <host> [port]\n" \

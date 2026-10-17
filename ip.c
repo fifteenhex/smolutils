@@ -3,7 +3,7 @@
 #include "config.h"
 #include "common.h"
 #include "inc/net.h"
-#include "sysfs.h"
+#include "inc/sysfs.h"
 
 #include <linux/sockios.h>
 

@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "common.h"
-#include "sysfs.h"
+#include "inc/sysfs.h"
 
 #include "inc/multicall.h"
 

@@ -4,7 +4,7 @@
 #include "common.h"
 #include "inc/net.h"
 
-#include "resolv.h"
+#include "inc/resolv.h"
 #include "dhcpc.h"
 #include "inc/misc.h"
 

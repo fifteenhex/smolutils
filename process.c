@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "common.h"
-#include "users.h"
+#include "inc/users.h"
 
 #include "inc/multicall.h"
 

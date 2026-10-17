@@ -86,19 +86,15 @@ C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
 	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
 
 HEADERS = config.h \
-	  auth.h \
 	  common.h \
-	  cmdline.h \
-	  users.h \
 	  seat.h \
-	  readln.h \
-	  resolv.h \
-	  colour.h \
-	  sysfs.h \
 	  dhcpc.h \
 	  later.h \
 	  dungeon.h \
+	  inc/auth.h \
 	  inc/cleanup.h \
+	  inc/cmdline.h \
+	  inc/colour.h \
 	  inc/io.h \
 	  inc/memfd.h \
 	  inc/misc.h \
@@ -106,8 +102,13 @@ HEADERS = config.h \
 	  inc/multicall.h \
 	  inc/net.h \
 	  inc/numbers.h \
+	  inc/pts.h \
+	  inc/readln.h \
+	  inc/resolv.h \
+	  inc/sysfs.h \
 	  inc/tool.h \
 	  inc/unaligned.h \
+	  inc/users.h \
 	  inc/util.h
 
 # This allows you to extend the rootfs with tarballs containing extra

@@ -5,7 +5,7 @@
 
 #define TOOL_NAME	"dmesg"
 #include "inc/tool.h"
-#include "colour.h"
+#include "inc/colour.h"
 
 #define MSG_MAX 2048
 

@@ -9,9 +9,9 @@
 #define TOOL_NAME	"getty"
 #define TOOL_USAGE	"<tty> <shell>"
 #include "inc/tool.h"
-#include "auth.h"
+#include "inc/auth.h"
 #include "seat.h"
-#include "users.h"
+#include "inc/users.h"
 
 #define SEAT_NODE_MAX	(SEAT_PATH_MAX + 64)
 

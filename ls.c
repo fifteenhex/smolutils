@@ -2,8 +2,8 @@
 
 #include "config.h"
 #include "common.h"
-#include "colour.h"
-#include "users.h"
+#include "inc/colour.h"
+#include "inc/users.h"
 
 static const char *colour_for(const struct stat *st)
 {

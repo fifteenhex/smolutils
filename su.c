@@ -2,8 +2,8 @@
 
 #include "config.h"
 #include "common.h"
-#include "auth.h"
-#include "users.h"
+#include "inc/auth.h"
+#include "inc/users.h"
 
 #define SHELL_PATH "/bin/smolsh"
 

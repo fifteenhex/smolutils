@@ -9,7 +9,7 @@
 #define TOOL_NAME	"sntp"
 #include "inc/tool.h"
 #include "inc/net.h"
-#include "resolv.h"
+#include "inc/resolv.h"
 
 #define NTP_SERVER	"pool.ntp.org"
 #define NTP_PORT	123

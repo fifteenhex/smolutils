@@ -2,8 +2,8 @@
 
 #include "config.h"
 #include "common.h"
-#include "readln.h"
-#include "users.h"
+#include "inc/readln.h"
+#include "inc/users.h"
 
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16

@@ -9,7 +9,7 @@
 #define TOOL_NAME	"startup"
 #define TOOL_USAGE	"[smolinit.<option>=<value> ...]"
 #include "inc/tool.h"
-#include "cmdline.h"
+#include "inc/cmdline.h"
 #include "later.h"
 
 #if is_enabled(CONFIG_NETWORK)

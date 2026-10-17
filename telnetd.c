@@ -6,8 +6,8 @@
 
 #include "common.h"
 #include "inc/net.h"
-#include "pts.h"
-#include "users.h"
+#include "inc/pts.h"
+#include "inc/users.h"
 
 #define GETTY_PATH	"/sbin/getty"
 #define GETTY_NAME	"getty"

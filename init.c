@@ -5,7 +5,7 @@
 #define TAG "init"
 
 #include "common.h"
-#include "cmdline.h"
+#include "inc/cmdline.h"
 #include "later.h"
 #include "dungeon.h"
 #include "inc/multicall.h"

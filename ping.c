@@ -7,7 +7,7 @@
 #define TOOL_USAGE	"<host>"
 #include "inc/tool.h"
 #include "inc/net.h"
-#include "resolv.h"
+#include "inc/resolv.h"
 #include "inc/misc.h"
 
 #define TIMEOUT 2
