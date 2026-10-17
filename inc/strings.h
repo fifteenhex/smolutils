@@ -32,4 +32,20 @@ static inline char *next_field(char **pos)
 	return start;
 }
 
+/* replace every from with to, returns the number of chars changed */
+static inline unsigned int str_replace_char(char *s, char from, char to)
+{
+	unsigned int replaced = 0;
+
+	for (; *s; s++) {
+		if (*s != from)
+			continue;
+
+		*s = to;
+		replaced++;
+	}
+
+	return replaced;
+}
+
 #endif /* _SMOLUTILS_STRINGS_H */

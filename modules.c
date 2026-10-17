@@ -5,6 +5,7 @@
 #define TAG "modules"
 
 #include "common.h"
+#include "inc/strings.h"
 
 #include "inc/multicall.h"
 
@@ -102,10 +103,8 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 	if (dot && !strcmp(dot, ".ko"))
 		*dot = 0;
 
-	/* Replace dots for underscores */
-	for (dot = buf; *dot; dot++)
-		if (*dot == '-')
-			*dot = '_';
+	/* The kernel wants underscores instead of dashes apparently */
+	str_replace_char(buf, '-', '_');
 
 	if (delete_module(buf, flags)) {
 		error("Failed to unload %s: %d\n", buf, errno);
