@@ -13,6 +13,7 @@
 /* 16K is the biggest NAND page, reads and writes go through this */
 #define CHUNK_SIZE	(16 * 1024)
 static uint8_t chunk[CHUNK_SIZE];
+static uint8_t check[CHUNK_SIZE];
 
 static bool get_info(int fd, struct mtd_info_user *info)
 {
@@ -415,8 +416,132 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define FLASHCP_USAGE	"usage: flashcp [-v] <file> <dev>\n"
+
+static int prog_flashcp(int argc, char **argv, char **envp)
+{
+	struct mtd_info_user info;
+	int __cleanup_fd fd = -1;
+	int __cleanup_fd in = -1;
+	bool verbose = false;
+	unsigned long blocks;
+	unsigned long done;
+	const char *file;
+	unsigned long i;
+	off_t size;
+	int c;
+
+	while ((c = getopt(argc, argv, "v")) != -1) {
+		if (c != 'v') {
+			usage(FLASHCP_USAGE);
+			return 1;
+		}
+		verbose = true;
+	}
+
+	if (argc - optind != 2) {
+		usage(FLASHCP_USAGE);
+		return 1;
+	}
+
+	file = argv[optind];
+
+	in = open_with_msgs(file, O_RDONLY, 0);
+	if (in < 0)
+		return 1;
+
+	size = file_size(in);
+	if (size <= 0) {
+		error("Nothing to write in %s\n", file);
+		return 1;
+	}
+
+	fd = open_with_msgs(argv[optind + 1], O_RDWR, 0);
+	if (fd < 0)
+		return 1;
+
+	if (!get_info(fd, &info))
+		return 1;
+
+	if (is_nand(&info)) {
+		error("%s is NAND, use nandwrite\n", argv[optind + 1]);
+		return 1;
+	}
+
+	if (size > (off_t) info.size) {
+		error("%s is bigger than the device\n", file);
+		return 1;
+	}
+
+	blocks = (size + info.erasesize - 1) / info.erasesize;
+
+	for (i = 0; i < blocks; i++) {
+		if (verbose)
+			printf("\rErasing block %lu of %lu", i + 1, blocks);
+
+		if (erase_block(fd, i * (off_t) info.erasesize, info.erasesize))
+			return 1;
+	}
+
+	for (done = 0; done < size; done += CHUNK_SIZE) {
+		unsigned int n = size - done;
+
+		if (n > CHUNK_SIZE)
+			n = CHUNK_SIZE;
+
+		if (verbose)
+			printf("\rWriting %luk of %luk", (done + n) / 1024,
+			       (unsigned long) size / 1024);
+
+		if (read_full(in, chunk, n) != (int) n) {
+			error("\nFailed to read %s: %d\n", file, errno);
+			return 1;
+		}
+
+		if (write_full(fd, chunk, n)) {
+			error("\nFailed to write at 0x%lx: %d\n", done, errno);
+			return 1;
+		}
+	}
+
+	if (lseek(in, 0, SEEK_SET) != 0 || lseek(fd, 0, SEEK_SET) != 0) {
+		error("\nFailed to seek back: %d\n", errno);
+		return 1;
+	}
+
+	for (done = 0; done < size; done += CHUNK_SIZE) {
+		unsigned int n = size - done;
+
+		if (n > CHUNK_SIZE)
+			n = CHUNK_SIZE;
+
+		if (verbose)
+			printf("\rVerifying %luk of %luk", (done + n) / 1024,
+			       (unsigned long) size / 1024);
+
+		if (read_full(in, chunk, n) != (int) n ||
+		    read_full(fd, check, n) != (int) n) {
+			error("\nFailed to read back at 0x%lx: %d\n", done,
+			      errno);
+			return 1;
+		}
+
+		if (memcmp(chunk, check, n)) {
+			error("\n%s doesn't match the flash at 0x%lx\n", file,
+			      done);
+			return 1;
+		}
+	}
+
+	if (verbose)
+		printf("\n");
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "flash_erase", prog_flash_erase },
+	{ "flashcp", prog_flashcp },
 	{ "mtdinfo", prog_mtdinfo },
 	{ "nanddump", prog_nanddump },
 	{ "nandwrite", prog_nandwrite },
