@@ -7,6 +7,7 @@
 #include "common.h"
 #include "inc/net.h"
 #include "inc/misc.h"
+#include "inc/strings.h"
 
 #include "dhcpc.h"
 #include "later.h"
@@ -423,8 +424,7 @@ static void ask_to_run_again(const char *interface, unsigned int secs)
 	};
 	char name[32];
 
-	if (snprintf(name, sizeof(name), "dhcpc.%s", interface)
-	    >= (int) sizeof(name)) {
+	if (!str_format(name, "dhcpc.%s", interface)) {
 		error("Interface name is too long: %s\n", interface);
 		return;
 	}
