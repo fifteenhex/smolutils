@@ -130,26 +130,27 @@ static int parse_response_cb_memfd(uint32_t v4addr, void *priv)
 	return 0;
 }
 
-static void parse_response(const uint8_t *buf, int len,
-			   int (*cb)(uint32_t v4addr, void *priv), void *priv)
+static int parse_response(const uint8_t *buf, int len,
+			  int (*cb)(uint32_t v4addr, void *priv), void *priv)
 {
 	const struct dns_hdr *hdr = (const struct dns_hdr *)buf;
 	int ancount;
 	int off = sizeof(*hdr);
+	int found = 0;
 
 	if (len < (int) sizeof(*hdr))
-		return;
+		return -1;
 
 	/* Not an answer to anything we asked */
 	if (ntohs(hdr->id) != dns_id)
-		return;
+		return -1;
 
 	ancount = ntohs(hdr->ancount);
 
 	/* skip question section */
 	off = skip_name(buf, len, off);
 	if (off < 0 || (off + 4) > len)
-		return;
+		return -1;
 	/* QTYPE + QCLASS */
 	off += 4;
 
@@ -158,7 +159,7 @@ static void parse_response(const uint8_t *buf, int len,
 
 		off = skip_name(buf, len, off);
 		if (off < 0 || off + 10 > len)
-			return;
+			return -1;
 
 		type = get_unaligned_be16(buf + off);
 		off += 2;
@@ -170,17 +171,20 @@ static void parse_response(const uint8_t *buf, int len,
 		off += 2;
 
 		if ((off + rdlen) > len)
-			return;
+			return -1;
 
 		if (type == 1 && rdlen == 4) {
 			uint32_t v4addr;
 
 			memcpy(&v4addr, buf + off, sizeof(v4addr));
 			cb(v4addr, priv);
+			found++;
 		}
 
 		off += rdlen;
 	}
+
+	return found;
 }
 
 static int setup_memfd(const char *memfd_str, struct mapping *map)
@@ -291,10 +295,16 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 
 	if (memfd_mode)
-		parse_response(buf, len, parse_response_cb_memfd,
-			       result_map.at);
+		ret = parse_response(buf, len, parse_response_cb_memfd,
+				     result_map.at);
 	else
-		parse_response(buf, len, parse_response_cb_stdout, NULL);
+		ret = parse_response(buf, len, parse_response_cb_stdout, NULL);
+
+	if (ret <= 0) {
+		error("%s: %s\n", hostname,
+		      ret ? "bad response" : "no address");
+		return 1;
+	}
 
 	return 0;
 }
