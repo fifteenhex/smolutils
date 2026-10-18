@@ -53,6 +53,11 @@ static int prog_free(int argc, char **argv, char **envp)
 	unsigned long cache;
 	unsigned long used;
 
+	if (argc > 1) {
+		usage("usage: free\n");
+		return 1;
+	}
+
 	if (!read_file(PROC_MEMINFO, procbuf, sizeof(procbuf))) {
 		error("Failed to read %s: %d\n", PROC_MEMINFO, errno);
 		return 1;
@@ -133,6 +138,11 @@ static int cb(const char *name, int dir, void *priv)
 
 static int prog_ps(int argc, char **argv, char **envp)
 {
+	if (argc > 1) {
+		usage("usage: ps\n");
+		return 1;
+	}
+
 	printf("USER\t\tPID\t\tCMD\n");
 
 	iterate_dir(proc_path, cb, NULL);
