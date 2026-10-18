@@ -56,6 +56,29 @@ union
 
 static_assert_size(struct ifreq, sizeof(long) == 8 ? 40 : 32);
 
+struct rtentry {
+	unsigned long	rt_pad1;
+	struct sockaddr	rt_dst;
+	struct sockaddr	rt_gateway;
+	struct sockaddr	rt_genmask;
+	unsigned short	rt_flags;
+	short		rt_pad2;
+	unsigned long	rt_pad3;
+	void		*rt_pad4;
+	short		rt_metric;
+	char		*rt_dev;
+	unsigned long	rt_mtu;
+	unsigned long	rt_window;
+	unsigned short	rt_irtt;
+};
+
+/* 3 possible sizes, 64 bit, 32bit and 68000 (because of the alignment of int) */
+static_assert_size(struct rtentry,
+		   sizeof(long) == 8 ? 120 : __alignof__(long) == 2 ? 80 : 84);
+
+#define	RTF_UP		0x0001
+#define	RTF_GATEWAY	0x0002
+
 static inline void ifreq_init(struct ifreq *ifr, const char *name)
 {
 	memset(ifr, 0, sizeof(*ifr));
