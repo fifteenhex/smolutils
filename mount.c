@@ -106,8 +106,10 @@ static int prog_umount(int argc, char **argv, char **envp)
 {
 	char *target;
 
-	if (argc != 2)
+	if (argc != 2) {
+		usage("usage: umount <target>\n");
 		return 1;
+	}
 
 	target = argv[1];
 
