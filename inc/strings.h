@@ -48,4 +48,15 @@ static inline unsigned int str_replace_char(char *s, char from, char to)
 	return replaced;
 }
 
+/* Did snprintf() work or not? */
+static inline bool __str_fits(int n, size_t len)
+{
+	return n >= 0 && (size_t) n < len;
+}
+
+/* Use snprintf() to create a string in an array with bounds checking! */
+#define str_format(_array, ...)						\
+	__str_fits(snprintf(_array, sizeof(_array) + __must_be_array(_array),	\
+			    __VA_ARGS__), sizeof(_array))
+
 #endif /* _SMOLUTILS_STRINGS_H */
