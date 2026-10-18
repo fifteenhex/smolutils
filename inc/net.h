@@ -133,6 +133,45 @@ static inline void sockaddr_in_init(struct sockaddr_in *sin, uint32_t addr_be,
 	sin->sin_addr.s_addr = addr_be;
 }
 
+static inline int smolutils_net_interface_set_address(const char *iface,
+						      uint32_t addr, uint32_t mask)
+{
+	int __cleanup_fd sock = -1;
+	struct ifreq ifr;
+
+	sock = smolutils_net_inet_socket();
+	if (sock < 0)
+		return -1;
+
+	ifreq_init(&ifr, iface);
+	sockaddr_in_init((struct sockaddr_in *) &ifr.ifr_addr, htonl(addr), 0);
+	if (ioctl(sock, SIOCSIFADDR, &ifr) < 0)
+		return -1;
+
+	/* The same union member as above, but go through the motions */
+	sockaddr_in_init((struct sockaddr_in *) &ifr.ifr_netmask, htonl(mask), 0);
+
+	return ioctl(sock, SIOCSIFNETMASK, &ifr);
+}
+
+static inline int smolutils_net_add_default_route(const char *iface, uint32_t gateway)
+{
+	int __cleanup_fd sock = -1;
+	struct rtentry rt = { 0 };
+
+	sock = smolutils_net_inet_socket();
+	if (sock < 0)
+		return -1;
+
+	sockaddr_in_init((struct sockaddr_in *) &rt.rt_dst, INADDR_ANY, 0);
+	sockaddr_in_init((struct sockaddr_in *) &rt.rt_genmask, INADDR_ANY, 0);
+	sockaddr_in_init((struct sockaddr_in *) &rt.rt_gateway, htonl(gateway), 0);
+	rt.rt_flags = RTF_UP | RTF_GATEWAY;
+	rt.rt_dev = (char *) iface;
+
+	return ioctl(sock, SIOCADDRT, &rt);
+}
+
 #define INET_ADDRSTRLEN		16
 #define INET6_ADDRSTRLEN	48
 
