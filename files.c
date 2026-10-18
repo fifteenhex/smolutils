@@ -292,6 +292,13 @@ static int prog_cat(int argc, char **argv, char **envp)
 			continue;
 		}
 
+		/* cat f >> f would never end */
+		if (same_file(fd, STDOUT_FILENO)) {
+			error("%s is the output\n", argv[i]);
+			ret = 1;
+			continue;
+		}
+
 		if (cat_fd(fd)) {
 			error("Failed to read %s: %d\n", argv[i], errno);
 			ret = 1;
