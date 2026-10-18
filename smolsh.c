@@ -4,6 +4,7 @@
 #include "common.h"
 #include "inc/readln.h"
 #include "inc/users.h"
+#include "inc/strings.h"
 
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16
@@ -267,8 +268,7 @@ static bool try_search(const char *cmd, char **path)
 
 		len = end - at;
 
-		if (len && snprintf(_path, sizeof(_path), "%.*s/%s",
-				    len, at, cmd) < (int) sizeof(_path) &&
+		if (len && str_format(_path, "%.*s/%s", len, at, cmd) &&
 		    !access(_path, X_OK)) {
 			*path = _path;
 			return true;
