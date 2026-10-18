@@ -8,8 +8,9 @@
 #define SEAT_FMT	"/run/seat-%s"
 #define SEAT_PATH_MAX	64
 
-#define seat_path(_buf, _len, _tty)					\
-	snprintf(_buf, _len, SEAT_FMT, _tty)
+/* Where the seat for a tty lives, false if the name didn't fit */
+#define seat_path(_array, _tty)						\
+	str_format(_array, SEAT_FMT, _tty)
 
 static inline const char *seat_name(const char *tty_path)
 {

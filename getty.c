@@ -10,6 +10,7 @@
 #define TOOL_USAGE	"<tty> <shell>"
 #include "inc/tool.h"
 #include "inc/auth.h"
+#include "inc/strings.h"
 #include "seat.h"
 #include "inc/users.h"
 
@@ -71,8 +72,7 @@ static void seat_make(struct seat *seat, const char *tty, uid_t uid)
 	seat->path = NULL;
 	seat->uid = uid;
 
-	if (seat_path(seat->dir, sizeof(seat->dir), tty)
-	    >= (int) sizeof(seat->dir)) {
+	if (!seat_path(seat->dir, tty)) {
 		debug("No room for a seat path\n");
 		return;
 	}
@@ -122,8 +122,7 @@ static char * const *seat_environ(struct seat *seat)
 	if (!seat->path)
 		return environ;
 
-	if (snprintf(seat->var, sizeof(seat->var), SEAT_ENV "=%s", seat->path)
-	    >= (int) sizeof(seat->var))
+	if (!str_format(seat->var, SEAT_ENV "=%s", seat->path))
 		return environ;
 
 	for (e = environ; *e; e++) {
