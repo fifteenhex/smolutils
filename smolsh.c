@@ -40,13 +40,25 @@ struct builtin {
 	int (*handler)(int argc, char **argv, int stdout);
 };
 
+static bool no_arguments(int argc, char **argv)
+{
+	if (argc == 1)
+		return true;
+
+	usage("usage: %s\n", argv[0]);
+
+	return false;
+}
+
 static int cd_handler(int argc, char **argv, int stdout)
 {
 	char *newdir;
 	int ret;
 
-	if (argc > 2)
+	if (argc > 2) {
+		usage("usage: cd [<directory>]\n");
 		return 1;
+	}
 
 	newdir = (argc == 2) ? argv[1] : "/";
 
@@ -68,6 +80,9 @@ static int cd_handler(int argc, char **argv, int stdout)
 
 static int clear_handler(int argc, char **argv, int stdout)
 {
+	if (!no_arguments(argc, argv))
+		return 1;
+
 	printf("\033[3J\033[H\033[2J");
 
 	return 0;
@@ -97,6 +112,9 @@ static int pwd_handler(int argc, char **argv, int stdout)
 {
 	char cwd[1024];
 
+	if (!no_arguments(argc, argv))
+		return 1;
+
 	if (!getcwd(cwd, ARRAY_SIZE(cwd)))
 		return 1;
 
@@ -124,6 +142,9 @@ static int whoami_handler(int argc, char **argv, int stdout)
 	uid_t uid = getuid();
 	const char *user = users_map_user(uid);
 
+	if (!no_arguments(argc, argv))
+		return 1;
+
 	if (user)
 		dprintf(stdout, "%s\n", user);
 	else
@@ -148,6 +169,9 @@ static int sleep_handler(int argc, char **argv, int stdout)
 
 static int sync_handler(int argc, char **argv, int stdout)
 {
+	if (!no_arguments(argc, argv))
+		return 1;
+
 	sync();
 
 	return 0;
