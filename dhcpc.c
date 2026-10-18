@@ -270,7 +270,7 @@ static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask
 	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
 		iface, IPARGS(addr), IPARGS(mask));
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = smolutils_net_inet_socket();
 	if (sock < 0)
 		return -1;
 
@@ -333,7 +333,7 @@ static int interface_set_default_route(const char *iface, uint32_t gateway)
 
 	verbose("Default route via " IPPRINT "\n", IPARGS(gateway));
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = smolutils_net_inet_socket();
 	if (sock < 0)
 		return -1;
 
@@ -364,15 +364,11 @@ static int get_mac(const char *iface, uint8_t *mac)
 	struct ifreq ifr;
 	int ret;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) {
-		error("failed to make a socket: %d\n", errno);
+	sock = smolutils_net_inet_socket();
+	if (sock < 0)
 		return -1;
-	}
 
-	ifreq_init(&ifr, iface);
-
-	ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
+	ret = ifreq_get(sock, iface, SIOCGIFHWADDR, &ifr);
 	if (ret) {
 		error("failed to get mac address\n");
 		return -1;
