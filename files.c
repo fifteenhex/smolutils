@@ -10,8 +10,10 @@ static int prog_touch(int argc, char **argv, char **envp)
 	const char *path;
 	int __cleanup_fd fd = -1;
 
-	if (argc != 2)
+	if (argc != 2) {
+		usage("usage: touch <file>\n");
 		return 1;
+	}
 
 	path = argv[1];
 
@@ -157,8 +159,10 @@ static int prog_rm(int argc, char **argv, char **envp)
 	const char *path;
 	int ret;
 
-	if (argc != 2)
+	if (argc != 2) {
+		usage("usage: rm <file>\n");
 		return 1;
+	}
 
 	path = argv[1];
 
@@ -176,8 +180,10 @@ static int prog_rmdir(int argc, char **argv, char **envp)
 	const char *path;
 	int ret;
 
-	if (argc != 2)
+	if (argc != 2) {
+		usage("usage: rmdir <directory>\n");
 		return 1;
+	}
 
 	path = argv[1];
 
@@ -195,8 +201,10 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	const char *path;
 	int ret;
 
-	if (argc != 2)
+	if (argc != 2) {
+		usage("usage: mkdir <directory>\n");
 		return 1;
+	}
 
 	path = argv[1];
 
@@ -296,8 +304,10 @@ static int prog_cat(int argc, char **argv, char **envp)
 static int prog_cp(int argc, char **argv, char **envp)
 {
 	/* super dumb for now */
-	if (argc != 3)
+	if (argc != 3) {
+		usage("usage: cp <source> <destination>\n");
 		return 1;
+	}
 
 	if (copy_file(argv[1], argv[2]))
 		return 1;
