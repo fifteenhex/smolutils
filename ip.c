@@ -76,17 +76,13 @@ static void print_address(struct context *cntx, const char *name)
 	uint32_t addr;
 	unsigned int bits = 32;
 
-	ifreq_init(&ifr, name);
-
-	if (ioctl(cntx->sock, SIOCGIFADDR, &ifr) < 0)
+	if (ifreq_get(cntx->sock, name, SIOCGIFADDR, &ifr) < 0)
 		return;
 
 	sin = (struct sockaddr_in *) &ifr.ifr_addr;
 	addr = sin->sin_addr.s_addr;
 
-	ifreq_init(&ifr, name);
-
-	if (!ioctl(cntx->sock, SIOCGIFNETMASK, &ifr)) {
+	if (!ifreq_get(cntx->sock, name, SIOCGIFNETMASK, &ifr)) {
 		sin = (struct sockaddr_in *) &ifr.ifr_netmask;
 		bits = mask_to_bits(sin->sin_addr.s_addr);
 	}
@@ -109,9 +105,7 @@ static int cb(const char *name, int dir, void *priv)
 
 	printf("%s: ", name);
 
-	ifreq_init(&ifr, name);
-
-	if (!ioctl(cntx->sock, SIOCGIFFLAGS, &ifr))
+	if (!ifreq_get(cntx->sock, name, SIOCGIFFLAGS, &ifr))
 		print_flags(ifr.ifr_flags);
 	else
 		printf("<>");
@@ -121,9 +115,7 @@ static int cb(const char *name, int dir, void *priv)
 
 	printf("\n");
 
-	ifreq_init(&ifr, name);
-
-	if (!ioctl(cntx->sock, SIOCGIFHWADDR, &ifr))
+	if (!ifreq_get(cntx->sock, name, SIOCGIFHWADDR, &ifr))
 		print_hwaddr(&ifr);
 
 	if (cntx->what == SHOW_ADDR)
@@ -159,11 +151,9 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0) {
-		error("Failed to make a socket: %d\n", errno);
+	sock = smolutils_net_inet_socket();
+	if (sock < 0)
 		return 1;
-	}
 
 	cntx.sock = sock;
 
