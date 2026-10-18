@@ -317,6 +317,10 @@ struct rtentry {
 	unsigned short	rt_irtt;
 };
 
+/* 3 possible sizes, 64 bit, 32bit and 68000 (because of the alignment of int) */
+static_assert_size(struct rtentry,
+		   sizeof(long) == 8 ? 120 : __alignof__(long) == 2 ? 80 : 84);
+
 #define	RTF_UP		0x0001
 #define	RTF_GATEWAY	0x0002
 
