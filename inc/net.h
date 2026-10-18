@@ -3,6 +3,7 @@
 #ifndef _SMOLUTILS_NET_H
 #define _SMOLUTILS_NET_H
 
+#include "asserts.h"
 #include "cleanup.h"
 #include "printing.h"
 
@@ -37,13 +38,23 @@ union
 		short ifru_flags;
 //		int ifru_ivalue;
 //		int ifru_mtu;
-//		struct ifmap ifru_map;
+		/* Not used, needed to get the struct size right */
+		struct {
+			unsigned long mem_start;
+			unsigned long mem_end;
+			unsigned short base_addr;
+			unsigned char irq;
+			unsigned char dma;
+			unsigned char port;
+		} ifru_map;
 //		char ifru_slave[IFNAMSIZ];
 //		char ifru_newname[IFNAMSIZ];
 //		void *ifru_data;
 //		struct if_settings ifru_settings;
 	} ifr_ifru;
 };
+
+static_assert_size(struct ifreq, sizeof(long) == 8 ? 40 : 32);
 
 static inline void ifreq_init(struct ifreq *ifr, const char *name)
 {
