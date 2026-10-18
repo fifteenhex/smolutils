@@ -78,14 +78,14 @@ static int spawn_and_wait_redirect(const char *path,
 	if (waitpid(pid, &waitpid_stat, 0) < 0)
 		return -1;
 
+	/* nolibc has a bug that means WIFEXITED() must be checked first */
+	if (WIFEXITED(waitpid_stat))
+		return WEXITSTATUS(waitpid_stat);
+
 	if (WIFSIGNALED(waitpid_stat)) {
 		if (killed)
 			*killed = true;
 		return WTERMSIG(waitpid_stat);
-	}
-
-	if (WIFEXITED(waitpid_stat)) {
-		return WEXITSTATUS(waitpid_stat);
 	}
 
 	return 0;
