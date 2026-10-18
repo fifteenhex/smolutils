@@ -11,6 +11,7 @@
 #include "inc/tool.h"
 #include "inc/cmdline.h"
 #include "later.h"
+#include "inc/strings.h"
 
 #if is_enabled(CONFIG_NETWORK)
 #include "inc/net.h"
@@ -223,7 +224,7 @@ static bool already_mounted(const char *path)
 	if (stat(path, &st))
 		return false;
 
-	if (snprintf(tmp, sizeof(tmp), "%s/..", path) >= (int) sizeof(tmp))
+	if (!str_format(tmp, "%s/..", path))
 		return false;
 
 	if (stat(tmp, &parent))
