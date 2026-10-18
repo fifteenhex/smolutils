@@ -18,27 +18,20 @@ static void setup_signals(void)
 		verbose("Failed to setup signals: %d\n", errno);
 }
 
-static void run_cmd(const char *bin, char * const *argv, const int *fds,
-		    bool nowait)
+static int run_cmd(const char *bin, char * const *argv, const int *fds,
+		   bool nowait, bool *killed)
 {
-	bool killed = false;
-	int ret;
-
 	/* In some situations, like pipes, the process needs to spawn but not be waited on */
 	if (nowait) {
-		if (spawn_redirect(bin, argv, environ, fds) < 0)
+		if (spawn_redirect(bin, argv, environ, fds) < 0) {
 			error("Failed to run %s: %d\n", bin, errno);
+			return 1;
+		}
 
-		return;
+		return 0;
 	}
 
-	ret = spawn_and_wait_redirect(bin, argv, environ, &killed, fds);
-	if (ret) {
-		if (killed)
-			error("Killed by signal: %d\n", ret);
-		else
-			error("Exited with non-zero return code: %d\n", ret);
-	}
+	return spawn_and_wait_redirect(bin, argv, environ, killed, fds);
 }
 
 /* Real builtins */
@@ -183,13 +176,14 @@ struct builtin builtins[] = {
 	{ "exit", exit_handler },
 };
 
-static bool try_builtin(char **tokens, unsigned num_tokens, int stdout)
+static bool try_builtin(char **tokens, unsigned num_tokens, int stdout,
+			int *status)
 {
 	const char *cmd = tokens[0];
 
 	foreach(bi, builtins) {
 		if (strcmp(cmd, bi->cmd) == 0) {
-			bi->handler(num_tokens, tokens, stdout);
+			*status = bi->handler(num_tokens, tokens, stdout);
 			return true;
 		}
 	}
@@ -437,10 +431,23 @@ static int open_redirects(struct command *cmd, int *fds)
 	return 0;
 }
 
+static void report_status(int status, bool killed)
+{
+	if (killed)
+		error("Killed by signal: %d\n", status);
+	else if (status)
+		error("Exited with non-zero return code: %d\n", status);
+}
+
+#define STATUS_NOT_EXECUTABLE	126
+#define STATUS_NOT_FOUND	127
+
 static void run_command(struct command *cmd, int in_fd, int out_fd, bool nowait)
 {
 	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 	int opened[3] = { -1, -1, -1 };
+	bool killed = false;
+	int status = 1;
 	char *path;
 	int ret;
 	int i;
@@ -467,27 +474,32 @@ static void run_command(struct command *cmd, int in_fd, int out_fd, bool nowait)
 	/* We'll use the words as the argv, so add the terminator */
 	cmd->argv[cmd->argc] = NULL;
 
-	if (try_builtin(cmd->argv, cmd->argc, fds[STDOUT_FILENO]))
+	if (try_builtin(cmd->argv, cmd->argc, fds[STDOUT_FILENO], &status))
 		goto out;
 
 	ret = try_absolute(cmd->argv[0], &path);
 	if (ret) {
-		if (ret == 1)
-			run_cmd(path, cmd->argv, fds, nowait);
-		else
+		if (ret == 1) {
+			status = run_cmd(path, cmd->argv, fds, nowait, &killed);
+		} else {
 			error("%s: not executable\n", cmd->argv[0]);
+			status = STATUS_NOT_EXECUTABLE;
+		}
 
 		goto out;
 	}
 
 	if (try_search(cmd->argv[0], &path)) {
-		run_cmd(path, cmd->argv, fds, nowait);
+		status = run_cmd(path, cmd->argv, fds, nowait, &killed);
 		goto out;
 	}
 
 	printf("Sorry, don't know how to: \"%s\"\n", cmd->argv[0]);
+	status = STATUS_NOT_FOUND;
 
 out:
+	report_status(status, killed);
+
 	for (i = 0; i < 3; i++) {
 		if (opened[i] >= 0)
 			close(opened[i]);
