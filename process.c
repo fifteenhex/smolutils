@@ -173,7 +173,47 @@ static int prog_kill(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define CHROOT_USAGE "usage: chroot <newroot> [<command> [args...]]\n"
+
+/* Run a command, or a shell, with a different root */
+static int prog_chroot(int argc, char **argv, char **envp)
+{
+	char *shell[] = { "smolsh", NULL };
+	const char *path;
+	char **cmd;
+
+	if (argc < 2) {
+		usage(CHROOT_USAGE);
+		return 1;
+	}
+
+	/* A command to run, or a shell in there if there isn't one */
+	if (argc > 2) {
+		path = argv[2];
+		cmd = argv + 2;
+	} else {
+		path = "/bin/smolsh";
+		cmd = shell;
+	}
+
+	if (chroot(argv[1])) {
+		error("chroot(%s) failed: %d\n", argv[1], errno);
+		return 1;
+	}
+
+	if (chdir("/")) {
+		error("chdir(/) failed: %d\n", errno);
+		return 1;
+	}
+
+	execve(path, cmd, envp);
+	error("Failed to run %s: %d\n", path, errno);
+
+	return 1;
+}
+
 static const struct multicall_prog progs[] = {
+	{ "chroot", prog_chroot },
 	{ "free", prog_free },
 	{ "kill", prog_kill },
 	{ "ps", prog_ps },

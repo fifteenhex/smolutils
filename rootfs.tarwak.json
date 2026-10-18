@@ -229,6 +229,10 @@
 				},
 				"entities": {
 					"blkwak": { },
+					"chroot": {
+						"type": "symlink",
+						"target": "/lib/smol/process"
+					},
 					"getty": { },
 					"keeper": {
 						"feature": "keeper"

@@ -25,6 +25,7 @@ Even for the mmu enjoyers out there:
 | blkwak      |          |                            | block multi-tool    |
 | cat         |          | files                      |                     |
 | chmod       |          | files                      |                     |
+| chroot      |          | process                    |                     |
 | chown       |          | files                      |                     |
 | cp          |          | files                      |                     |
 | devmem      |          |                            |                     |
