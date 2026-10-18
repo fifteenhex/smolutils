@@ -260,81 +260,6 @@ static const char *addr_to_str(uint32_t addr, char *buf, socklen_t len)
 	return inet_ntop(AF_INET, &tmp, buf, len);
 }
 
-static int interface_set_address(const char *iface, uint32_t addr, uint32_t mask)
-{
-	int __cleanup_fd sock = -1;
-	struct sockaddr_in *sin;
-	struct ifreq ifr;
-	int ret;
-
-	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
-		iface, IPARGS(addr), IPARGS(mask));
-
-	sock = smolutils_net_inet_socket();
-	if (sock < 0)
-		return -1;
-
-	ifreq_init(&ifr, iface);
-
-	sin = (struct sockaddr_in *)&ifr.ifr_addr;
-	sockaddr_in_init(sin, htonl(addr), 0);
-
-	ret = ioctl(sock, SIOCSIFADDR, &ifr);
-	if (ret < 0) {
-		verbose("Failed to set address\n");
-		return -1;
-	}
-
-	/*
-	 * This is really the same thing as above because of the union
-	 * but go through the motions.
-	 */
-	sin = (struct sockaddr_in *)&ifr.ifr_netmask;
-	sockaddr_in_init(sin, htonl(mask), 0);
-
-	ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
-	if (ret < 0) {
-		verbose("Failed to set subnet mask\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-static int interface_set_default_route(const char *iface, uint32_t gateway)
-{
-	int __cleanup_fd sock = -1;
-	struct rtentry rt = { 0 };
-	struct sockaddr_in *sin;
-	int ret;
-
-	verbose("Default route via " IPPRINT "\n", IPARGS(gateway));
-
-	sock = smolutils_net_inet_socket();
-	if (sock < 0)
-		return -1;
-
-	sin = (struct sockaddr_in *)&rt.rt_dst;
-	sockaddr_in_init(sin, INADDR_ANY, 0);
-
-	sin = (struct sockaddr_in *)&rt.rt_genmask;
-	sockaddr_in_init(sin, INADDR_ANY, 0);
-
-	sin = (struct sockaddr_in *)&rt.rt_gateway;
-	sockaddr_in_init(sin, htonl(gateway), 0);
-
-	rt.rt_flags = RTF_UP | RTF_GATEWAY;
-	rt.rt_dev = (char *)iface;
-
-	ret = ioctl(sock, SIOCADDRT, &rt);
-	if (ret < 0) {
-	verbose("Failed to set default route\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int get_mac(const char *iface, uint8_t *mac)
 {
 	int __cleanup_fd sock = -1;
@@ -704,10 +629,18 @@ int main(int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	interface_set_address(cntx.interface, cntx.config.address, cntx.config.subnet_mask);
+	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
+		cntx.interface, IPARGS(cntx.config.address),
+		IPARGS(cntx.config.subnet_mask));
+	if (smolutils_net_interface_set_address(cntx.interface, cntx.config.address,
+						cntx.config.subnet_mask))
+		verbose("Failed to set address: %d\n", errno);
 
-	if (cntx.config.router)
-		interface_set_default_route(cntx.interface, cntx.config.router);
+	if (cntx.config.router) {
+		verbose("Default route via " IPPRINT "\n", IPARGS(cntx.config.router));
+		if (smolutils_net_add_default_route(cntx.interface, cntx.config.router))
+			verbose("Failed to set default route: %d\n", errno);
+	}
 
 	write_state(&cntx.config);
 
