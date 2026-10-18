@@ -21,6 +21,9 @@
 
 #define RETRY_SECONDS	60
 
+/* How long to wait on an offer or an ack */
+#define RX_TIMEOUT	3
+
 #define DEFAULT_INTERFACE "eth0"
 #define SERVER_PORT 67
 #define CLIENT_PORT 68
@@ -227,7 +230,7 @@ static int setup_socket(struct context *cntx)
 
 	sockaddr_in_init(&client_addr, INADDR_ANY, CLIENT_PORT);
 
-	sock = smolutils_net_udp_socket(3);
+	sock = smolutils_net_udp_socket(RX_TIMEOUT);
 	if (sock < 0)
 		return -1;
 
