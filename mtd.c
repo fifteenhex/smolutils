@@ -265,7 +265,7 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 	if (!get_info(fd, &info))
 		return 1;
 
-	if (start >= info.size || length > info.size - start) {
+	if (start >= info.size || !off_len_fits(start, length, info.size)) {
 		error("0x%llx + 0x%llx is past the end\n", start, length);
 		return 1;
 	}
@@ -399,7 +399,7 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 		       is_bad_block(fd, &info, start - start % info.erasesize))
 			start += info.erasesize - start % info.erasesize;
 
-		if (start + got > info.size) {
+		if (!off_len_fits(start, got, info.size)) {
 			error("Ran out of good blocks at 0x%llx\n", start);
 			return 1;
 		}
