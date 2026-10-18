@@ -62,18 +62,33 @@ static inline void ifreq_init(struct ifreq *ifr, const char *name)
 	strncpy(ifr->ifr_name, name, IFNAMSIZ - 1);
 }
 
+static inline int smolutils_net_inet_socket(void)
+{
+	int sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (sock < 0)
+		error("Failed to create socket: %d\n", errno);
+
+	return sock;
+}
+
+static inline int ifreq_get(int sock, const char *name, unsigned long cmd, struct ifreq *ifr)
+{
+	ifreq_init(ifr, name);
+
+	return ioctl(sock, cmd, ifr);
+}
+
 static inline int smolutils_net_interface_set_up(const char *iface)
 {
 	int __cleanup_fd sock = -1;
 	struct ifreq ifr;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = smolutils_net_inet_socket();
 	if (sock < 0)
 		return -1;
 
-	ifreq_init(&ifr, iface);
-
-	if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0)
+	if (ifreq_get(sock, iface, SIOCGIFFLAGS, &ifr) < 0)
 		return -1;
 
 	ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
