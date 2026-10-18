@@ -521,8 +521,13 @@ static int prog_init(int argc, char **argv, char **envp)
  * it do the work. Nothing here needs a capability of its own, but it
  * does need to be allowed to signal pid 1, which means being root.
  */
-static int tell_init(int sig)
+static int tell_init(int argc, char **argv, int sig)
 {
+	if (argc > 1) {
+		usage("usage: %s\n", path_basename(argv[0]));
+		return 1;
+	}
+
 	if (kill(1, sig)) {
 		error("Failed to ask init to stop: %d\n", errno);
 		return 1;
@@ -533,17 +538,17 @@ static int tell_init(int sig)
 
 static int prog_reboot(int argc, char **argv, char **envp)
 {
-	return tell_init(SIG_REBOOT);
+	return tell_init(argc, argv, SIG_REBOOT);
 }
 
 static int prog_poweroff(int argc, char **argv, char **envp)
 {
-	return tell_init(SIG_POWEROFF);
+	return tell_init(argc, argv, SIG_POWEROFF);
 }
 
 static int prog_halt(int argc, char **argv, char **envp)
 {
-	return tell_init(SIG_HALT);
+	return tell_init(argc, argv, SIG_HALT);
 }
 
 static const struct multicall_prog progs[] = {
