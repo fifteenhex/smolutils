@@ -255,8 +255,8 @@ static void accept_one(int listener)
 
 #define POLLFDS_NUM (1 + (MAX_SESSIONS * 2))
 #define POLLFDS_SOCK (POLLFDS_NUM - 1)
-#define POLLFDS_SESSION_SOCK(_session) (2 * _session)
-#define POLLFDS_SESSION_MASTER(_session) ((2 * _session) + 1)
+#define POLLFDS_SESSION_SOCK(_session) (2 * (_session))
+#define POLLFDS_SESSION_MASTER(_session) ((2 * (_session)) + 1)
 
 int main (int argc, char **argv, char **envp)
 {
