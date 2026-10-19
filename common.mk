@@ -84,6 +84,13 @@ PROGS_USER += mtd
 _TARWAKFEATURES += -fmtd
 endif
 
+ifneq ($(filter gpio,$(DISABLE_LIST)),)
+_COPTS += -DCONFIG_GPIO=n
+else
+PROGS_USER += gpio
+_TARWAKFEATURES += -fgpio
+endif
+
 ifneq ($(filter keeper,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_KEEPER=n
 else

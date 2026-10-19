@@ -87,6 +87,7 @@ Even for the mmu enjoyers out there:
 - minions   - Init managed background processes
 - keeper    - Start background processes as a user
 - mtd       - Raw flash tools, an mtd-utils subset
+- gpio      - GPIO tools, basic libgpiod-tools
 - initramfs - Support for running as an initramfs
 
 ### No config files

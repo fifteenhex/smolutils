@@ -39,6 +39,11 @@
 #define CONFIG_MTD	y
 #endif
 
+/* The gpio tools, for poking gpios */
+#ifndef CONFIG_GPIO
+#define CONFIG_GPIO	y
+#endif
+
 /* keeper, start background processes from the shell */
 #ifndef CONFIG_KEEPER
 #define CONFIG_KEEPER	y
