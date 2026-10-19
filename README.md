@@ -36,6 +36,7 @@ Even for the mmu enjoyers out there:
 | flashcp     |          | mtd                        |                     |
 | getty       |          |                            |                     |
 | gpiodetect  |          | gpio                       |                     |
+| gpioinfo    |          | gpio                       |                     |
 | halt        |          | init                       |                     |
 | hwclock     |          | rtc                        |                     |
 | i2cdetect   |          | i2c                        |                     |
