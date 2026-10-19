@@ -38,6 +38,7 @@ Even for the mmu enjoyers out there:
 | gpiodetect  |          | gpio                       |                     |
 | gpioget     |          | gpio                       |                     |
 | gpioinfo    |          | gpio                       |                     |
+| gpioset     |          | gpio                       |                     |
 | halt        |          | init                       |                     |
 | hwclock     |          | rtc                        |                     |
 | i2cdetect   |          | i2c                        |                     |

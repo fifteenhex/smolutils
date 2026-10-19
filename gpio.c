@@ -235,10 +235,83 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define GPIOSET_USAGE \
+	"usage: gpioset [-l] [-t <seconds>] <chip> <offset>=<value>...\n" \
+	"       -t holds the lines for that long, otherwise they are let go at once\n"
+
+static int prog_gpioset(int argc, char **argv, char **envp)
+{
+	unsigned int offsets[GPIO_V2_LINES_MAX];
+	uint64_t flags = GPIO_V2_LINE_FLAG_OUTPUT;
+	int __cleanup_fd lines = -1;
+	int __cleanup_fd chip = -1;
+	unsigned long hold = 0;
+	uint64_t values = 0;
+	unsigned int num;
+	unsigned int i;
+	int c;
+
+	while ((c = getopt(argc, argv, "lt:")) != -1) {
+		switch (c) {
+		case 'l':
+			flags |= GPIO_V2_LINE_FLAG_ACTIVE_LOW;
+			break;
+
+		case 't':
+			if (!parse_ul(optarg, 10, &hold)) {
+				error("Not a number of seconds: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		default:
+			usage(GPIOSET_USAGE);
+			return 1;
+		}
+	}
+
+	num = argc - optind - 1;
+	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
+		usage(GPIOSET_USAGE);
+		return 1;
+	}
+
+	for (i = 0; i < num; i++) {
+		char *arg = argv[optind + 1 + i];
+		char *eq = strchr(arg, '=');
+		unsigned long v;
+
+		if (!eq || !parse_ul_range(eq + 1, 10, 0, 1, &v)) {
+			error("Not an <offset>=<value>: %s\n", arg);
+			return 1;
+		}
+
+		*eq = '\0';
+		if (!parse_offset(arg, &offsets[i]))
+			return 1;
+
+		values |= (uint64_t) v << i;
+	}
+
+	chip = open_chip(argv[optind], O_RDONLY);
+	if (chip < 0)
+		return 1;
+
+	lines = request_lines(chip, offsets, num, flags, values, "gpioset");
+	if (lines < 0)
+		return 1;
+
+	if (hold)
+		sleep(hold);
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "gpiodetect", prog_gpiodetect },
 	{ "gpioget", prog_gpioget },
 	{ "gpioinfo", prog_gpioinfo },
+	{ "gpioset", prog_gpioset },
 };
 
 MULTICALL_MAIN(progs)
