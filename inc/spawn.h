@@ -75,8 +75,14 @@ static int spawn_and_wait_redirect(const char *path,
 	if (pid < 0)
 		return -1;
 
-	if (waitpid(pid, &waitpid_stat, 0) < 0)
-		return -1;
+	/*
+	 * waitpid() might get interrupted but the child might still be alive
+	 * so loop until its really dead for sure.
+	 */
+	while (waitpid(pid, &waitpid_stat, 0) < 0) {
+		if (errno != EINTR)
+			return -1;
+	}
 
 	/* nolibc has a bug that means WIFEXITED() must be checked first */
 	if (WIFEXITED(waitpid_stat))
