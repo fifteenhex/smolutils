@@ -4,9 +4,9 @@
 #define _SMOLUTILS_READLN_H
 
 #define READLN_BUFSZ 256
-#define READLN_INTERRUPTED	-1
-#define READLN_OVERFLOW		-2
-#define READLN_DONE		-3
+#define READLN_INTERRUPTED	(-1)
+#define READLN_OVERFLOW		(-2)
+#define READLN_DONE		(-3)
 
 enum readln_action {
 	READLN_KEEP,
