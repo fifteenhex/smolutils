@@ -307,10 +307,94 @@ static int prog_gpioset(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define GPIOMON_USAGE \
+	"usage: gpiomon [-r] [-f] [-n <events>] <chip> <offset>...\n" \
+	"       -r rising edges only, -f falling edges only, -n stop after that many\n"
+
+static int prog_gpiomon(int argc, char **argv, char **envp)
+{
+	unsigned int offsets[GPIO_V2_LINES_MAX];
+	int __cleanup_fd lines = -1;
+	int __cleanup_fd chip = -1;
+	uint64_t flags = GPIO_V2_LINE_FLAG_INPUT;
+	unsigned long wanted = 0;
+	unsigned long seen = 0;
+	unsigned int num;
+	unsigned int i;
+	int c;
+
+	while ((c = getopt(argc, argv, "rfn:")) != -1) {
+		switch (c) {
+		case 'r':
+			flags |= GPIO_V2_LINE_FLAG_EDGE_RISING;
+			break;
+
+		case 'f':
+			flags |= GPIO_V2_LINE_FLAG_EDGE_FALLING;
+			break;
+
+		case 'n':
+			if (!parse_ul(optarg, 10, &wanted) || !wanted) {
+				error("Not a number of events: %s\n", optarg);
+				return 1;
+			}
+			break;
+
+		default:
+			usage(GPIOMON_USAGE);
+			return 1;
+		}
+	}
+
+	/* Neither means both */
+	if (!(flags & (GPIO_V2_LINE_FLAG_EDGE_RISING | GPIO_V2_LINE_FLAG_EDGE_FALLING)))
+		flags |= GPIO_V2_LINE_FLAG_EDGE_RISING | GPIO_V2_LINE_FLAG_EDGE_FALLING;
+
+	num = argc - optind - 1;
+	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
+		usage(GPIOMON_USAGE);
+		return 1;
+	}
+
+	for (i = 0; i < num; i++) {
+		if (!parse_offset(argv[optind + 1 + i], &offsets[i]))
+			return 1;
+	}
+
+	chip = open_chip(argv[optind], O_RDONLY);
+	if (chip < 0)
+		return 1;
+
+	lines = request_lines(chip, offsets, num, flags, 0, "gpiomon");
+	if (lines < 0)
+		return 1;
+
+	while (!wanted || seen < wanted) {
+		struct gpio_v2_line_event event;
+		int got;
+
+		got = read_full(lines, &event, sizeof(event));
+		if (got != (int) sizeof(event)) {
+			error("Failed to read an event: %d\n", errno);
+			return 1;
+		}
+
+		printf("event: %s EDGE offset: %u timestamp: [%llu.%09llu]\n",
+		       event.id == GPIO_V2_LINE_EVENT_RISING_EDGE ? " RISING" : "FALLING",
+		       event.offset,
+		       (unsigned long long) (event.timestamp_ns / 1000000000ULL),
+		       (unsigned long long) (event.timestamp_ns % 1000000000ULL));
+		seen++;
+	}
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "gpiodetect", prog_gpiodetect },
 	{ "gpioget", prog_gpioget },
 	{ "gpioinfo", prog_gpioinfo },
+	{ "gpiomon", prog_gpiomon },
 	{ "gpioset", prog_gpioset },
 };
 
