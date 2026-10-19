@@ -37,6 +37,53 @@ static bool chip_info(int fd, const char *what, struct gpiochip_info *info)
 	return true;
 }
 
+static bool parse_offset(const char *arg, unsigned int *offset)
+{
+	unsigned long v;
+
+	if (!parse_ul_range(arg, 10, 0, GPIO_V2_LINES_MAX - 1, &v)) {
+		error("Not a line offset: %s\n", arg);
+		return false;
+	}
+
+	*offset = v;
+
+	return true;
+}
+
+/*
+ * Request lines with the given flags (direction, active low, edges) and
+ * consumer name. The fd that comes back is how the lines are read, set
+ * and watched, and closing it lets them go. Outputs start out driven to
+ * values, which is ignored for inputs.
+ */
+static int request_lines(int chip, const unsigned int *offsets, unsigned int num,
+			 uint64_t flags, uint64_t values, const char *consumer)
+{
+	struct gpio_v2_line_request req = { 0 };
+	unsigned int i;
+
+	for (i = 0; i < num; i++)
+		req.offsets[i] = offsets[i];
+	req.num_lines = num;
+	req.config.flags = flags;
+	snprintf(req.consumer, sizeof(req.consumer), "%s", consumer);
+
+	if (flags & GPIO_V2_LINE_FLAG_OUTPUT) {
+		req.config.num_attrs = 1;
+		req.config.attrs[0].attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
+		req.config.attrs[0].attr.values = values;
+		req.config.attrs[0].mask = (1ULL << num) - 1;
+	}
+
+	if (ioctl(chip, GPIO_V2_GET_LINE_IOCTL, &req)) {
+		error("Failed to request the lines: %d\n", errno);
+		return -1;
+	}
+
+	return req.fd;
+}
+
 static int detect_cb(const char *name, int dir, void *priv)
 {
 	struct gpiochip_info info;
@@ -135,8 +182,62 @@ static int prog_gpioinfo(int argc, char **argv, char **envp)
 	return 0;
 }
 
+#define GPIOGET_USAGE "usage: gpioget [-l] <chip> <offset>...\n"
+
+static int prog_gpioget(int argc, char **argv, char **envp)
+{
+	unsigned int offsets[GPIO_V2_LINES_MAX];
+	struct gpio_v2_line_values values;
+	uint64_t flags = GPIO_V2_LINE_FLAG_INPUT;
+	int __cleanup_fd lines = -1;
+	int __cleanup_fd chip = -1;
+	unsigned int num;
+	unsigned int i;
+	int c;
+
+	while ((c = getopt(argc, argv, "l")) != -1) {
+		if (c != 'l') {
+			usage(GPIOGET_USAGE);
+			return 1;
+		}
+		flags |= GPIO_V2_LINE_FLAG_ACTIVE_LOW;
+	}
+
+	num = argc - optind - 1;
+	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
+		usage(GPIOGET_USAGE);
+		return 1;
+	}
+
+	for (i = 0; i < num; i++) {
+		if (!parse_offset(argv[optind + 1 + i], &offsets[i]))
+			return 1;
+	}
+
+	chip = open_chip(argv[optind], O_RDONLY);
+	if (chip < 0)
+		return 1;
+
+	lines = request_lines(chip, offsets, num, flags, 0, "gpioget");
+	if (lines < 0)
+		return 1;
+
+	values.mask = (1ULL << num) - 1;
+	if (ioctl(lines, GPIO_V2_LINE_GET_VALUES_IOCTL, &values)) {
+		error("Failed to read the lines: %d\n", errno);
+		return 1;
+	}
+
+	for (i = 0; i < num; i++)
+		printf("%s%u", i ? " " : "", (unsigned int) ((values.bits >> i) & 1));
+	printf("\n");
+
+	return 0;
+}
+
 static const struct multicall_prog progs[] = {
 	{ "gpiodetect", prog_gpiodetect },
+	{ "gpioget", prog_gpioget },
 	{ "gpioinfo", prog_gpioinfo },
 };
 
