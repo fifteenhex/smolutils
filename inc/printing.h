@@ -18,7 +18,7 @@
 #if is_enabled(CONFIG_DEBUG)
 #define debug(fmt, ...) printf(TAG_PREFIX fmt, ##__VA_ARGS__)
 #else
-#define debug(...)
+#define debug(...) ((void) 0)
 #endif
 
 /*
@@ -29,7 +29,7 @@
 #ifdef VERBOSE
 #define verbose(...) debug(__VA_ARGS__)
 #else
-#define verbose(...)
+#define verbose(...) ((void) 0)
 #endif
 
 #define error(fmt, ...) fprintf(stderr, TAG_PREFIX fmt, ##__VA_ARGS__)
@@ -42,7 +42,7 @@
 #if is_enabled(CONFIG_USAGE)
 #define usage(...) fprintf(stderr, __VA_ARGS__)
 #else
-#define usage(...)
+#define usage(...) ((void) 0)
 #endif
 
 #endif /* _SMOLUTILS_PRINTING_H */
