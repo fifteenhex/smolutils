@@ -14,6 +14,13 @@
 #define ICMP_ECHO 8
 #define ICMP_ECHOREPLY 0
 #define IP_MIN_HDR_LEN 20
+
+/* From <linux/icmp.h> pulls in libc headers */
+#define SOL_RAW		255
+#define ICMP_FILTER	1
+struct icmp_filter {
+	__u32 data;
+};
 struct icmphdr {
 	__u8	type;
 	__u8	code;
@@ -77,36 +84,17 @@ static int send_request(int sock, struct sockaddr_in *dst,
 }
 
 /* 0 - no error, no response, 1 - no error, response, <0 error */
-static int wait_for_response(int sock, uint16_t id, uint16_t seq)
+static int wait_for_response(int sock, const struct sockaddr_in *dst, uint16_t id, uint16_t seq)
 {
-	struct sockaddr_in src;
-	socklen_t srclen = sizeof(src);
-	struct icmphdr hdr;
+	struct timespec deadline = deadline_after(TIMEOUT);
 	uint8_t resp[256] = { 0 };
+	struct icmphdr hdr;
 	int iphdrlen;
 	ssize_t len;
 
-	/*
-	 * We might need to check multiple packets to find our response,
-	 * I think we could get stuck in this loop if someone dribbles icmp packets? revist
-	 */
-	while (true) {
-		len = recvfrom(sock, resp, sizeof(resp), 0,
-			       (struct sockaddr *)&src, &srclen);
-
-		if (len < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				error("Timeout waiting for response\n");
-				return 0;
-			}
-
-			return -1;
-		}
-
-		/* We get the IP header too so len always has to be bigger */
-		if (len < IP_MIN_HDR_LEN)
-			continue;
-
+	/* We will get packets aside from the one we want so we need to loop */
+	while ((len = smolutils_net_recv(sock, resp, sizeof(resp), IP_MIN_HDR_LEN,
+					 dst, NULL, &deadline)) > 0) {
 		iphdrlen = (resp[0] & 0xf) * 4;
 		if (len < (iphdrlen + (int) sizeof(hdr)))
 			continue;
@@ -121,12 +109,22 @@ static int wait_for_response(int sock, uint16_t id, uint16_t seq)
 
 		return 1;
 	}
+
+	if (len < 0) {
+		error("Failed to receive: %d\n", errno);
+		return -1;
+	}
+
+	error("Timeout waiting for response\n");
+
+	return 0;
 }
 
 static int prog_ping(int argc, char **argv, char **envp)
 {
 	struct timeval t0 = { 0 }, t1 = { 0 };
 	int __cleanup_fd sock = -1;
+	struct icmp_filter filter;
 	struct sockaddr_in dst;
 	const char *host;
 	uint16_t id;
@@ -148,6 +146,10 @@ static int prog_ping(int argc, char **argv, char **envp)
 	if (sock < 0)
 		return 1;
 
+	/* Set a filter for ping replies */
+	filter.data = ~(1U << ICMP_ECHOREPLY);
+	setsockopt(sock, SOL_RAW, ICMP_FILTER, &filter, sizeof(filter));
+
 	id = (uint16_t) random_u32();
 	replies = 0;
 
@@ -162,7 +164,7 @@ static int prog_ping(int argc, char **argv, char **envp)
 
 		gettimeofday(&t0, NULL);
 
-		ret = wait_for_response(sock, id, seq);
+		ret = wait_for_response(sock, &dst, id, seq);
 		if (ret == 0)
 			continue;
 
