@@ -268,10 +268,6 @@ int main (int argc, char **argv, char **envp)
 	struct mapping __cleanup_mapping result_map = MAPPING_NONE;
 	bool memfd_mode = false;
 
-	/* Fix this.. */
-	if (argc < 2)
-		return 1;
-
 	while ((c = getopt(argc, argv, "m:")) != -1) {
 		switch (c) {
 		case 'm':
@@ -287,7 +283,12 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
-	hostname = (optind < argc) ? argv[optind] : ".";
+	if (optind != argc - 1) {
+		usage(USAGE);
+		return 1;
+	}
+
+	hostname = argv[optind];
 
 	num_servers = dns_servers(servers, ARRAY_SIZE(servers));
 
