@@ -130,6 +130,30 @@ static int parse_response_cb_memfd(uint32_t v4addr, void *priv)
 	return 0;
 }
 
+#define DNS_FLAG_QR	0x8000
+#define DNS_FLAG_TC	0x0200
+#define DNS_OPCODE(f)	(((f) >> 11) & 0xf)
+#define DNS_RCODE(f)	((f) & 0xf)
+#define DNS_NXDOMAIN	3
+
+/* Validate that a packet is probably a reply to our request */
+static bool is_reply_to(const uint8_t *query, int qlen, const uint8_t *reply, int len)
+{
+	const struct dns_hdr *hdr = (const struct dns_hdr *) reply;
+	uint16_t flags = ntohs(hdr->flags);
+
+	if (len < qlen || hdr->id != ((const struct dns_hdr *) query)->id)
+		return false;
+
+	if (!(flags & DNS_FLAG_QR) || DNS_OPCODE(flags) || (flags & DNS_FLAG_TC))
+		return false;
+
+	if (ntohs(hdr->qdcount) != 1)
+		return false;
+
+	return !memcmp(query + sizeof(*hdr), reply + sizeof(*hdr), qlen - sizeof(*hdr));
+}
+
 static int parse_response(const uint8_t *buf, int len,
 			  int (*cb)(uint32_t v4addr, void *priv), void *priv)
 {
@@ -233,7 +257,9 @@ int main (int argc, char **argv, char **envp)
 	unsigned int num_servers;
 	const char *hostname;
 	uint8_t buf[BUF_SZ];
+	uint8_t reply[BUF_SZ];
 	unsigned int i;
+	int rcode;
 	int qlen;
 	int ret;
 	int len;
@@ -289,10 +315,24 @@ int main (int argc, char **argv, char **envp)
 		if (ret < 0)
 			continue;
 
-		while ((len = smolutils_net_recv(sock, buf, sizeof(buf), sizeof(struct dns_hdr),
+		while ((len = smolutils_net_recv(sock, reply, sizeof(reply), sizeof(struct dns_hdr),
 						 NULL, NULL, &deadline)) > 0 &&
-		       ntohs(((struct dns_hdr *) buf)->id) != dns_id)
+		       !is_reply_to(buf, qlen, reply, len))
 			;
+
+		if (len < 1)
+			continue;
+
+		rcode = DNS_RCODE(ntohs(((struct dns_hdr *) reply)->flags));
+		if (rcode == DNS_NXDOMAIN) {
+			error("%s: no such name\n", hostname);
+			return 1;
+		}
+
+		if (rcode) {
+			verbose("Server error %d\n", rcode);
+			len = 0;
+		}
 	}
 
 	if (len < 1) {
@@ -301,10 +341,10 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	if (memfd_mode)
-		ret = parse_response(buf, len, parse_response_cb_memfd,
+		ret = parse_response(reply, len, parse_response_cb_memfd,
 				     result_map.at);
 	else
-		ret = parse_response(buf, len, parse_response_cb_stdout, NULL);
+		ret = parse_response(reply, len, parse_response_cb_stdout, NULL);
 
 	if (ret <= 0) {
 		error("%s: %s\n", hostname,
