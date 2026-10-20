@@ -80,7 +80,7 @@ static int copy_file(const char *src, const char *dst)
 {
 	int __cleanup_fd src_fd = -1;
 	int __cleanup_fd dst_fd = -1;
-	struct stat st;
+	struct stat st, dst_st;
 	off_t left;
 
 	src_fd = open_with_msgs(src, O_RDONLY, 0);
@@ -94,6 +94,12 @@ static int copy_file(const char *src, const char *dst)
 
 	if (!S_ISREG(st.st_mode)) {
 		error("%s isn't a regular file\n", src);
+		return 1;
+	}
+
+	/* Avoid interesting situations where the src and dst are actually the same thing */
+	if (!stat(dst, &dst_st) && __same_file(&st, &dst_st)) {
+		error("%s and %s are the same file\n", src, dst);
 		return 1;
 	}
 
