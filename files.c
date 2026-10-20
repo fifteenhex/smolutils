@@ -275,8 +275,8 @@ static int cat_fd(int fd)
 		if (len == 0)
 			return 0;
 
-		/* FIXME: For now write byte by byte because of nolibc's fwrite() */
-		fwrite(buf, 1, len, stdout);
+		if (write_full(STDOUT_FILENO, buf, len))
+			return -1;
 	}
 }
 
