@@ -277,8 +277,9 @@ int main (int argc, char **argv, char **envp)
 		return 1;
 	}
 
-	/* Ask each one in turn, the first to answer wins */
 	for (i = 0, len = 0; i < num_servers && len < 1; i++) {
+		struct timespec deadline = deadline_after(DNS_TIMEOUT);
+
 		sockaddr_in_init(&srv, servers[i], DNS_PORT);
 
 		if (connect(sock, (struct sockaddr *)&srv, sizeof(srv)))
@@ -288,11 +289,16 @@ int main (int argc, char **argv, char **envp)
 		if (ret < 0)
 			continue;
 
-		len = recv(sock, buf, sizeof(buf), 0);
+		while ((len = smolutils_net_recv(sock, buf, sizeof(buf), sizeof(struct dns_hdr),
+						 NULL, NULL, &deadline)) > 0 &&
+		       ntohs(((struct dns_hdr *) buf)->id) != dns_id)
+			;
 	}
 
-	if (len < 1)
+	if (len < 1) {
+		error("%s: no answer\n", hostname);
 		return 1;
+	}
 
 	if (memfd_mode)
 		ret = parse_response(buf, len, parse_response_cb_memfd,
