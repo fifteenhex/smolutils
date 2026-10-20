@@ -132,6 +132,7 @@ HEADERS = config.h \
 	  inc/spawn.h \
 	  inc/strings.h \
 	  inc/sysfs.h \
+	  inc/time.h \
 	  inc/tool.h \
 	  inc/unaligned.h \
 	  inc/users.h \
