@@ -80,8 +80,10 @@ static int iterate_dir(const char *path,
 		return -1;
 
 	dir = fdopendir(fd);
-	if (!dir)
+	if (!dir) {
+		close(fd);
 		return -1;
+	}
 
         while ((readdir_r(dir, &e, &result) == 0) && result) {
                 const char *name = e.d_name;
