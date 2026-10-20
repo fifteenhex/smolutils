@@ -54,10 +54,12 @@ static inline int resolv_doit(const char *hostname, struct resolv_buf *result)
 	fd_to_arg(memfd_str, memfd);
 
 	ret = spawn_and_wait_args("/bin/resolv", newargv);
-	if (ret) {
+	if (ret < 0)
 		error("Failed to spawn resolv\n");
+
+	/* resolv spawned but returned an error */
+	if (ret)
 		return -1;
-	}
 
 	if (!resolv_mapbuf(&map, memfd))
 		return -1;
