@@ -6,6 +6,7 @@
 #include "asserts.h"
 #include "cleanup.h"
 #include "printing.h"
+#include "time.h"
 
 #include <linux/sockios.h>
 
@@ -293,6 +294,50 @@ static inline int smolutils_net_socket_timeout(int type, int protocol,
 static inline int smolutils_net_udp_socket(int timeout)
 {
 	return smolutils_net_socket_timeout(SOCK_DGRAM, 0, timeout);
+}
+
+/* All in one recvform with timeout, filtering etc */
+static inline ssize_t smolutils_net_recv(int sock, void *buf, size_t len, size_t min,
+					 const struct sockaddr_in *want,
+					 struct sockaddr_in *from,
+					 const struct timespec *deadline)
+{
+	while (true) {
+		struct sockaddr_in peer;
+		socklen_t peer_len = sizeof(peer);
+		struct timeval left;
+		ssize_t got;
+
+		if (!deadline_left(deadline, &left))
+			return 0;
+
+		if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &left, sizeof(left)))
+			return -1;
+
+		got = recvfrom(sock, buf, len, 0, (struct sockaddr *) &peer, &peer_len);
+		if (got < 0) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return 0;
+			if (errno == EINTR)
+				continue;
+			return -1;
+		}
+
+		if ((size_t) got < min)
+			continue;
+
+		if (want) {
+			if (want->sin_addr.s_addr != peer.sin_addr.s_addr)
+				continue;
+			if (want->sin_port && want->sin_port != peer.sin_port)
+				continue;
+		}
+
+		if (from)
+			*from = peer;
+
+		return got;
+	}
 }
 
 static inline int smolutils_net_setsockreuseaddr(int sock)
