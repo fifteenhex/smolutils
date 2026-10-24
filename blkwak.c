@@ -21,6 +21,7 @@
 	"       cmp <dev> <file> [off]             compare with a file\n" \
 	"       rescan <dev>                       re-read the partition table\n" \
 	"       -b read/write buffer size\n" \
+	"       -s read makes a sparse image\n" \
 	"       -v verify write\n"
 
 struct blk {
@@ -38,6 +39,7 @@ static void cleanup_blk(struct blk *b)
 #define __cleanup_blk __attribute__((cleanup(cleanup_blk)))
 
 static unsigned int bs = DEFAULT_BS;
+static bool sparse;
 static uint8_t *buf;
 
 static int open_blk(struct blk *b, const char *path, int flags)
@@ -190,50 +192,6 @@ static bool is_nonsense(struct blk *b, struct img *img)
 	}
 
 	return false;
-}
-
-static int cmd_read(struct blk *b, int argc, char **argv)
-{
-	struct img __cleanup_img out = { .fd = -1 };
-	unsigned long long done = 0;
-	unsigned long long off;
-	unsigned long long len;
-
-	if (argc < 1 || argc > 3 ||
-	    !parse_region(b, argc - 1, argv + 1, &off, &len)) {
-		usage(USAGE);
-		return 1;
-	}
-
-	if (open_img(&out, argv[0], O_WRONLY | O_CREAT, 0644))
-		return 1;
-
-	if (is_nonsense(b, &out))
-		return 1;
-
-	/* If the output is a normal file truncate it first, maybe we need a notrunc mode later? */
-	if (__is_regfile(&out.st) && ftruncate(out.fd, 0)) {
-		error("Failed to truncate %s: %d\n", argv[0], errno);
-		return 1;
-	}
-
-	while (done < len) {
-		unsigned int n = len - done > bs ? bs : len - done;
-
-		if (read_at(b, off + done, n))
-			return 1;
-
-		if (write_full(out.fd, buf, n)) {
-			error("Failed to write %s: %d\n", argv[0], errno);
-			return 1;
-		}
-
-		done += n;
-	}
-
-	info("read %llu bytes\n", done);
-
-	return 0;
 }
 
 static bool verify;
@@ -433,6 +391,150 @@ static int finish_compare(const struct walk *w)
 	return 0;
 }
 
+static int read_raw(struct blk *b, struct img *out, const char *path,
+		    unsigned long long off, unsigned long long len)
+{
+	unsigned long long done = 0;
+
+	while (done < len) {
+		unsigned int n = len - done > bs ? bs : len - done;
+
+		if (read_at(b, off + done, n))
+			return 1;
+
+		if (write_full(out->fd, buf, n)) {
+			error("Failed to write %s: %d\n", path, errno);
+			return 1;
+		}
+
+		done += n;
+	}
+
+	info("read %llu bytes\n", done);
+
+	return 0;
+}
+
+#define SPARSE_BLK_SZ	4096
+
+/* One word over and over, a fill chunk says that in four bytes */
+static bool block_is_fill(const uint8_t *p)
+{
+	return !memcmp(p, p + 4, SPARSE_BLK_SZ - 4);
+}
+
+/* Do two blocks go in the same chunk? Raw with raw, a fill with its twin */
+static bool same_chunk(const uint8_t *a, const uint8_t *b)
+{
+	bool fill = block_is_fill(a);
+
+	if (fill != block_is_fill(b))
+		return false;
+
+	return !fill || !memcmp(a, b, 4);
+}
+
+static int put_blocks(struct android_sparse_out *o, const uint8_t *p,
+		      unsigned int len)
+{
+	uint32_t blks = len / SPARSE_BLK_SZ;
+
+	if (block_is_fill(p))
+		return android_sparse_put_fill(o, p, blks);
+
+	return android_sparse_put_raw(o, p, blks);
+}
+
+static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
+		       unsigned long long len)
+{
+	struct walk w = {
+		.b = b,
+		.in = out,
+		.op = OP_COMPARE,
+	};
+	struct android_sparse_out o;
+	unsigned long long done = 0;
+
+	if (android_sparse_create(&o, out->fd, SPARSE_BLK_SZ))
+		return 1;
+
+	while (done < len) {
+		unsigned int n = len - done > bs ? bs : len - done;
+		unsigned int start = 0;
+		unsigned int i;
+
+		if (read_at(b, off + done, n))
+			return 1;
+
+		/* A run of blocks that share a chunk goes out together */
+		for (i = SPARSE_BLK_SZ; i <= n; i += SPARSE_BLK_SZ) {
+			if (i < n && same_chunk(buf + start, buf + i))
+				continue;
+
+			if (put_blocks(&o, buf + start, i - start))
+				return 1;
+			start = i;
+		}
+
+		done += n;
+	}
+
+	if (android_sparse_finish(&o))
+		return 1;
+
+	info("%llu bytes in %u chunks, %llu bytes of image\n", done, o.chunks,
+	     o.end);
+
+	if (!verify)
+		return 0;
+
+	/* Read it back against the device */
+	if (walk_image(&w, off))
+		return 1;
+
+	return finish_compare(&w);
+}
+
+static int cmd_read(struct blk *b, int argc, char **argv)
+{
+	struct img __cleanup_img out = { .fd = -1 };
+	unsigned long long off;
+	unsigned long long len;
+
+	if (argc < 1 || argc > 3 ||
+	    !parse_region(b, argc - 1, argv + 1, &off, &len)) {
+		usage(USAGE);
+		return 1;
+	}
+
+	if (sparse && (off % SPARSE_BLK_SZ || len % SPARSE_BLK_SZ ||
+		       bs % SPARSE_BLK_SZ)) {
+		error("The region and -b have to be whole %u byte blocks\n",
+		      SPARSE_BLK_SZ);
+		return 1;
+	}
+
+	/* -v reads a sparse image back, so it is opened for that too */
+	if (open_img(&out, argv[0], (sparse ? O_RDWR : O_WRONLY) | O_CREAT,
+		     0644))
+		return 1;
+
+	if (is_nonsense(b, &out))
+		return 1;
+
+	/* If the output is a normal file truncate it first, maybe we need a notrunc mode later? */
+	if (__is_regfile(&out.st) && ftruncate(out.fd, 0)) {
+		error("Failed to truncate %s: %d\n", argv[0], errno);
+		return 1;
+	}
+
+	if (sparse)
+		return read_sparse(b, &out, off, len);
+
+	return read_raw(b, &out, argv[0], off, len);
+}
+
 static int cmd_write(struct blk *b, int argc, char **argv)
 {
 	struct img __cleanup_img in = { .fd = -1 };
@@ -546,7 +648,7 @@ int main (int argc, char **argv, char **envp)
 	unsigned long long v;
 	int c;
 
-	while ((c = getopt(argc, argv, "b:v")) != -1) {
+	while ((c = getopt(argc, argv, "b:sv")) != -1) {
 		switch (c) {
 		case 'b':
 			if (!parse_size(optarg, &v) || !v || v > MAX_BS) {
@@ -554,6 +656,10 @@ int main (int argc, char **argv, char **envp)
 				return 1;
 			}
 			bs = v;
+			break;
+
+		case 's':
+			sparse = true;
 			break;
 
 		case 'v':
