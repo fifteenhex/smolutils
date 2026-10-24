@@ -57,9 +57,11 @@ static bool parse_offset(const char *arg, unsigned int *offset)
  * and watched, and closing it lets them go. Outputs start out driven to
  * values, which is ignored for inputs.
  */
-static int request_lines(int chip, const unsigned int *offsets, unsigned int num,
-			 uint64_t flags, uint64_t values, const char *consumer)
+static int request_lines(int chip, const unsigned int *offsets,
+			 unsigned int num, uint64_t flags, uint64_t values,
+			 const char *consumer)
 {
+	struct gpio_v2_line_config_attribute *attr;
 	struct gpio_v2_line_request req = { 0 };
 	unsigned int i;
 
@@ -70,10 +72,11 @@ static int request_lines(int chip, const unsigned int *offsets, unsigned int num
 	snprintf(req.consumer, sizeof(req.consumer), "%s", consumer);
 
 	if (flags & GPIO_V2_LINE_FLAG_OUTPUT) {
+		attr = &req.config.attrs[0];
 		req.config.num_attrs = 1;
-		req.config.attrs[0].attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
-		req.config.attrs[0].attr.values = values;
-		req.config.attrs[0].mask = (1ULL << num) - 1;
+		attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
+		attr->attr.values = values;
+		attr->mask = (1ULL << num) - 1;
 	}
 
 	if (ioctl(chip, GPIO_V2_GET_LINE_IOCTL, &req)) {
