@@ -23,16 +23,23 @@ static inline bool gpio_is_chip(const char *name)
 /* arg can be gpiochip<n>, <n> or the path */
 static inline int gpio_open_chip(const char *arg, int flags)
 {
-	char path[sizeof(GPIO_DEV_DIR "/" GPIO_DEV_PREFIX) + 24];
+	char path[sizeof(GPIO_DEV_DIR "/") + GPIO_MAX_NAME_SIZE];
 	unsigned long n;
+	bool fits;
 
 	if (arg[0] == '/')
 		return open_with_msgs(arg, flags, 0);
 
 	if (parse_ul(arg, 10, &n))
-		snprintf(path, sizeof(path), GPIO_DEV_DIR "/" GPIO_DEV_PREFIX "%lu", n);
+		fits = str_format(path, GPIO_DEV_DIR "/" GPIO_DEV_PREFIX "%lu",
+				  n);
 	else
-		snprintf(path, sizeof(path), GPIO_DEV_DIR "/%s", arg);
+		fits = str_format(path, GPIO_DEV_DIR "/%s", arg);
+
+	if (!fits) {
+		error("Not a gpio chip: %s\n", arg);
+		return -1;
+	}
 
 	return open_with_msgs(path, flags, 0);
 }
