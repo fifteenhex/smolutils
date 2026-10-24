@@ -3,102 +3,15 @@
 #include "config.h"
 #include "common.h"
 
+#include "inc/gpio.h"
 #include "inc/multicall.h"
-
-#include <linux/gpio.h>
-
-#define GPIO_DEV_PREFIX	"gpiochip"
-#define GPIO_DEV_DIR	"/dev"
-
-/* Does a /dev name look like a chip? */
-static bool is_chip(const char *name)
-{
-	return STARTS_WITH(name, GPIO_DEV_PREFIX);
-}
-
-/* arg can be gpiochip<n>, <n> or the path */
-static int open_chip(const char *arg, int flags)
-{
-	char path[sizeof(GPIO_DEV_DIR "/" GPIO_DEV_PREFIX) + 24];
-	unsigned long n;
-
-	if (arg[0] == '/')
-		return open_with_msgs(arg, flags, 0);
-
-	if (parse_ul(arg, 10, &n))
-		snprintf(path, sizeof(path), GPIO_DEV_DIR "/" GPIO_DEV_PREFIX "%lu", n);
-	else
-		snprintf(path, sizeof(path), GPIO_DEV_DIR "/%s", arg);
-
-	return open_with_msgs(path, flags, 0);
-}
-
-static bool chip_info(int fd, const char *what, struct gpiochip_info *info)
-{
-	if (ioctl(fd, GPIO_GET_CHIPINFO_IOCTL, info)) {
-		error("%s isn't a gpio chip: %d\n", what, errno);
-		return false;
-	}
-
-	return true;
-}
-
-static bool parse_offset(const char *arg, unsigned int *offset)
-{
-	unsigned long v;
-
-	if (!parse_ul_range(arg, 10, 0, GPIO_V2_LINES_MAX - 1, &v)) {
-		error("Not a line offset: %s\n", arg);
-		return false;
-	}
-
-	*offset = v;
-
-	return true;
-}
-
-/*
- * Request lines with the given flags (direction, active low, edges) and
- * consumer name. The fd that comes back is how the lines are read, set
- * and watched, and closing it lets them go. Outputs start out driven to
- * values, which is ignored for inputs.
- */
-static int request_lines(int chip, const unsigned int *offsets,
-			 unsigned int num, uint64_t flags, uint64_t values,
-			 const char *consumer)
-{
-	struct gpio_v2_line_config_attribute *attr;
-	struct gpio_v2_line_request req = { 0 };
-	unsigned int i;
-
-	for (i = 0; i < num; i++)
-		req.offsets[i] = offsets[i];
-	req.num_lines = num;
-	req.config.flags = flags;
-	snprintf(req.consumer, sizeof(req.consumer), "%s", consumer);
-
-	if (flags & GPIO_V2_LINE_FLAG_OUTPUT) {
-		attr = &req.config.attrs[0];
-		req.config.num_attrs = 1;
-		attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
-		attr->attr.values = values;
-		attr->mask = (1ULL << num) - 1;
-	}
-
-	if (ioctl(chip, GPIO_V2_GET_LINE_IOCTL, &req)) {
-		error("Failed to request the lines: %d\n", errno);
-		return -1;
-	}
-
-	return req.fd;
-}
 
 static int detect_cb(const char *name, int dir, void *priv)
 {
 	struct gpiochip_info info;
 	int __cleanup_fd fd = -1;
 
-	if (!is_chip(name))
+	if (!gpio_is_chip(name))
 		return 0;
 
 	fd = openat(dir, name, O_RDONLY);
@@ -142,8 +55,8 @@ static int info_chip(const char *arg)
 	int __cleanup_fd fd = -1;
 	unsigned int i;
 
-	fd = open_chip(arg, O_RDONLY);
-	if (fd < 0 || !chip_info(fd, arg, &info))
+	fd = gpio_open_chip(arg, O_RDONLY);
+	if (fd < 0 || !gpio_chip_info(fd, arg, &info))
 		return 1;
 
 	printf("%s - %u lines:\n", info.name, info.lines);
@@ -166,7 +79,7 @@ static int info_cb(const char *name, int dir, void *priv)
 {
 	char path[sizeof(GPIO_DEV_DIR) + GPIO_MAX_NAME_SIZE + 1];
 
-	if (!is_chip(name))
+	if (!gpio_is_chip(name))
 		return 0;
 
 	snprintf(path, sizeof(path), GPIO_DEV_DIR "/%s", name);
@@ -219,15 +132,15 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	}
 
 	for (i = 0; i < num; i++) {
-		if (!parse_offset(argv[optind + 1 + i], &offsets[i]))
+		if (!gpio_parse_offset(argv[optind + 1 + i], &offsets[i]))
 			return 1;
 	}
 
-	chip = open_chip(argv[optind], O_RDONLY);
+	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
 		return 1;
 
-	lines = request_lines(chip, offsets, num, flags, 0, "gpioget");
+	lines = gpio_request_lines(chip, offsets, num, flags, 0, "gpioget");
 	if (lines < 0)
 		return 1;
 
@@ -296,17 +209,18 @@ static int prog_gpioset(int argc, char **argv, char **envp)
 		}
 
 		*eq = '\0';
-		if (!parse_offset(arg, &offsets[i]))
+		if (!gpio_parse_offset(arg, &offsets[i]))
 			return 1;
 
 		values |= (uint64_t) v << i;
 	}
 
-	chip = open_chip(argv[optind], O_RDONLY);
+	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
 		return 1;
 
-	lines = request_lines(chip, offsets, num, flags, values, "gpioset");
+	lines = gpio_request_lines(chip, offsets, num, flags, values,
+				   "gpioset");
 	if (lines < 0)
 		return 1;
 
@@ -366,15 +280,15 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 	}
 
 	for (i = 0; i < num; i++) {
-		if (!parse_offset(argv[optind + 1 + i], &offsets[i]))
+		if (!gpio_parse_offset(argv[optind + 1 + i], &offsets[i]))
 			return 1;
 	}
 
-	chip = open_chip(argv[optind], O_RDONLY);
+	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
 		return 1;
 
-	lines = request_lines(chip, offsets, num, flags, 0, "gpiomon");
+	lines = gpio_request_lines(chip, offsets, num, flags, 0, "gpiomon");
 	if (lines < 0)
 		return 1;
 

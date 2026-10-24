@@ -114,6 +114,7 @@ HEADERS = config.h \
 	  inc/colour.h \
 	  inc/date.h \
 	  inc/fs.h \
+	  inc/gpio.h \
 	  inc/io.h \
 	  inc/kernfs.h \
 	  inc/memfd.h \
