@@ -138,4 +138,140 @@ static inline int android_sparse_chunk(const struct android_sparse_img *img,
 	return 0;
 }
 
+struct android_sparse_out {
+	unsigned long long end;		/* where the next chunk goes */
+	unsigned long long last;	/* the last chunk's header */
+	uint32_t last_blks;
+	uint32_t blk_sz;
+	uint32_t blks;
+	uint32_t chunks;
+	unsigned int last_type;
+	uint8_t last_fill[4];
+	int fd;
+};
+
+static inline int __android_sparse_write(int fd, unsigned long long off,
+					 const void *buf, unsigned int len)
+{
+	if (lseek(fd, off, SEEK_SET) != (off_t) off ||
+	    write_full(fd, buf, len)) {
+		error("Failed to write the image: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+static inline int __android_sparse_header(const struct android_sparse_out *o)
+{
+	uint8_t hdr[ANDROID_SPARSE_HEADER_SZ] = { 0 };
+
+	put_unaligned_le32(hdr, ANDROID_SPARSE_MAGIC);
+	put_unaligned_le16(hdr + 4, 1);
+	put_unaligned_le16(hdr + 8, ANDROID_SPARSE_HEADER_SZ);
+	put_unaligned_le16(hdr + 10, ANDROID_SPARSE_CHUNK_HEADER_SZ);
+	put_unaligned_le32(hdr + 12, o->blk_sz);
+	put_unaligned_le32(hdr + 16, o->blks);
+	put_unaligned_le32(hdr + 20, o->chunks);
+
+	return __android_sparse_write(o->fd, 0, hdr, sizeof(hdr));
+}
+
+static inline int __android_sparse_chunk_hdr(const struct android_sparse_out *o,
+					     unsigned int type, uint32_t body)
+{
+	uint8_t hdr[ANDROID_SPARSE_CHUNK_HEADER_SZ] = { 0 };
+
+	put_unaligned_le16(hdr, type);
+	put_unaligned_le32(hdr + 4, o->last_blks);
+	put_unaligned_le32(hdr + 8, ANDROID_SPARSE_CHUNK_HEADER_SZ + body);
+
+	return __android_sparse_write(o->fd, o->last, hdr, sizeof(hdr));
+}
+
+static inline bool __android_sparse_grows(const struct android_sparse_out *o,
+					  unsigned int type, uint32_t blks)
+{
+	unsigned long long total = (unsigned long long) o->last_blks + blks;
+	unsigned long long body = sizeof(o->last_fill);
+
+	if (o->last_type != type || total > UINT32_MAX)
+		return false;
+
+	if (type == ANDROID_SPARSE_CHUNK_RAW)
+		body = total * o->blk_sz;
+
+	return ANDROID_SPARSE_CHUNK_HEADER_SZ + body <= UINT32_MAX;
+}
+
+static inline void __android_sparse_new_chunk(struct android_sparse_out *o,
+					      unsigned int type)
+{
+	o->last = o->end;
+	o->last_type = type;
+	o->last_blks = 0;
+	o->end += ANDROID_SPARSE_CHUNK_HEADER_SZ;
+	o->chunks++;
+}
+
+/* Starts the image at the beginning of fd, finish it when done */
+static inline int android_sparse_create(struct android_sparse_out *o, int fd,
+					uint32_t blk_sz)
+{
+	memset(o, 0, sizeof(*o));
+	o->fd = fd;
+	o->blk_sz = blk_sz;
+	o->end = ANDROID_SPARSE_HEADER_SZ;
+
+	return __android_sparse_header(o);
+}
+
+/* blks whole blocks of data */
+static inline int android_sparse_put_raw(struct android_sparse_out *o,
+					 const void *data, uint32_t blks)
+{
+	unsigned int len = blks * o->blk_sz;
+
+	if (!__android_sparse_grows(o, ANDROID_SPARSE_CHUNK_RAW, blks))
+		__android_sparse_new_chunk(o, ANDROID_SPARSE_CHUNK_RAW);
+
+	if (__android_sparse_write(o->fd, o->end, data, len))
+		return -1;
+
+	o->end += len;
+	o->last_blks += blks;
+	o->blks += blks;
+
+	return __android_sparse_chunk_hdr(o, ANDROID_SPARSE_CHUNK_RAW,
+					     o->last_blks * o->blk_sz);
+}
+
+/* blks blocks of the four bytes at fill, over and over */
+static inline int android_sparse_put_fill(struct android_sparse_out *o,
+					  const uint8_t *fill, uint32_t blks)
+{
+	if (!__android_sparse_grows(o, ANDROID_SPARSE_CHUNK_FILL, blks) ||
+	    memcmp(fill, o->last_fill, sizeof(o->last_fill))) {
+		__android_sparse_new_chunk(o, ANDROID_SPARSE_CHUNK_FILL);
+		memcpy(o->last_fill, fill, sizeof(o->last_fill));
+
+		if (__android_sparse_write(o->fd, o->end, fill,
+					   sizeof(o->last_fill)))
+			return -1;
+		o->end += sizeof(o->last_fill);
+	}
+
+	o->last_blks += blks;
+	o->blks += blks;
+
+	return __android_sparse_chunk_hdr(o, ANDROID_SPARSE_CHUNK_FILL,
+					     sizeof(o->last_fill));
+}
+
+/* The header again, now with the counts */
+static inline int android_sparse_finish(const struct android_sparse_out *o)
+{
+	return __android_sparse_header(o);
+}
+
 #endif /* _SMOLUTILS_ANDROID_SPARSE_IMG_H */
