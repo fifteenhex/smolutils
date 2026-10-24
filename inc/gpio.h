@@ -140,6 +140,19 @@ static inline int gpio_get_values(int lines, uint64_t mask, uint64_t *values)
 	return 0;
 }
 
+/* Drive the lines in mask, bit i is line i of the request */
+static inline int gpio_set_values(int lines, uint64_t mask, uint64_t values)
+{
+	struct gpio_v2_line_values v = { .bits = values, .mask = mask };
+
+	if (ioctl(lines, GPIO_V2_LINE_SET_VALUES_IOCTL, &v)) {
+		error("Failed to set the lines: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
+}
+
 /* Blocks until an edge on a request made with edge flags */
 static inline int gpio_read_event(int lines, struct gpio_v2_line_event *event)
 {
