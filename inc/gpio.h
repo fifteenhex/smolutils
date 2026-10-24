@@ -61,6 +61,12 @@ static inline bool gpio_parse_offset(const char *arg, unsigned int *offset)
 	return true;
 }
 
+/* generate a mask for the first num lines of a request */
+static inline uint64_t gpio_lines_mask(unsigned int num)
+{
+	return num >= 64 ? ~0ULL : (1ULL << num) - 1;
+}
+
 /*
  * Request lines with the given flags (direction, active low, edges) and
  * consumer name. The fd that comes back is how the lines are read, set
@@ -86,7 +92,7 @@ static inline int gpio_request_lines(int chip, const unsigned int *offsets,
 		req.config.num_attrs = 1;
 		attr->attr.id = GPIO_V2_LINE_ATTR_ID_OUTPUT_VALUES;
 		attr->attr.values = values;
-		attr->mask = (1ULL << num) - 1;
+		attr->mask = gpio_lines_mask(num);
 	}
 
 	if (ioctl(chip, GPIO_V2_GET_LINE_IOCTL, &req)) {

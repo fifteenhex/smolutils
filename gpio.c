@@ -144,7 +144,7 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	if (lines < 0)
 		return 1;
 
-	values.mask = (1ULL << num) - 1;
+	values.mask = gpio_lines_mask(num);
 	if (ioctl(lines, GPIO_V2_LINE_GET_VALUES_IOCTL, &values)) {
 		error("Failed to read the lines: %d\n", errno);
 		return 1;
