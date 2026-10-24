@@ -4,6 +4,7 @@
 #define _SMOLUTILS_GPIO_H
 
 #include "fs.h"
+#include "io.h"
 #include "numbers.h"
 #include "printing.h"
 #include "strings.h"
@@ -101,6 +102,46 @@ static inline int gpio_request_lines(int chip, const unsigned int *offsets,
 	}
 
 	return req.fd;
+}
+
+static inline int gpio_line_info(int chip, unsigned int offset,
+				 struct gpio_v2_line_info *line)
+{
+	memset(line, 0, sizeof(*line));
+	line->offset = offset;
+
+	if (ioctl(chip, GPIO_V2_GET_LINEINFO_IOCTL, line)) {
+		error("Failed to read line %u: %d\n", offset, errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Bit i of values is line i of the request */
+static inline int gpio_get_values(int lines, uint64_t mask, uint64_t *values)
+{
+	struct gpio_v2_line_values v = { .mask = mask };
+
+	if (ioctl(lines, GPIO_V2_LINE_GET_VALUES_IOCTL, &v)) {
+		error("Failed to read the lines: %d\n", errno);
+		return -1;
+	}
+
+	*values = v.bits;
+
+	return 0;
+}
+
+/* Blocks until an edge on a request made with edge flags */
+static inline int gpio_read_event(int lines, struct gpio_v2_line_event *event)
+{
+	if (read_full(lines, event, sizeof(*event)) != (int) sizeof(*event)) {
+		error("Failed to read an event: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
 }
 
 #endif /* _SMOLUTILS_GPIO_H */

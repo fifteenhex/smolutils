@@ -62,12 +62,10 @@ static int info_chip(const char *arg)
 	printf("%s - %u lines:\n", info.name, info.lines);
 
 	for (i = 0; i < info.lines; i++) {
-		struct gpio_v2_line_info line = { .offset = i };
+		struct gpio_v2_line_info line;
 
-		if (ioctl(fd, GPIO_V2_GET_LINEINFO_IOCTL, &line)) {
-			error("Failed to read line %u: %d\n", i, errno);
+		if (gpio_line_info(fd, i, &line))
 			return 1;
-		}
 
 		print_line(&line);
 	}
@@ -109,11 +107,11 @@ static int prog_gpioinfo(int argc, char **argv, char **envp)
 static int prog_gpioget(int argc, char **argv, char **envp)
 {
 	unsigned int offsets[GPIO_V2_LINES_MAX];
-	struct gpio_v2_line_values values;
 	uint64_t flags = GPIO_V2_LINE_FLAG_INPUT;
 	int __cleanup_fd lines = -1;
 	int __cleanup_fd chip = -1;
 	unsigned int num;
+	uint64_t values;
 	unsigned int i;
 	int c;
 
@@ -144,14 +142,12 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	if (lines < 0)
 		return 1;
 
-	values.mask = gpio_lines_mask(num);
-	if (ioctl(lines, GPIO_V2_LINE_GET_VALUES_IOCTL, &values)) {
-		error("Failed to read the lines: %d\n", errno);
+	if (gpio_get_values(lines, gpio_lines_mask(num), &values))
 		return 1;
-	}
 
 	for (i = 0; i < num; i++)
-		printf("%s%u", i ? " " : "", (unsigned int) ((values.bits >> i) & 1));
+		printf("%s%u", i ? " " : "",
+		       (unsigned int) ((values >> i) & 1));
 	printf("\n");
 
 	return 0;
@@ -294,13 +290,9 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 
 	while (!wanted || seen < wanted) {
 		struct gpio_v2_line_event event;
-		int got;
 
-		got = read_full(lines, &event, sizeof(event));
-		if (got != (int) sizeof(event)) {
-			error("Failed to read an event: %d\n", errno);
+		if (gpio_read_event(lines, &event))
 			return 1;
-		}
 
 		printf("event: %s EDGE offset: %u timestamp: [%llu.%09llu]\n",
 		       event.id == GPIO_V2_LINE_EVENT_RISING_EDGE ? " RISING" : "FALLING",
