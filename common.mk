@@ -107,6 +107,7 @@ HEADERS = config.h \
 	  dhcpc.h \
 	  later.h \
 	  dungeon.h \
+	  inc/android_sparse_img.h \
 	  inc/asserts.h \
 	  inc/auth.h \
 	  inc/cleanup.h \
