@@ -5,6 +5,7 @@
 #define TAG "blkwak"
 
 #include "common.h"
+#include "inc/android_sparse_img.h"
 
 #include <linux/fs.h>
 
@@ -16,7 +17,7 @@
 	"usage: blkwak [-b <bs>] [-v] <command> <dev> ...\n" \
 	"       info <dev>\n" \
 	"       read <dev> <file> [off] [len]      device -> file\n" \
-	"       write <dev> <file> [off]           file -> device\n" \
+	"       write <dev> <file> [off]           raw or sparse -> device\n" \
 	"       cmp <dev> <file> [off]             compare with a file\n" \
 	"       rescan <dev>                       re-read the partition table\n" \
 	"       -b read/write buffer size\n" \
@@ -300,10 +301,97 @@ static int walk_raw(struct walk *w, unsigned long long off, uint8_t *data)
 	return 0;
 }
 
+static int span_fill(struct walk *w, unsigned long long off,
+		     unsigned long long len, const uint8_t *fill, uint8_t *data)
+{
+	unsigned int i;
+
+	for (i = 0; i < bs; i++)
+		data[i] = fill[i & 3];
+
+	while (len) {
+		unsigned int n = len > bs ? bs : len;
+
+		if (span_data(w, off, data, n))
+			return -1;
+
+		off += n;
+		len -= n;
+		w->done += n;
+	}
+
+	return 0;
+}
+
+static int walk_sparse(struct walk *w, unsigned long long off,
+		       const uint8_t *hdr, uint8_t *data)
+{
+	struct android_sparse_img img;
+	unsigned long long at = off;
+	uint32_t i;
+
+	if (android_sparse_open(&img, w->in->fd, hdr))
+		return -1;
+
+	if (!off_len_fits(off, img.size, w->b->size)) {
+		error("0x%llx + 0x%llx is past the end\n", off, img.size);
+		return -1;
+	}
+
+	for (i = 0; i < img.chunks; i++) {
+		struct android_sparse_chunk c;
+
+		if (android_sparse_chunk(&img, i, &c))
+			return -1;
+
+		switch (c.type) {
+		case ANDROID_SPARSE_CHUNK_RAW:
+			while (c.len) {
+				unsigned int n = c.len > bs ? bs : c.len;
+
+				if (read_full(w->in->fd, data, n) != (int) n) {
+					error("Image ends inside chunk %u\n",
+					      i);
+					return -1;
+				}
+				if (span_data(w, at, data, n))
+					return -1;
+				at += n;
+				c.len -= n;
+				w->done += n;
+			}
+			break;
+
+		case ANDROID_SPARSE_CHUNK_FILL:
+			if (span_fill(w, at, c.len, c.fill, data))
+				return -1;
+			at += c.len;
+			break;
+
+		case ANDROID_SPARSE_CHUNK_DONT_CARE:
+			at += c.len;
+			break;
+
+		case ANDROID_SPARSE_CHUNK_CRC32:
+			/* Covers no blocks */
+			break;
+		}
+	}
+
+	if (at - off != img.size) {
+		error("The chunks don't add up to the image size\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int walk_image(struct walk *w, unsigned long long off)
 {
 	uint8_t __cleanup_free *second = NULL;
+	uint8_t hdr[ANDROID_SPARSE_HEADER_SZ];
 	uint8_t *data = buf;
+	int got;
 
 	if (lseek(w->in->fd, 0, SEEK_SET)) {
 		error("Failed to rewind the image: %d\n", errno);
@@ -318,6 +406,15 @@ static int walk_image(struct walk *w, unsigned long long off)
 			return -1;
 		}
 		data = second;
+	}
+
+	got = read_full(w->in->fd, hdr, sizeof(hdr));
+	if (got == (int) sizeof(hdr) && android_sparse_is(hdr))
+		return walk_sparse(w, off, hdr, data);
+
+	if (got < 0 || lseek(w->in->fd, 0, SEEK_SET)) {
+		error("Failed to read the image: %d\n", errno);
+		return -1;
 	}
 
 	return walk_raw(w, off, data);
