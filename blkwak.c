@@ -237,63 +237,114 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 
 static bool verify;
 
-static int compare_image(const struct blk *b, const struct img *in,
-			 unsigned long long off)
-{
-	unsigned long long first_bad = ~0ULL;
-	uint8_t __cleanup_free *data = NULL;
-	unsigned long long done = 0;
-	unsigned long long bad = 0;
-	int got;
+enum op {
+	OP_WRITE,
+	OP_COMPARE,
+};
 
-	data = malloc(bs);
-	if (!data) {
-		error("No room for a second buffer\n");
-		return 1;
+/* Writing an image and checking one is the same walk over its spans */
+struct walk {
+	struct blk *b;
+	struct img *in;
+	unsigned long long first_bad;
+	unsigned long long bad;
+	unsigned long long done;
+	enum op op;
+};
+
+static int span_data(struct walk *w, unsigned long long off,
+		     const uint8_t *data, unsigned int n)
+{
+	unsigned int i;
+
+	if (!off_len_fits(off, n, w->b->size)) {
+		error("0x%llx + %u is past the end\n", off, n);
+		return -1;
 	}
 
-	while ((got = read_full(in->fd, data, bs)) > 0) {
-		unsigned int i;
+	if (w->op == OP_WRITE)
+		return write_at(w->b, off, data, n);
 
-		if (!off_len_fits(off + done, got, b->size)) {
-			error("0x%llx + %u is past the end of the device\n",
-			      off + done, got);
-			return 1;
+	if (read_at(w->b, off, n))
+		return -1;
+
+	if (!memcmp(buf, data, n))
+		return 0;
+
+	for (i = 0; i < n; i++) {
+		if (buf[i] != data[i]) {
+			if (!w->bad++)
+				w->first_bad = off + i;
 		}
+	}
 
-		if (read_at(b, off + done, got))
-			return 1;
+	return 0;
+}
 
-		for (i = 0; i < (unsigned int) got; i++)
-			if (buf[i] != data[i]) {
-				if (first_bad == ~0ULL)
-					first_bad = off + done + i;
-				bad++;
-			}
+static int walk_raw(struct walk *w, unsigned long long off, uint8_t *data)
+{
+	int got;
 
-		done += got;
+	while ((got = read_full(w->in->fd, data, bs)) > 0) {
+		if (span_data(w, off, data, got))
+			return -1;
+		off += got;
+		w->done += got;
 	}
 
 	if (got < 0) {
 		error("Failed to read the image: %d\n", errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int walk_image(struct walk *w, unsigned long long off)
+{
+	uint8_t __cleanup_free *second = NULL;
+	uint8_t *data = buf;
+
+	if (lseek(w->in->fd, 0, SEEK_SET)) {
+		error("Failed to rewind the image: %d\n", errno);
+		return -1;
+	}
+
+	/* Comparing needs the device in buf and the image somewhere else */
+	if (w->op == OP_COMPARE) {
+		second = malloc(bs);
+		if (!second) {
+			error("No room for a second buffer\n");
+			return -1;
+		}
+		data = second;
+	}
+
+	return walk_raw(w, off, data);
+}
+
+static int finish_compare(const struct walk *w)
+{
+	if (w->bad) {
+		info("%llu of %llu bytes differ, first at 0x%llx\n", w->bad,
+		     w->done, w->first_bad);
 		return 1;
 	}
 
-	if (bad)
-		info("%llu of %llu bytes differ, first at 0x%llx\n", bad, done,
-		     first_bad);
-	else
-		info("%llu bytes match\n", done);
+	info("%llu bytes match\n", w->done);
 
-	return bad ? 1 : 0;
+	return 0;
 }
 
 static int cmd_write(struct blk *b, int argc, char **argv)
 {
 	struct img __cleanup_img in = { .fd = -1 };
-	unsigned long long done = 0;
+	struct walk w = {
+		.b = b,
+		.in = &in,
+		.op = OP_WRITE,
+	};
 	unsigned long long off = 0;
-	int got;
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
 		usage(USAGE);
@@ -306,29 +357,15 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 	if (is_nonsense(b, &in))
 		return 1;
 
-	while ((got = read_full(in.fd, buf, bs)) > 0) {
-		if (!off_len_fits(off + done, got, b->size)) {
-			error("0x%llx + %u is past the end of the device\n",
-			      off + done, got);
-			return 1;
-		}
-
-		if (write_at(b, off + done, buf, got))
-			return 1;
-		done += got;
-	}
-
-	if (got < 0) {
-		error("Failed to read %s: %d\n", argv[0], errno);
+	if (walk_image(&w, off))
 		return 1;
-	}
 
 	if (fsync(b->fd)) {
 		error("fsync failed: %d\n", errno);
 		return 1;
 	}
 
-	info("wrote %llu bytes\n", done);
+	info("wrote %llu bytes\n", w.done);
 
 	if (!verify)
 		return 0;
@@ -338,17 +375,22 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 		return 1;
 	}
 
-	if (lseek(in.fd, 0, SEEK_SET)) {
-		error("Failed to rewind %s: %d\n", argv[0], errno);
+	w.op = OP_COMPARE;
+	w.done = 0;
+	if (walk_image(&w, off))
 		return 1;
-	}
 
-	return compare_image(b, &in, off);
+	return finish_compare(&w);
 }
 
 static int cmd_cmp(struct blk *b, int argc, char **argv)
 {
 	struct img __cleanup_img in = { .fd = -1 };
+	struct walk w = {
+		.b = b,
+		.in = &in,
+		.op = OP_COMPARE,
+	};
 	unsigned long long off = 0;
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
@@ -362,7 +404,10 @@ static int cmd_cmp(struct blk *b, int argc, char **argv)
 	if (is_nonsense(b, &in))
 		return 1;
 
-	return compare_image(b, &in, off);
+	if (walk_image(&w, off))
+		return 1;
+
+	return finish_compare(&w);
 }
 
 static int cmd_rescan(struct blk *b, int argc, char **argv)
