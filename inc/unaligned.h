@@ -21,6 +21,24 @@ static inline uint32_t get_unaligned_be32(const void *buf)
 	return be32toh(v);
 }
 
+static inline uint16_t get_unaligned_le16(const void *buf)
+{
+	uint16_t v;
+
+	memcpy(&v, buf, sizeof(v));
+
+	return le16toh(v);
+}
+
+static inline uint32_t get_unaligned_le32(const void *buf)
+{
+	uint32_t v;
+
+	memcpy(&v, buf, sizeof(v));
+
+	return le32toh(v);
+}
+
 static inline void put_unaligned_be16(void *buf, uint16_t v)
 {
 	v = htobe16(v);
