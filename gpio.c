@@ -75,14 +75,10 @@ static int info_chip(const char *arg)
 
 static int info_cb(const char *name, int dir, void *priv)
 {
-	char path[sizeof(GPIO_DEV_DIR) + GPIO_MAX_NAME_SIZE + 1];
-
 	if (!gpio_is_chip(name))
 		return 0;
 
-	snprintf(path, sizeof(path), GPIO_DEV_DIR "/%s", name);
-
-	return info_chip(path) ? -1 : 0;
+	return info_chip(name) ? -1 : 0;
 }
 
 #define GPIOINFO_USAGE "usage: gpioinfo [<chip>...]\n"
