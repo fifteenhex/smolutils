@@ -46,4 +46,18 @@ static inline void put_unaligned_be16(void *buf, uint16_t v)
 	memcpy(buf, &v, sizeof(v));
 }
 
+static inline void put_unaligned_le16(void *buf, uint16_t v)
+{
+	v = htole16(v);
+
+	memcpy(buf, &v, sizeof(v));
+}
+
+static inline void put_unaligned_le32(void *buf, uint32_t v)
+{
+	v = htole32(v);
+
+	memcpy(buf, &v, sizeof(v));
+}
+
 #endif /* _SMOLUTILS_UNALIGNED_H */
