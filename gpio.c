@@ -10,6 +10,12 @@
 #define GPIO_DEV_PREFIX	"gpiochip"
 #define GPIO_DEV_DIR	"/dev"
 
+/* Does a /dev name look like a chip? */
+static bool is_chip(const char *name)
+{
+	return STARTS_WITH(name, GPIO_DEV_PREFIX);
+}
+
 /* arg can be gpiochip<n>, <n> or the path */
 static int open_chip(const char *arg, int flags)
 {
@@ -92,7 +98,7 @@ static int detect_cb(const char *name, int dir, void *priv)
 	struct gpiochip_info info;
 	int __cleanup_fd fd = -1;
 
-	if (strncmp(name, GPIO_DEV_PREFIX, STRLEN(GPIO_DEV_PREFIX)))
+	if (!is_chip(name))
 		return 0;
 
 	fd = openat(dir, name, O_RDONLY);
@@ -160,7 +166,7 @@ static int info_cb(const char *name, int dir, void *priv)
 {
 	char path[sizeof(GPIO_DEV_DIR) + GPIO_MAX_NAME_SIZE + 1];
 
-	if (strncmp(name, GPIO_DEV_PREFIX, STRLEN(GPIO_DEV_PREFIX)))
+	if (!is_chip(name))
 		return 0;
 
 	snprintf(path, sizeof(path), GPIO_DEV_DIR "/%s", name);
