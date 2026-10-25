@@ -1,4 +1,6 @@
 .buildmode*
+.localconfig.*
+config.h.local
 
 *.o
 *.gdb

@@ -55,7 +55,7 @@ x86_64.cpio.gz: x86_64.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
 
 PROGS ?= $(PROGS_SYSTEM) $(PROGS_USER) $(PROGS_NET_SYSTEM) $(PROGS_NET_USER)
 

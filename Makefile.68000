@@ -56,5 +56,5 @@ m68k.cpio: m68k.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE) *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
 	$(Q)rm -f m68k.cpio m68k.cpio.gz

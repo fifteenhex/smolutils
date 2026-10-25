@@ -34,6 +34,6 @@ sh-$(CPU).cpio.gz: sh-$(CPU).tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE)
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP)
 	$(Q)rm -f *.$(CPU).o *.$(CPU).elf *.$(CPU).elf.dbg
 	$(Q)rm -f sh-$(CPU).tar sh-$(CPU).erofs sh-$(CPU).cpio.gz

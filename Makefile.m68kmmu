@@ -34,7 +34,7 @@ m68k-$(CPU).cpio.gz: m68k-$(CPU).tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f .buildmode.68030 .buildmode.68040 .buildmode.68060
+	$(Q)rm -f .buildmode.68030 .buildmode.68040 .buildmode.68060 .localconfig.68030 .localconfig.68040 .localconfig.68060
 	$(Q)rm -f *.68030.elf *.68040.elf *.68060.elf
 	$(Q)rm -f *.68030.elf.dbg *.68040.elf.dbg *.68060.elf.dbg
 	$(Q)rm -f m68k-680[346]0.tar m68k-680[346]0.erofs m68k-680[346]0.cpio.gz

@@ -61,6 +61,6 @@ arm-$(CPU).cpio: arm-$(CPU).tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE)
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP)
 	$(Q)rm -f *.$(CPU).o *.$(CPU).elf *.$(CPU).elf.dbg
 	$(Q)rm -f arm-$(CPU).tar arm-$(CPU).erofs arm-$(CPU).cpio arm-$(CPU).cpio.gz

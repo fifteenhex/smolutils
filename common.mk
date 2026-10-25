@@ -31,10 +31,23 @@ PROGS_USER =		\
 
 include features.mk
 
+# Include config.h.local first so it overrides the defaults
+LOCAL_CONFIG = $(wildcard config.h.local)
+ifneq ($(LOCAL_CONFIG),)
+_COPTS += -include $(LOCAL_CONFIG)
+endif
+
+# Like .buildmode, a stamp for if config.h.local exists so adding or
+# removing it rebuilds everything
+LOCAL_CONFIG_STAMP = .localconfig.$(SMOL_SUFFIX)
+$(LOCAL_CONFIG_STAMP): FORCE
+	$(Q)echo '$(LOCAL_CONFIG)' | cmp -s - $@ 2>/dev/null || echo '$(LOCAL_CONFIG)' > $@
+
 C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
 	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
 
-HEADERS = config.h \
+HEADERS = $(LOCAL_CONFIG) $(LOCAL_CONFIG_STAMP) \
+	  config.h \
 	  common.h \
 	  seat.h \
 	  dhcpc.h \
