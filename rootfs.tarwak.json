@@ -24,22 +24,28 @@
 				},
 				"entities": {
 					"cat": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"cp": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"chmod": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"chown": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
-					"df": { },
+					"df": {
+						"feature": "filesystem"
+					},
 					"dmesg": { },
 					"smolsh": { },
 					"mtdinfo": {
@@ -138,6 +144,7 @@
 					"less": { },
 					"uname": { },
 					"touch": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
@@ -146,6 +153,7 @@
 						"target": "/lib/smol/process"
 					},
 					"mknod": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
@@ -153,7 +161,9 @@
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
-					"ls": { },
+					"ls": {
+						"feature": "filesystem"
+					},
 					"ps": {
 						"type": "symlink",
 						"target": "/lib/smol/process"
@@ -197,30 +207,37 @@
 						"target": "/sbin/init"
 					},
 					"mount": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/filesystem"
 					},
 					"umount": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/filesystem"
 					},
 					"rmdir": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"mkdir": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"ln": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"rm": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"mv": {
+						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					}
@@ -243,8 +260,12 @@
 							"mode": "0555"
 						},
 						"entities": {
-							"files": { },
-							"filesystem": { },
+							"files": {
+								"feature": "filesystem"
+							},
+							"filesystem": {
+								"feature": "filesystem"
+							},
 							"process": { },
 							"lsbus": {
 								"feature": "hwhandling"

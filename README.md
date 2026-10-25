@@ -112,6 +112,7 @@ set, init, the shell and so on, is always there.
 - gpio      - GPIO tools, basic libgpiod-tools
 - i2c       - I2C tools, basic i2c-tools
 - hwhandling - lsbus, rtc and devmem, for poking at hardware
+- filesystem - mount, umount, ls, df and the file tools like cp and cat
 - initramfs - Support for running as an initramfs
 
 ### No config files

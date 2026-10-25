@@ -17,19 +17,15 @@ PROGS_SYSTEM = init	\
 PROGS_USER =		\
 	smolsh		\
 	dmesg		\
-	ls		\
 	process		\
-	files		\
 	sha256sum	\
 	xxd		\
 	man		\
 	less		\
 	uname		\
-	df		\
-	su		\
-	filesystem
+	su
 
-SETS_ALL = net telnetd initramfs modules mtd i2c gpio keeper hwhandling
+SETS_ALL = net telnetd initramfs modules mtd i2c gpio keeper hwhandling filesystem
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
@@ -57,6 +53,7 @@ $(eval $(call set,i2c,,i2c,))
 $(eval $(call set,gpio,,gpio,))
 $(eval $(call set,keeper,keeper,,))
 $(eval $(call set,hwhandling,,lsbus rtc devmem,))
+$(eval $(call set,filesystem,,filesystem files ls df,))
 
 # Make sure all of the requested sets actually exist
 $(foreach s,$(_SETS),$(if $(filter $(s),$(SETS_DEFINED)),,$(error unknown set $(s))))
