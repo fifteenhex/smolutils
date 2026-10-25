@@ -6,7 +6,7 @@ fempty :=
 fspace := $(empty) $(empty)
 fcomma := ,
 
-FEATURES_ALL = net telnetd initramfs modules mtd i2c gpio keeper
+FEATURES_ALL = net telnetd initramfs modules mtd i2c gpio keeper hwhandling
 FEATURES ?= $(FEATURES_ALL)
 
 # Internalise FEATURES as it can't be overridden if it came from the command line
@@ -32,6 +32,7 @@ $(eval $(call feature,mtd,,mtd,))
 $(eval $(call feature,i2c,,i2c,))
 $(eval $(call feature,gpio,,gpio,))
 $(eval $(call feature,keeper,keeper,,))
+$(eval $(call feature,hwhandling,,lsbus rtc devmem,))
 
 # Make sure all of the requested features actually exist
 $(foreach f,$(_FEATURES),$(if $(filter $(f),$(FEATURES_DEFINED)),,$(error unknown feature $(f))))

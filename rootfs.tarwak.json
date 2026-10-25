@@ -115,20 +115,24 @@
 					},
 					"hwclock": {
 						"type": "symlink",
-						"target": "/lib/smol/rtc"
+						"target": "/lib/smol/rtc",
+						"feature": "hwhandling"
 					},
 					"rtcwake": {
 						"type": "symlink",
-						"target": "/lib/smol/rtc"
+						"target": "/lib/smol/rtc",
+						"feature": "hwhandling"
 					},
 					"xxd": { },
 					"lspci": {
 						"type": "symlink",
-						"target": "/lib/smol/lsbus"
+						"target": "/lib/smol/lsbus",
+						"feature": "hwhandling"
 					},
 					"lsusb": {
 						"type": "symlink",
-						"target": "/lib/smol/lsbus"
+						"target": "/lib/smol/lsbus",
+						"feature": "hwhandling"
 					},
 					"man": { },
 					"less": { },
@@ -162,6 +166,7 @@
 						"feature": "net"
 					},
 					"devmem": {
+						"feature": "hwhandling",
 						"xattrs": {
 						}
 					},
@@ -241,8 +246,12 @@
 							"files": { },
 							"filesystem": { },
 							"process": { },
-							"lsbus": { },
-							"rtc": { },
+							"lsbus": {
+								"feature": "hwhandling"
+							},
+							"rtc": {
+								"feature": "hwhandling"
+							},
 							"i2c": {
 								"feature": "i2c"
 							},

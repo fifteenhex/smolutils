@@ -110,6 +110,7 @@ The default set is everything. Pass FEATURES="" with a list of what you want.
 - mtd       - Raw flash tools, an mtd-utils subset
 - gpio      - GPIO tools, basic libgpiod-tools
 - i2c       - I2C tools, basic i2c-tools
+- hwhandling - lsbus, rtc and devmem, for poking at hardware
 - initramfs - Support for running as an initramfs
 
 ### No config files

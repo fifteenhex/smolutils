@@ -18,9 +18,6 @@ PROGS_USER =		\
 	files		\
 	sha256sum	\
 	xxd		\
-	devmem		\
-	lsbus		\
-	rtc		\
 	man		\
 	less		\
 	uname		\
