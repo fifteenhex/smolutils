@@ -64,3 +64,7 @@ jobs:
 
       - name: boot
         run: make -f Makefile.ci boot KERNEL="$KERNEL"
+
+      - name: feature sizes
+        if: matrix.config == 'default'
+        run: make -f Makefile.ci feature-sizes | tee -a "$GITHUB_STEP_SUMMARY"
