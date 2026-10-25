@@ -46,6 +46,11 @@
 #define CONFIG_GPIO	y
 #endif
 
+/* i2c support */
+#ifndef CONFIG_I2C
+#define CONFIG_I2C	y
+#endif
+
 /* keeper, start background processes from the shell */
 #ifndef CONFIG_KEEPER
 #define CONFIG_KEEPER	y
