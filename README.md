@@ -89,19 +89,20 @@ I'm coming up with this as I go. This started out as a userspace for a stupid
 project but its turned out pretty useful for lots of my other projects and I'm
 trying to make this nice now.
 
-### "Features" and "Configs"
+### "Sets" and "Configs"
 
-*features* should be a set of binaries that can be totally discarded to avoid
+*sets* are groups of binaries that can be totally discarded to avoid
 wasting space. I.e. if you don't have a flash device that needs the MTD sub
 system in Linux you don't need all of the mtd tools. Configs on the other hand
 are meant to tune tools that are included. This gets a bit messy where the too
 overlap. On the MTD example, if you don't have MTD then you can drop all of the
 MTD tools but there might be other tools that compile in support for working
-with MTD devices. So we end up with a feature for MTD and a config for MTD.
+with MTD devices. So we end up with a set for MTD and a config for MTD.
 
-### Features
+### Sets
 
-The default set is everything. Pass FEATURES="" with a list of what you want.
+The default is every set. Pass SETS="" with a list of what you want. The base
+set, init, the shell and so on, is always there.
 
 - net       - Add networking utils
 - telnetd   - telnetd, part of net

@@ -125,13 +125,13 @@ config-random:
 	./tools/genconfig.py --random $(if $(CONFIG_SEED),--seed $(CONFIG_SEED)) -o config.h.local
 	cat config.h.local
 
-# Print a table of how much each feature adds to the rootfs
-.PHONY: feature-sizes
-feature-sizes: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
+# Print a table of how much each set adds to the rootfs
+.PHONY: set-sizes
+set-sizes: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 	@echo "## x86_64"
-	@./tools/featuresizes.py x86_64 -- $(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS)
+	@./tools/setsizes.py x86_64 -- $(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS)
 	@echo "## m68k"
-	@./tools/featuresizes.py m68k -- $(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS)
+	@./tools/setsizes.py m68k -- $(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS)
 
 BOOT_TIMEOUT ?= 30
 

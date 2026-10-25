@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Create a cool markdown table of the feature sizes
+# Create a cool markdown table of the set sizes
 #
 import argparse
 import os
@@ -16,17 +16,17 @@ def run(cmd):
         sys.exit(f'failed: {" ".join(cmd)}')
     return r.stdout
 
-def list_features(make):
-    # list-features prints "name dep dep.." per line, skip anything make itself says
-    features = []
-    for line in run(make + ['list-features']).splitlines():
+def list_sets(make):
+    # list-sets prints "name dep dep.." per line, skip anything make itself says
+    sets = []
+    for line in run(make + ['list-sets']).splitlines():
         parts = line.split()
         if parts and not parts[0].startswith('make'):
-            features.append((parts[0], parts[1:]))
-    return features
+            sets.append((parts[0], parts[1:]))
+    return sets
 
 def closure(name, deps_of):
-    # A feature's deps and their deps and so on
+    # A set's deps and their deps and so on
     todo, seen = list(deps_of[name]), []
     while todo:
         d = todo.pop()
@@ -41,7 +41,7 @@ def rootfs_size(path):
         return sum(m.size for m in t.getmembers() if m.isreg())
 
 def main():
-    ap = argparse.ArgumentParser(description='Measure how much each feature adds to the rootfs')
+    ap = argparse.ArgumentParser(description='Measure how much each set adds to the rootfs')
     ap.add_argument('image', help='image name the makefile uses, x86_64 for x86_64.tar and x86_64.erofs')
     ap.add_argument('--no-erofs', action='store_true', help="don't build and measure the erofs image")
     ap.add_argument('make', nargs='+', help='make command, put -- before it')
@@ -52,10 +52,10 @@ def main():
     args.make = args.make + ['--no-print-directory']
     cache = {}
 
-    def build(features):
-        key = tuple(sorted(features))
+    def build(sets):
+        key = tuple(sorted(sets))
         if key not in cache:
-            make = args.make + [f'FEATURES={" ".join(key)}']
+            make = args.make + [f'SETS={" ".join(key)}']
             run(make + [tar])
             sizes = [rootfs_size(tar)]
             if not args.no_erofs:
@@ -64,20 +64,20 @@ def main():
             cache[key] = sizes
         return cache[key]
 
-    features = list_features(args.make)
-    deps_of = dict(features)
+    sets = list_sets(args.make)
+    deps_of = dict(sets)
 
     cols = ['rootfs'] + ([] if args.no_erofs else ['erofs'])
     rows = [('(none)', build([]))]
-    for name, _ in features:
+    for name, _ in sets:
         deps = closure(name, deps_of)
         before, after = build(deps), build(deps + [name])
         label = name + (f' (on top of {" ".join(deps)})' if deps else '')
         rows.append((label, [a - b for a, b in zip(after, before)]))
-    rows.append(('(all)', build([n for n, _ in features])))
+    rows.append(('(all)', build([n for n, _ in sets])))
 
     width = max(len(r[0]) for r in rows)
-    print(f'| {"feature":<{width}} | ' + ' | '.join(f'{c:>10}' for c in cols) + ' |')
+    print(f'| {"set":<{width}} | ' + ' | '.join(f'{c:>10}' for c in cols) + ' |')
     print(f'|{"-" * (width + 2)}|' + '|'.join('-' * 12 for _ in cols) + '|')
     for label, sizes in rows:
         print(f'| {label:<{width}} | ' + ' | '.join(f'{s:>10}' for s in sizes) + ' |')

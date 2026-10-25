@@ -25,7 +25,7 @@ PROGS_USER =		\
 	su		\
 	filesystem
 
-include features.mk
+include sets.mk
 
 # Include config.h.local first so it overrides the defaults
 LOCAL_CONFIG = $(wildcard config.h.local)
