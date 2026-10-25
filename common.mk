@@ -19,6 +19,11 @@ LOCAL_CONFIG_STAMP = .localconfig.$(SMOL_SUFFIX)
 $(LOCAL_CONFIG_STAMP): FORCE
 	$(Q)echo '$(LOCAL_CONFIG)' | cmp -s - $@ 2>/dev/null || echo '$(LOCAL_CONFIG)' > $@
 
+CONFIGTAGS = tools/configtags
+$(CONFIGTAGS): tools/configtags.c config.h $(LOCAL_CONFIG) $(LOCAL_CONFIG_STAMP)
+	$(MSG) HOSTCC $@
+	$(Q)$(HOSTCC) -Wall $(if $(LOCAL_CONFIG),-include $(LOCAL_CONFIG)) -o $@ $<
+
 C_FILES = $(addsuffix .c,$(PROGS))
 
 HEADERS = $(LOCAL_CONFIG) $(LOCAL_CONFIG_STAMP) \
@@ -71,8 +76,10 @@ endif
 
 # $(1) is the tarball to make, $(2) the pattern tarwak names elfs by
 define build_tar
+	$(Q)test "$$($(CONFIGTAGS) -a | LC_ALL=C sort | tr '\n' ' ')" = "$(sort $(TAGS_ALL)) " || \
+		{ echo "the tags in tools/configtags.c and TAGS_ALL in sets.mk don't match"; exit 1; }
 	$(MSG) TARWAK $(1)
-	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $(1) -b ./ -p "$(2)" $(_TARWAKFEATURES)
+	$(Q)$(TARWAK) -i rootfs.tarwak.json -o $(1) -b ./ -p "$(2)" $(_TARWAKFEATURES) $$($(CONFIGTAGS) | sed 's/^/-f/')
 	$(if $(EXTRA_TARS),$(MSG) TARMUNGE $(1))
 	$(if $(EXTRA_TARS),$(Q)$(TARMUNGE) -i rootfs.tarwak.json -o $(1).tmp $(1) $(EXTRA_TARS))
 	$(if $(EXTRA_TARS),$(Q)mv $(1).tmp $(1))

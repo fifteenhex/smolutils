@@ -33,7 +33,7 @@ ELFS = $(addsuffix .68000.elf,$(PROGS))
 elfs: $(ELFS)
 
 .PHONY: m68k.tar
-m68k.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+m68k.tar: rootfs.tarwak.json elfs $(CONFIGTAGS) $(EXTRA_TARS)
 	$(call build_tar,$@,%s.68000.elf)
 
 .PHONY: m68k.erofs
@@ -53,5 +53,5 @@ m68k.cpio: m68k.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) $(CONFIGTAGS) *.o *.gdb *.68000.elf *.68000.elf.dbg m68k.tar m68k.erofs
 	$(Q)rm -f m68k.cpio m68k.cpio.gz

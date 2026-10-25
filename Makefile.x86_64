@@ -36,7 +36,7 @@ ELFS = $(addsuffix .x86_64.elf,$(PROGS))
 elfs: $(ELFS) lz4.x86_64.elf
 
 .PHONY: x86_64.tar
-x86_64.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+x86_64.tar: rootfs.tarwak.json elfs $(CONFIGTAGS) $(EXTRA_TARS)
 	$(call build_tar,$@,%s.x86_64.elf)
 
 .PHONY: x86_64.erofs
@@ -52,7 +52,7 @@ x86_64.cpio.gz: x86_64.tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) $(CONFIGTAGS) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
 
 .PHONY: multicall-size
 multicall-size:

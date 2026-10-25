@@ -1,6 +1,7 @@
 .buildmode*
 .localconfig.*
 config.h.local
+tools/configtags
 
 *.o
 *.gdb

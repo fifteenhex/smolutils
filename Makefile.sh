@@ -16,7 +16,7 @@ ELFS = $(addsuffix .$(CPU).elf,$(PROGS))
 elfs: $(ELFS)
 
 .PHONY: sh-$(CPU).tar
-sh-$(CPU).tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
+sh-$(CPU).tar: rootfs.tarwak.json elfs $(CONFIGTAGS) $(EXTRA_TARS)
 	$(call build_tar,$@,%s.$(CPU).elf)
 
 .PHONY: sh-$(CPU).erofs
@@ -31,6 +31,6 @@ sh-$(CPU).cpio.gz: sh-$(CPU).tar
 
 .PHONY: clean
 clean:
-	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP)
+	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) $(CONFIGTAGS)
 	$(Q)rm -f *.$(CPU).o *.$(CPU).elf *.$(CPU).elf.dbg
 	$(Q)rm -f sh-$(CPU).tar sh-$(CPU).erofs sh-$(CPU).cpio.gz
