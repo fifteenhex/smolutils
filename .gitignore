@@ -15,3 +15,6 @@ _build/
 tarwak/
 *.cpio
 *.cpio.gz
+
+# python stuff
+__pycache__/
