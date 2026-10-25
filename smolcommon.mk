@@ -8,6 +8,9 @@ MAKEFLAGS += --no-builtin-rules
 # So HEADERS is read when the rule run because we extend it later.
 .SECONDEXPANSION:
 
+# Stop interesting things happening with the default goal
+.DEFAULT_GOAL := all
+
 # Reduce the output, pass V=1 to get the noise back
 ifeq ($(V),1)
 Q =
