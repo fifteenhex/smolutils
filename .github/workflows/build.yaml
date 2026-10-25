@@ -18,7 +18,17 @@ jobs:
         run: sudo apt-get update
 
       - name: Install dependencies
-        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils linux-libc-dev-m68k-cross clang-tidy libarchive-tools qemu-system-x86 linux-image-generic
+        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils linux-libc-dev-m68k-cross libarchive-tools
+
+      # Linting tools, only for default
+      - name: Install lint dependencies
+        if: matrix.config == 'default'
+        run: sudo apt-get install -y clang-tidy
+
+      # QEMU and linux, only for default and all-y as they boot and run tests
+      - name: Install boot dependencies
+        if: matrix.config == 'default' || matrix.config == 'all-y'
+        run: sudo apt-get install -y qemu-system-x86 linux-image-generic
 
       # Only refresh the toolchains when they change. The makefile might change even if the toolchains don't
       - name: Work out the toolchain key
