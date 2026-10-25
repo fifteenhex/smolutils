@@ -18,17 +18,17 @@ int main(int argc, char **argv, char **envp)
 
 	if (users_changeuser(0, 0)) {
 		error("Failed to become root\n");
-		return 1;
+		return EX_OSERR;
 	}
 
 	if (auth_check("su")) {
 		error("You shall not pass!\n");
-		return 1;
+		return EX_NOPERM;
 	}
 
 	execve(SHELL_PATH, newargv, envp);
 
 	error("Failed to run %s\n", SHELL_PATH);
 
-	return 1;
+	return EX_OSERR;
 }
