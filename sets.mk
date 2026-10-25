@@ -10,13 +10,13 @@ fcomma := ,
 # The sets below fill this in
 PROGS =
 
-SETS_ALL = base net initramfs core hwhandling filesystem misc
+SETS_ALL = base net core hwhandling filesystem misc
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
 _SETS := $(subst $(fcomma),$(fspace),$(SETS))
 
-TAGS_ALL = modules i2c gpio mtd telnetd
+TAGS_ALL = modules i2c gpio mtd telnetd initramfs
 
 # $(1) set, $(2) progs, $(3) deps
 define set
@@ -40,9 +40,10 @@ endif
 endef
 
 $(eval $(call set,base,init startup,))
+# initramfs doesn't actually install anything, it just creates the link so linux can start init
+$(eval $(call tagged,base,initramfs,))
 $(eval $(call set,net,sntp dhcpc ip ping resolv tftp,))
 $(eval $(call tagged,net,telnetd,telnetd))
-$(eval $(call set,initramfs,,))
 $(eval $(call set,core,getty keeper dmesg uname process su,))
 $(eval $(call tagged,core,modules,modules))
 $(eval $(call set,hwhandling,blkwak lsbus rtc devmem,))

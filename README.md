@@ -112,6 +112,7 @@ The default is every set. Pass SETS="" with a list of what you want.
 
 #### Tags
 
+Tags will eventually have cross-set control over what gets included. This is WIP
 
 ### No config files
 
