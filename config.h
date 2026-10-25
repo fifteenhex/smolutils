@@ -4,6 +4,8 @@
 #define _SMOLUTILS_CONFIG_H
 
 /* This is like KConfig, but awful. Put your overrides in config.h.local */
+
+/* debug() output */
 #ifndef CONFIG_DEBUG
 #define CONFIG_DEBUG	y
 #endif
