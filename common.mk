@@ -7,7 +7,6 @@ endif
 
 PROGS_SYSTEM = init	\
 	       getty	\
-	       modules	\
 	       blkwak	\
 	       startup
 

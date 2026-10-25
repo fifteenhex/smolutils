@@ -41,6 +41,7 @@ endif
 ifneq ($(filter modules,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_MODULES=n
 else
+PROGS_SYSTEM += modules
 _TARWAKFEATURES += -fmodules
 endif
 
