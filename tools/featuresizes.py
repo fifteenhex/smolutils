@@ -17,11 +17,11 @@ def run(cmd):
     return r.stdout
 
 def list_features(make):
-    # list-features prints "name dep dep.." per line
+    # list-features prints "name dep dep.." per line, skip anything make itself says
     features = []
     for line in run(make + ['list-features']).splitlines():
         parts = line.split()
-        if parts:
+        if parts and not parts[0].startswith('make'):
             features.append((parts[0], parts[1:]))
     return features
 
@@ -48,6 +48,8 @@ def main():
     args = ap.parse_args()
 
     tar, erofs = f'{args.image}.tar', f'{args.image}.erofs'
+    # When run from another make the sub make announces directories, don't
+    args.make = args.make + ['--no-print-directory']
     cache = {}
 
     def build(features):
