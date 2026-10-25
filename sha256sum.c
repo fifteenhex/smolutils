@@ -38,11 +38,11 @@ static int prog_sha256sum(int argc, char **argv, char **envp)
 
 	fd = open_with_msgs(path, O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return EX_NOINPUT;
 
 	if (fstat(fd, &st)) {
 		error("Failed to size %s: %d\n", path, errno);
-		return 1;
+		return EX_OSERR;
 	}
 
 	if (S_ISREG(st.st_mode)) {
@@ -52,23 +52,23 @@ static int prog_sha256sum(int argc, char **argv, char **envp)
 
 		if (ioctl(fd, BLKGETSIZE64, &blksize)) {
 			verbose("Failed to size block device %s: %d\n", path, errno);
-			return 1;
+			return EX_OSERR;
 		}
 
 		size = blksize;
 	} else {
 		error("%s isn't a file or a block device\n", path);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	if (lonesha256_stream(out, read_block, size)) {
 		error("Failed to read %s: %d\n", path, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	/* Make sure we hashed as much data as we expected */
 	if (hashed < (off_t) size)
-		return 1;
+		return EX_IOERR;
 
 	for (int i = 0; i < sizeof(out); i++)
 		printf("%02x", (unsigned) out[i]);
