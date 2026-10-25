@@ -101,6 +101,8 @@ with MTD devices. So we end up with a feature for MTD and a config for MTD.
 
 ### Features
 
+The default set is everything. Pass FEATURES="" with a list of what you want.
+
 - net       - Add networking utils
 - telnetd   - telnetd, part of net
 - modules   - Add modules support

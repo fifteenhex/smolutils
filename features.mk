@@ -1,57 +1,40 @@
-# "Features", sets of binaries that can be dropped completely to save space.
-# Pass FEATURE_DISABLE=net,mtd,.. to leave them out.
-
-# Feature parsing
+# "Features" - Like BSD sets or something
+#
+# Pass features to select what you want, look at FEATURES_ALL for what you can have.
 
 fempty :=
 fspace := $(empty) $(empty)
 fcomma := ,
 
-DISABLE_LIST := $(subst $(fcomma),$(fspace),$(FEATURE_DISABLE))
+FEATURES_ALL = net telnetd initramfs modules mtd i2c gpio keeper
+FEATURES ?= $(FEATURES_ALL)
 
-ifeq ($(filter net,$(DISABLE_LIST)),)
-PROGS_NET_SYSTEM =	\
-	sntp		\
-	dhcpc
+# Internalise FEATURES as it can't be overridden if it came from the command line
+_FEATURES := $(subst $(fcomma),$(fspace),$(FEATURES))
 
-PROGS_NET_USER =	\
-	ip		\
-	ping		\
-	resolv		\
-	tftp
-_TARWAKFEATURES += -fnet
-
-ifeq ($(filter telnetd,$(DISABLE_LIST)),)
-PROGS_NET_SYSTEM += telnetd
-_TARWAKFEATURES += -ftelnetd
+# $(1) feature, $(2) system progs, $(3) user progs, $(4) deps
+define feature
+FEATURES_DEFINED += $(1)
+ifneq ($(filter $(1),$(_FEATURES)),)
+$$(foreach n,$(4),$$(if $$(filter $$(n),$$(_FEATURES)),,$$(error feature $(1) needs $$(n))))
+PROGS_SYSTEM += $(2)
+PROGS_USER += $(3)
+_TARWAKFEATURES += -f$(1)
 endif
-endif
+endef
 
-ifeq ($(filter initramfs,$(DISABLE_LIST)),)
-_TARWAKFEATURES += -finitramfs
-endif
+$(eval $(call feature,net,sntp dhcpc,ip ping resolv tftp,))
+$(eval $(call feature,telnetd,telnetd,,net))
+$(eval $(call feature,initramfs,,,))
+$(eval $(call feature,modules,modules,,))
+$(eval $(call feature,mtd,,mtd,))
+$(eval $(call feature,i2c,,i2c,))
+$(eval $(call feature,gpio,,gpio,))
+$(eval $(call feature,keeper,keeper,,))
 
-ifeq ($(filter modules,$(DISABLE_LIST)),)
-PROGS_SYSTEM += modules
-_TARWAKFEATURES += -fmodules
-endif
+# Make sure all of the requested features actually exist
+$(foreach f,$(_FEATURES),$(if $(filter $(f),$(FEATURES_DEFINED)),,$(error unknown feature $(f))))
 
-ifeq ($(filter mtd,$(DISABLE_LIST)),)
-PROGS_USER += mtd
-_TARWAKFEATURES += -fmtd
-endif
-
-ifeq ($(filter i2c,$(DISABLE_LIST)),)
-PROGS_USER += i2c
-_TARWAKFEATURES += -fi2c
-endif
-
-ifeq ($(filter gpio,$(DISABLE_LIST)),)
-PROGS_USER += gpio
-_TARWAKFEATURES += -fgpio
-endif
-
-ifeq ($(filter keeper,$(DISABLE_LIST)),)
-PROGS_SYSTEM += keeper
-_TARWAKFEATURES += -fkeeper
-endif
+# Catch mistakes in either the feature evaluation or the all list
+$(if $(filter-out $(FEATURES_ALL),$(FEATURES_DEFINED)),$(error missing from FEATURES_ALL: $(filter-out $(FEATURES_ALL),$(FEATURES_DEFINED))))
+$(if $(filter-out $(FEATURES_DEFINED),$(FEATURES_ALL)),$(error in FEATURES_ALL but not defined: $(filter-out $(FEATURES_DEFINED),$(FEATURES_ALL))))
