@@ -53,73 +53,73 @@
 					"mtdinfo": {
 						"type": "symlink",
 						"target": "/lib/smol/mtd",
-						"feature": "mtd"
+						"feature": "hwhandling"
 					},
 					"gpiodetect": {
 						"type": "symlink",
 						"target": "/lib/smol/gpio",
-						"feature": "gpio"
+						"feature": "hwhandling"
 					},
 					"gpioinfo": {
 						"type": "symlink",
 						"target": "/lib/smol/gpio",
-						"feature": "gpio"
+						"feature": "hwhandling"
 					},
 					"gpioget": {
 						"type": "symlink",
 						"target": "/lib/smol/gpio",
-						"feature": "gpio"
+						"feature": "hwhandling"
 					},
 					"gpioset": {
 						"type": "symlink",
 						"target": "/lib/smol/gpio",
-						"feature": "gpio"
+						"feature": "hwhandling"
 					},
 					"gpiomon": {
 						"type": "symlink",
 						"target": "/lib/smol/gpio",
-						"feature": "gpio"
+						"feature": "hwhandling"
 					},
 
 					"flash_erase": {
 						"type": "symlink",
 						"target": "/lib/smol/mtd",
-						"feature": "mtd"
+						"feature": "hwhandling"
 					},
 					"nanddump": {
 						"type": "symlink",
 						"target": "/lib/smol/mtd",
-						"feature": "mtd"
+						"feature": "hwhandling"
 					},
 					"nandwrite": {
 						"type": "symlink",
 						"target": "/lib/smol/mtd",
-						"feature": "mtd"
+						"feature": "hwhandling"
 					},
 					"flashcp": {
 						"type": "symlink",
 						"target": "/lib/smol/mtd",
-						"feature": "mtd"
+						"feature": "hwhandling"
 					},
 					"i2cget": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c",
-						"feature": "i2c"
+						"feature": "hwhandling"
 					},
 					"i2cset": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c",
-						"feature": "i2c"
+						"feature": "hwhandling"
 					},
 					"i2cdetect": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c",
-						"feature": "i2c"
+						"feature": "hwhandling"
 					},
 					"i2cdump": {
 						"type": "symlink",
 						"target": "/lib/smol/i2c",
-						"feature": "i2c"
+						"feature": "hwhandling"
 					},
 					"hwclock": {
 						"type": "symlink",
@@ -284,17 +284,17 @@
 								"feature": "hwhandling"
 							},
 							"i2c": {
-								"feature": "i2c"
+								"feature": "hwhandling"
 							},
 							"modules": {
 								"mode": "0500",
 								"feature": "core"
 							},
 							"mtd": {
-								"feature": "mtd"
+								"feature": "hwhandling"
 							},
 							"gpio": {
-								"feature": "gpio"
+								"feature": "hwhandling"
 							}
 						}
 					}

@@ -89,7 +89,7 @@ I'm coming up with this as I go. This started out as a userspace for a stupid
 project but its turned out pretty useful for lots of my other projects and I'm
 trying to make this nice now.
 
-### "Sets" and "Configs"
+### "Sets", "Tags" and "Configs"
 
 *sets* are groups of binaries that can be totally discarded to avoid
 wasting space. I.e. if you don't have a flash device that needs the MTD sub
@@ -104,16 +104,15 @@ with MTD devices. So we end up with a set for MTD and a config for MTD.
 The default is every set. Pass SETS="" with a list of what you want. The base
 set, init, the shell and so on, is always there.
 
-- net       - Add networking utils
-- telnetd   - telnetd, part of net
-- keeper    - Start background processes as a user
-- mtd       - Raw flash tools, an mtd-utils subset
-- gpio      - GPIO tools, basic libgpiod-tools
-- i2c       - I2C tools, basic i2c-tools
-- hwhandling - lsbus, rtc and devmem, for poking at hardware
+- net        - Add networking utils
+- telnetd    - telnetd, part of net
+- keeper     - Start background processes as a user
+- hwhandling - lsbus, rtc, devmem and the mtd, i2c and gpio tools, for poking at hardware
 - filesystem - mount, umount, ls, df and the file tools like cp and cat
-- core      - dmesg, uname, insmod, rmmod, ps, kill, free, chroot and su
-- initramfs - Support for running as an initramfs
+- core       - dmesg, uname, insmod, rmmod, ps, kill, free, chroot and su
+
+#### Tags
+
 
 ### No config files
 

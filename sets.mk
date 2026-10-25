@@ -21,11 +21,13 @@ PROGS_USER =		\
 	man		\
 	less
 
-SETS_ALL = net telnetd initramfs core mtd i2c gpio keeper hwhandling filesystem
+SETS_ALL = net telnetd initramfs core keeper hwhandling filesystem
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
 _SETS := $(subst $(fcomma),$(fspace),$(SETS))
+
+TAGS_ALL = modules i2c gpio mtd
 
 # $(1) set, $(2) system progs, $(3) user progs, $(4) deps
 define set
@@ -40,15 +42,26 @@ _TARWAKFEATURES += -f$(1)
 endif
 endef
 
+# $(1) set, $(2) tag, $(3) system progs, $(4) user progs
+define tagged
+$(if $(filter $(1),$(SETS_DEFINED)),,$(error tag $(2) is in set $(1) which isn't defined yet))
+$(if $(filter $(2),$(TAGS_ALL)),,$(error unknown tag $(2) in set $(1)))
+ifneq ($(filter $(1),$(_SETS)),)
+PROGS_SYSTEM += $(3)
+PROGS_USER += $(4)
+endif
+endef
+
 $(eval $(call set,net,sntp dhcpc,ip ping resolv tftp,))
 $(eval $(call set,telnetd,telnetd,,net))
 $(eval $(call set,initramfs,,,))
-$(eval $(call set,core,modules,dmesg uname process su,))
-$(eval $(call set,mtd,,mtd,))
-$(eval $(call set,i2c,,i2c,))
-$(eval $(call set,gpio,,gpio,))
+$(eval $(call set,core,,dmesg uname process su,))
+$(eval $(call tagged,core,modules,modules,))
 $(eval $(call set,keeper,keeper,,))
 $(eval $(call set,hwhandling,,lsbus rtc devmem,))
+$(eval $(call tagged,hwhandling,i2c,,i2c))
+$(eval $(call tagged,hwhandling,gpio,,gpio))
+$(eval $(call tagged,hwhandling,mtd,,mtd))
 $(eval $(call set,filesystem,,filesystem files ls df,))
 
 # Make sure all of the requested sets actually exist
