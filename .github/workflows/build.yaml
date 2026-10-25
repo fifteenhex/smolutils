@@ -46,7 +46,9 @@ jobs:
         run: make -f Makefile.ci build
 
       # Magic to find a kernel image we can actually read
+      # Booting needs a getty and a shell, which all-n and random might not have
       - name: pick a kernel
+        if: matrix.config == 'default' || matrix.config == 'all-y'
         run: |
           kernel=
           for k in $(ls -1 /boot/vmlinuz-* | sort -V -r); do
@@ -63,6 +65,7 @@ jobs:
           echo "KERNEL=$kernel" >> "$GITHUB_ENV"
 
       - name: boot
+        if: matrix.config == 'default' || matrix.config == 'all-y'
         run: make -f Makefile.ci boot KERNEL="$KERNEL"
 
       - name: set sizes
