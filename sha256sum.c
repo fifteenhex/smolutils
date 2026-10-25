@@ -66,6 +66,10 @@ static int prog_sha256sum(int argc, char **argv, char **envp)
 		return 1;
 	}
 
+	/* Make sure we hashed as much data as we expected */
+	if (hashed < (off_t) size)
+		return 1;
+
 	for (int i = 0; i < sizeof(out); i++)
 		printf("%02x", (unsigned) out[i]);
 	printf("  %s\n", path);
