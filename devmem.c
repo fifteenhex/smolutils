@@ -176,7 +176,7 @@ int main (int argc, char **argv, char **envp)
 			if (!parse_ul(optarg, 0, &length) || !length ||
 			    length > MAX_LENGTH) {
 				usage("Not a length: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			have_length = true;
 			break;
@@ -184,7 +184,7 @@ int main (int argc, char **argv, char **envp)
 		case 's':
 			if (!parse_ull(optarg, 0, &value)) {
 				usage("Not a value: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			setarg = optarg;
 			break;
@@ -194,19 +194,19 @@ int main (int argc, char **argv, char **envp)
 			    (width != 1 && width != 2 && width != 4 &&
 			     width != 8)) {
 				usage("Not a width: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
 		default:
 			usage(USAGE_TEXT);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind == argc) {
 		usage(USAGE_TEXT);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (setarg) {
@@ -222,7 +222,7 @@ int main (int argc, char **argv, char **envp)
 	if (length % width) {
 		usage("A length of %lu isn't a whole number of %lu byte accesses\n",
 		      length, width);
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* check all of the addresses before touching any of them */

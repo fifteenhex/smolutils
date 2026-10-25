@@ -67,7 +67,7 @@ static int prog_mtdinfo(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage(MTDINFO_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(argv[1], O_RDONLY, 0);
@@ -148,14 +148,14 @@ static int prog_flash_erase(int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "q")) != -1) {
 		if (c != 'q') {
 			usage(FLASH_ERASE_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 		quiet = true;
 	}
 
 	if (argc - optind != 3) {
 		usage(FLASH_ERASE_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!parse_size(argv[optind + 1], &start)) {
@@ -249,13 +249,13 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 
 		default:
 			usage(NANDDUMP_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (argc - optind != 1) {
 		usage(NANDDUMP_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(argv[optind], O_RDONLY, 0);
@@ -339,13 +339,13 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 
 		default:
 			usage(NANDWRITE_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (argc - optind != 2) {
 		usage(NANDWRITE_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(argv[optind], O_RDWR, 0);
@@ -434,14 +434,14 @@ static int prog_flashcp(int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "v")) != -1) {
 		if (c != 'v') {
 			usage(FLASHCP_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 		verbose = true;
 	}
 
 	if (argc - optind != 2) {
 		usage(FLASHCP_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	file = argv[optind];

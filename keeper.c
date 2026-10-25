@@ -136,13 +136,13 @@ int main(int argc, char **argv, char **envp)
 
 		default:
 			usage(USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind >= argc) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	return start(&argv[optind], envp);

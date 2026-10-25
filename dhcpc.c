@@ -584,7 +584,7 @@ int main(int argc, char **argv, char **envp)
 
 		default:
 			usage(USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 

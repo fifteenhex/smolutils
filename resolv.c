@@ -279,13 +279,13 @@ int main (int argc, char **argv, char **envp)
 
 		default:
 			usage(USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind != argc - 1) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	hostname = argv[optind];

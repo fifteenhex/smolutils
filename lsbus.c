@@ -72,7 +72,7 @@ static int prog_lspci(int argc, char **argv, char **envp)
 {
 	if (argc > 1) {
 		usage("usage: lspci\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	return list_bus(PCI_DEVICES, cb_pci);
@@ -82,7 +82,7 @@ static int prog_lsusb(int argc, char **argv, char **envp)
 {
 	if (argc > 1) {
 		usage("usage: lsusb\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	return list_bus(USB_DEVICES, cb_usb);

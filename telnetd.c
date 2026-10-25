@@ -273,7 +273,7 @@ int main (int argc, char **argv, char **envp)
 			/* fall through */
 		default:
 			usage("usage: telnetd [-p port]\n");
-			return 1;
+			return EX_USAGE;
 		}
 	}
 

@@ -58,7 +58,7 @@ static int cd_handler(int argc, char **argv, int stdout)
 
 	if (argc > 2) {
 		usage("usage: cd [<directory>]\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	newdir = (argc == 2) ? argv[1] : "/";
@@ -160,7 +160,7 @@ static int sleep_handler(int argc, char **argv, int stdout)
 
 	if (argc != 2 || !parse_seconds(argv[1], &secs)) {
 		usage("usage: sleep <seconds>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	sleep(secs);
@@ -182,7 +182,7 @@ static int exit_handler(int argc, char **argv, int stdout)
 {
 	if (argc > 1 && !parse_int_range(argv[1], 10, 0, 255, &exit_status)) {
 		usage("usage: exit [0-255]\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	keeprocking = false;

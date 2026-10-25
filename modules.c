@@ -36,7 +36,7 @@ static int prog_insmod(int argc, char **argv, char **envp)
 
 	if (argc < 2) {
 		usage(INSMOD_USAGE, argv[0]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* Build a single string wil all of the parameters */
@@ -82,13 +82,13 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 
 		default:
 			usage(RMMOD_USAGE, argv[0]);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind != argc - 1) {
 		usage(RMMOD_USAGE, argv[0]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* Module name can be the name or the file path */

@@ -55,7 +55,7 @@ static int prog_free(int argc, char **argv, char **envp)
 
 	if (argc > 1) {
 		usage("usage: free\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!read_file(PROC_MEMINFO, procbuf, sizeof(procbuf))) {
@@ -140,7 +140,7 @@ static int prog_ps(int argc, char **argv, char **envp)
 {
 	if (argc > 1) {
 		usage("usage: ps\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	printf("USER\t\tPID\t\tCMD\n");
@@ -166,7 +166,7 @@ static int prog_kill(int argc, char **argv, char **envp)
 
 	if ((argc - i) != 1) {
 		usage("usage: kill [-<signal>] <pid>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* pid_t is an int, so this can't be truncated on the way through */
@@ -194,7 +194,7 @@ static int prog_chroot(int argc, char **argv, char **envp)
 
 	if (argc < 2) {
 		usage(CHROOT_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* A command to run, or a shell in there if there isn't one */

@@ -127,7 +127,7 @@ static int cmd_info(struct blk *b, int argc, char **argv)
 
 	if (argc) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	info("size %llu bytes, %llu sectors\n", b->size, b->size / SECTOR);
@@ -505,7 +505,7 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 	if (argc < 1 || argc > 3 ||
 	    !parse_region(b, argc - 1, argv + 1, &off, &len)) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (sparse && (off % SPARSE_BLK_SZ || len % SPARSE_BLK_SZ ||
@@ -547,7 +547,7 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (open_img(&in, argv[0], O_RDONLY, 0))
@@ -594,7 +594,7 @@ static int cmd_cmp(struct blk *b, int argc, char **argv)
 
 	if (argc < 1 || argc > 2 || (argc == 2 && !parse_size(argv[1], &off))) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (open_img(&in, argv[0], O_RDONLY, 0))
@@ -613,7 +613,7 @@ static int cmd_rescan(struct blk *b, int argc, char **argv)
 {
 	if (argc) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (ioctl(b->fd, BLKRRPART, 0)) {
@@ -668,13 +668,13 @@ int main (int argc, char **argv, char **envp)
 
 		default:
 			usage(USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (argc - optind < 2) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	foreach(cmdp, commands)

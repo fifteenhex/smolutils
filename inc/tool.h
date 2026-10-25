@@ -4,6 +4,7 @@
 #define _SMOLUTILS_TOOL_H
 
 #include "printing.h"
+#include "sysexits.h"
 
 #ifndef TOOL_NAME
 #error "TOOL_NAME not defined"
@@ -25,7 +26,7 @@ int main(int argc, char **argv, char **envp)				\
 	if (nargs < (_min) ||						\
 	    ((_max) != TOOL_ARGS_ANY && nargs > (_max))) {		\
 		usage(TOOL_USAGE_LINE);					\
-		return 1;						\
+		return EX_USAGE;					\
 	}								\
 									\
 	return _run(argc, argv, envp);					\

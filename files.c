@@ -12,7 +12,7 @@ static int prog_touch(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage("usage: touch <file>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	path = argv[1];
@@ -55,7 +55,7 @@ static int prog_ln(int argc, char **argv, char **envp)
 
 		default:
 			usage(LN_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
@@ -63,7 +63,7 @@ static int prog_ln(int argc, char **argv, char **envp)
 	linkpath = (optind < argc) ? argv[optind++] : NULL;
 	if (!target || !linkpath || optind != argc) {
 		usage(LN_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	ret = symbolic ? symlink(target, linkpath) : link(target, linkpath);
@@ -142,7 +142,7 @@ static int prog_mv(int argc, char **argv, char **envp)
 
 	if (argc != 3) {
 		usage("usage: mv <source> <target>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	src = argv[1];
@@ -167,7 +167,7 @@ static int prog_rm(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage("usage: rm <file>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	path = argv[1];
@@ -188,7 +188,7 @@ static int prog_rmdir(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage("usage: rmdir <directory>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	path = argv[1];
@@ -209,7 +209,7 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage("usage: mkdir <directory>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	path = argv[1];
@@ -231,7 +231,7 @@ static int prog_mknod(int argc, char **argv, char **envp)
 
 	if (argc != 5) {
 		usage("usage: mknod <path> b|c <major> <minor>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	path = argv[1];
@@ -319,7 +319,7 @@ static int prog_cp(int argc, char **argv, char **envp)
 	/* super dumb for now */
 	if (argc != 3) {
 		usage("usage: cp <source> <destination>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (copy_file(argv[1], argv[2]))
@@ -336,7 +336,7 @@ static int prog_chmod(int argc, char **argv, char **envp)
 
 	if (argc < 3) {
 		usage("usage: chmod <octal mode> <file>...\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* Only the octal form, nobody needs u+x that badly */
@@ -365,7 +365,7 @@ static int prog_chown(int argc, char **argv, char **envp)
 
 	if (argc < 3) {
 		usage("usage: chown <uid>[:<gid>] <file>...\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* Work out where the gid is and terminate the uid */

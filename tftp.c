@@ -463,13 +463,13 @@ int main (int argc, char **argv, char **envp)
 			break;
 		default:
 			usage(USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (!op || !remote || optind >= argc || optind + 2 < argc) {
 		usage(USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	host = argv[optind];

@@ -14,6 +14,7 @@
 #include "inc/signals.h"
 #include "inc/spawn.h"
 #include "inc/strings.h"
+#include "inc/sysexits.h"
 #include "inc/util.h"
 
 /* Shared state directories, tmpfs abuse */

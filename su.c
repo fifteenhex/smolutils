@@ -13,7 +13,7 @@ int main(int argc, char **argv, char **envp)
 
 	if (argc > 2 || (argc == 2 && strcmp(argv[1], "root"))) {
 		usage("Usage: %s [root]\n", argv[0]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (users_changeuser(0, 0)) {

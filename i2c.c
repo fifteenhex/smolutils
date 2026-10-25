@@ -157,7 +157,7 @@ static int prog_i2cget(int argc, char **argv, char **envp)
 	first = parse_options(argc, argv, "", &force);
 	if (first < 0 || argc - first < 2 || argc - first > 4) {
 		usage(I2CGET_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 	argv += first;
 	argc -= first;
@@ -176,7 +176,7 @@ static int prog_i2cget(int argc, char **argv, char **envp)
 			n = 2;
 		} else if (strcmp(argv[3], "b")) {
 			usage(I2CGET_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
@@ -219,7 +219,7 @@ static int prog_i2cset(int argc, char **argv, char **envp)
 	first = parse_options(argc, argv, "", &force);
 	if (first < 0 || argc - first < 4) {
 		usage(I2CSET_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 	argv += first;
 	argc -= first;
@@ -234,7 +234,7 @@ static int prog_i2cset(int argc, char **argv, char **envp)
 
 	if (len < 1 || (mode != 'i' && len != 1) || len > I2C_SMBUS_BLOCK_MAX) {
 		usage(I2CSET_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!parse_chip(argv[1], &chip))
@@ -290,7 +290,7 @@ static int prog_i2cdetect(int argc, char **argv, char **envp)
 	first = parse_options(argc, argv, "r", &force);
 	if (first < 0 || (argc - first != 1 && argc - first != 3)) {
 		usage(I2CDETECT_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 	argv += first;
 	argc -= first;
@@ -353,7 +353,7 @@ static int prog_i2cdump(int argc, char **argv, char **envp)
 	first = parse_options(argc, argv, "", &force);
 	if (first < 0 || argc - first != 2) {
 		usage(I2CDUMP_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 	argv += first;
 	argc -= first;

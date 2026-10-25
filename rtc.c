@@ -130,20 +130,20 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 		case 'w':
 			if (what) {
 				usage(HWCLOCK_USAGE);
-				return 1;
+				return EX_USAGE;
 			}
 			what = c;
 			break;
 
 		default:
 			usage(HWCLOCK_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind != argc) {
 		usage(HWCLOCK_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(path, O_RDONLY, 0);
@@ -272,13 +272,13 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 
 		default:
 			usage(RTCWAKE_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	if (optind != argc || mode < 0 || (seconds && epoch)) {
 		usage(RTCWAKE_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (mode >= MODE_NO && !seconds && !epoch) {

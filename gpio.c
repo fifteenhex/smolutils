@@ -29,7 +29,7 @@ static int prog_gpiodetect(int argc, char **argv, char **envp)
 {
 	if (argc != 1) {
 		usage(GPIODETECT_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	return iterate_dir(GPIO_DEV_DIR, detect_cb, NULL) < 0 ? 1 : 0;
@@ -114,7 +114,7 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "l")) != -1) {
 		if (c != 'l') {
 			usage(GPIOGET_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 		flags |= GPIO_V2_LINE_FLAG_ACTIVE_LOW;
 	}
@@ -122,7 +122,7 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 	num = argc - optind - 1;
 	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
 		usage(GPIOGET_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0; i < num; i++) {
@@ -180,14 +180,14 @@ static int prog_gpioset(int argc, char **argv, char **envp)
 
 		default:
 			usage(GPIOSET_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	num = argc - optind - 1;
 	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
 		usage(GPIOSET_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0; i < num; i++) {
@@ -257,7 +257,7 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 
 		default:
 			usage(GPIOMON_USAGE);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
@@ -268,7 +268,7 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 	num = argc - optind - 1;
 	if (argc - optind < 2 || num > GPIO_V2_LINES_MAX) {
 		usage(GPIOMON_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0; i < num; i++) {

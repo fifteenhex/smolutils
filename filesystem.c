@@ -81,7 +81,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 
 		default:
 			usage(MOUNT_USAGE);
-			return 1;
+			return EX_USAGE;
                 }
         }
 
@@ -90,7 +90,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 
 	if (!type || !source || !target) {
 		usage(MOUNT_USAGE);
-		return 1;
+		return EX_USAGE;
 	}
 
 	ret = mount(source, target, type, flags, NULL);
@@ -108,7 +108,7 @@ static int prog_umount(int argc, char **argv, char **envp)
 
 	if (argc != 2) {
 		usage("usage: umount <target>\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	target = argv[1];

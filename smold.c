@@ -555,7 +555,7 @@ static int tell_init(int argc, char **argv, int sig)
 {
 	if (argc > 1) {
 		usage("usage: %s\n", path_basename(argv[0]));
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (kill(1, sig)) {

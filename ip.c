@@ -148,7 +148,7 @@ int main (int argc, char **argv, char **envp)
 		}
 
 		usage("usage: ip [addr|link] [show]\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	sock = smolutils_net_inet_socket();
