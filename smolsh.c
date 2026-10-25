@@ -216,7 +216,7 @@ static bool try_builtin(char **tokens, unsigned num_tokens, int stdout,
 	return false;
 }
 
-static int try_absolute(const char *cmd, char **path)
+static int try_absolute(const char *cmd, const char **path)
 {
 	/* A bare name is for the search. Only something with a / is a path */
 	if (!strchr(cmd, '/'))
@@ -253,7 +253,7 @@ static const char *shell_path(void)
 	return fallback;
 }
 
-static bool try_search(const char *cmd, char **path)
+static bool try_search(const char *cmd, const char **path)
 {
 	/* this should be PATH_MAX I guess.. seems like a waste of 4K */
 	static char _path[1024];
@@ -471,8 +471,8 @@ static void run_command(struct command *cmd, int in_fd, int out_fd, bool nowait)
 	int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
 	int opened[3] = { -1, -1, -1 };
 	bool killed = false;
+	const char *path;
 	int status = 1;
-	char *path;
 	int ret;
 	int i;
 

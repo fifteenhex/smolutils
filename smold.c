@@ -184,7 +184,7 @@ static int spawn_getty(struct getty *getty)
 	const char *tty_path = getty->tty_path;
 	char * const newargv[] = {
 		GETTY_NAME,
-		tty_path,
+		(char *) tty_path,
 		SHELL_PATH,
 		NULL
 	};
@@ -227,7 +227,7 @@ static int spawn_telnetd(void)
 	char * const newargv[] = {
 		TELNETD_NAME,
 		"-p",
-		telnetd_port,
+		(char *) telnetd_port,
 		NULL
 	};
 
