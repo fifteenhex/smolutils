@@ -21,7 +21,7 @@ PROGS_USER =		\
 	man		\
 	less
 
-SETS_ALL = net initramfs core keeper hwhandling filesystem
+SETS_ALL = net initramfs core hwhandling filesystem
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
@@ -55,9 +55,8 @@ endef
 $(eval $(call set,net,sntp dhcpc,ip ping resolv tftp,))
 $(eval $(call tagged,net,telnetd,telnetd,))
 $(eval $(call set,initramfs,,,))
-$(eval $(call set,core,,dmesg uname process su,))
+$(eval $(call set,core,keeper,dmesg uname process su,))
 $(eval $(call tagged,core,modules,modules,))
-$(eval $(call set,keeper,keeper,,))
 $(eval $(call set,hwhandling,,lsbus rtc devmem,))
 $(eval $(call tagged,hwhandling,i2c,,i2c))
 $(eval $(call tagged,hwhandling,gpio,,gpio))

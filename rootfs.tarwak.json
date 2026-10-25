@@ -315,7 +315,7 @@
 					},
 					"getty": { },
 					"keeper": {
-						"feature": "keeper"
+						"feature": "core"
 					},
 					"insmod": {
 						"type": "symlink",

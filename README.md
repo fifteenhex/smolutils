@@ -105,10 +105,9 @@ The default is every set. Pass SETS="" with a list of what you want. The base
 set, init, the shell and so on, is always there.
 
 - net        - Add networking utils
-- keeper     - Start background processes as a user
 - hwhandling - lsbus, rtc, devmem and the mtd, i2c and gpio tools, for poking at hardware
 - filesystem - mount, umount, ls, df and the file tools like cp and cat
-- core       - dmesg, uname, insmod, rmmod, ps, kill, free, chroot and su
+- core       - dmesg, uname, insmod, rmmod, ps, kill, free, chroot, su and keeper
 
 #### Tags
 
