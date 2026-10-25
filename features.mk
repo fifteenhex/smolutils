@@ -41,6 +41,11 @@ PROGS_USER += mtd
 _TARWAKFEATURES += -fmtd
 endif
 
+ifeq ($(filter i2c,$(DISABLE_LIST)),)
+PROGS_USER += i2c
+_TARWAKFEATURES += -fi2c
+endif
+
 ifeq ($(filter gpio,$(DISABLE_LIST)),)
 PROGS_USER += gpio
 _TARWAKFEATURES += -fgpio

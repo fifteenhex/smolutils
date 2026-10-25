@@ -95,19 +95,23 @@
 					},
 					"i2cget": {
 						"type": "symlink",
-						"target": "/lib/smol/i2c"
+						"target": "/lib/smol/i2c",
+						"feature": "i2c"
 					},
 					"i2cset": {
 						"type": "symlink",
-						"target": "/lib/smol/i2c"
+						"target": "/lib/smol/i2c",
+						"feature": "i2c"
 					},
 					"i2cdetect": {
 						"type": "symlink",
-						"target": "/lib/smol/i2c"
+						"target": "/lib/smol/i2c",
+						"feature": "i2c"
 					},
 					"i2cdump": {
 						"type": "symlink",
-						"target": "/lib/smol/i2c"
+						"target": "/lib/smol/i2c",
+						"feature": "i2c"
 					},
 					"hwclock": {
 						"type": "symlink",
@@ -235,7 +239,9 @@
 							"process": { },
 							"lsbus": { },
 							"rtc": { },
-							"i2c": { },
+							"i2c": {
+								"feature": "i2c"
+							},
 							"modules": {
 								"mode": "0500",
 								"feature": "modules"

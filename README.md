@@ -107,6 +107,7 @@ with MTD devices. So we end up with a feature for MTD and a config for MTD.
 - keeper    - Start background processes as a user
 - mtd       - Raw flash tools, an mtd-utils subset
 - gpio      - GPIO tools, basic libgpiod-tools
+- i2c       - I2C tools, basic i2c-tools
 - initramfs - Support for running as an initramfs
 
 ### No config files
