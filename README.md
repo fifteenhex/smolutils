@@ -57,7 +57,7 @@ Even for the mmu enjoyers out there:
 | lz4         | stub     |                            | not in the build    |
 | man         | stub     |                            |                     |
 | mkdir       |          | files                      |                     |
-| mount       |          |                            |                     |
+| mount       |          | filesystem                 |                     |
 | mtdinfo     |          | mtd                        |                     |
 | mv          |          | files                      |                     |
 | nanddump    |          | mtd                        |                     |
@@ -79,7 +79,7 @@ Even for the mmu enjoyers out there:
 | telnetd     |          |                            |                     |
 | tftp        |          |                            |                     |
 | touch       |          | files                      |                     |
-| umount      |          | mount                      |                     |
+| umount      |          | filesystem                 |                     |
 | uname       |          |                            |                     |
 | xxd         |          |                            |                     |
 

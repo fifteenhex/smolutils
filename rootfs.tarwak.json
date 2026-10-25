@@ -191,10 +191,13 @@
 						"type": "symlink",
 						"target": "/sbin/init"
 					},
-					"mount": { },
+					"mount": {
+						"type": "symlink",
+						"target": "/lib/smol/filesystem"
+					},
 					"umount": {
 						"type": "symlink",
-						"target": "/bin/mount"
+						"target": "/lib/smol/filesystem"
 					},
 					"rmdir": {
 						"type": "symlink",
@@ -236,6 +239,7 @@
 						},
 						"entities": {
 							"files": { },
+							"filesystem": { },
 							"process": { },
 							"lsbus": { },
 							"rtc": { },

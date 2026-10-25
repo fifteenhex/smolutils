@@ -26,7 +26,7 @@ PROGS_USER =		\
 	uname		\
 	df		\
 	su		\
-	mount
+	filesystem
 
 include features.mk
 
