@@ -5,10 +5,23 @@
 
 /* This is like KConfig, but awful. Put your overrides in config.h.local */
 
+/* -- General options -- */
+
 /* debug() output */
 #ifndef CONFIG_DEBUG
 #define CONFIG_DEBUG	y
 #endif
+
+/* -- */
+
+/* -- smold options -- */
+
+/* Support starting gettys at boot */
+#ifndef CONFIG_SMOLD_GETTY
+#define CONFIG_SMOLD_GETTY	y
+#endif
+
+/* -- */
 
 /* Support running in an initramfs */
 #ifndef CONFIG_INITRAMFS

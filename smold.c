@@ -39,6 +39,34 @@ struct getty {
 static struct getty gettys[16];
 static unsigned num_gettys = 0;
 
+static bool parse_cmdline_getty(const char *arg)
+{
+	const char *val;
+
+	if (!is_enabled(CONFIG_SMOLD_GETTY))
+		return false;
+
+	val = cmdline_option(arg, cmdline_opt_getty);
+	if (val) {
+		if (num_gettys >= ARRAY_SIZE(gettys)) {
+			error("Too many gettys\n");
+			/* We can't use it but consume the argument */
+			return true;
+		}
+
+		verbose("Will start getty on TTY %s\n", val);
+		/*
+		 * I guess its safe to just point the argv memory to avoid
+		 * wasting memory copying strings.
+		 */
+		gettys[num_gettys++].tty_path = val;
+
+		return true;
+	}
+
+	return false;
+}
+
 static const char *telnetd_port = NULL;
 static pid_t telnetd_pid = -1;
 
@@ -121,25 +149,11 @@ static void parse_cmdline(int argc, char **argv)
 	/* First arg will be the program name, skip that */
 	for (i = 1; i < argc; i++) {
 		const char *arg = argv[i];
-		const char *val;
 
 		verbose("%s\n", arg);
 
-		val = cmdline_option(arg, cmdline_opt_getty);
-		if (val) {
-			if (num_gettys >= ARRAY_SIZE(gettys)) {
-				error("Too many gettys\n");
-				continue;
-			}
-
-			verbose("Will start getty on TTY %s\n", val);
-			/*
-			 * I guess its safe to just point the argv memory to avoid
-			 * wasting memory copying strings.
-			 */
-			gettys[num_gettys++].tty_path = val;
+		if (parse_cmdline_getty(arg))
 			continue;
-		}
 
 		if (parse_cmdline_telnetd(arg))
 			continue;
@@ -176,12 +190,34 @@ static int spawn_getty(struct getty *getty)
 	};
 	pid_t pid;
 
+	if (!is_enabled(CONFIG_SMOLD_GETTY))
+		return -EOPNOTSUPP;
+
 	pid = spawn(GETTY_PATH, newargv, environ);
 
 	if (pid == -1)
 		return -1;
 
 	getty->getty_pid = pid;
+
+	return 0;
+}
+
+static int spawn_gettys(void)
+{
+	unsigned i;
+	int ret;
+
+	if (!is_enabled(CONFIG_SMOLD_GETTY))
+		return 0;
+
+	for (i = 0; i < num_gettys; i++) {
+		ret = spawn_getty(&gettys[i]);
+		if (ret) {
+			error("Failed to spawn getty\n");
+			return 1; /* hmmm */
+		}
+	}
 
 	return 0;
 }
@@ -435,14 +471,8 @@ static int prog_init(int argc, char **argv, char **envp)
 
 	setup_signals();
 
-	/* Spawn each of the configured gettys */
-	for (i = 0; i < num_gettys; i++) {
-		ret = spawn_getty(&gettys[i]);
-		if (ret) {
-			error("Failed to spawn getty\n");
-			return 1; /* hmmm */
-		}
-	}
+	if (spawn_gettys())
+		return 1;
 
 	/* No securetty == no telnet */
 	if (telnetd_port && access(SMOL_SECURETTY_PATH, F_OK)) {
