@@ -101,13 +101,14 @@ with MTD devices. So we end up with a set for MTD and a config for MTD.
 
 ### Sets
 
-The default is every set. Pass SETS="" with a list of what you want. The base
-set, init, the shell and so on, is always there.
+The default is every set. Pass SETS="" with a list of what you want.
 
+- base       - init and startup
+- core       - getty, dmesg, uname, insmod, rmmod, ps, kill, free, chroot, su and keeper
 - net        - Add networking utils
-- hwhandling - lsbus, rtc, devmem and the mtd, i2c and gpio tools, for poking at hardware
+- hwhandling - blkwak, lsbus, rtc, devmem and the mtd, i2c and gpio tools, for poking at hardware
 - filesystem - mount, umount, ls, df and the file tools like cp and cat
-- core       - dmesg, uname, insmod, rmmod, ps, kill, free, chroot, su and keeper
+- misc       - smolsh, sha256sum, xxd, man and less
 
 #### Tags
 

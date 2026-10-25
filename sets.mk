@@ -1,26 +1,16 @@
 # "Sets" - Like BSD sets or something
 #
-# Pass SETS="net mtd .." to select what you want, look at SETS_ALL for what you
-# can have. Currently there is a "base" set that includes everything that isn't
-# in a set, this will change.
+# Pass SETS="base core .." to select what you want, look at SETS_ALL for what
+# you can have.
 
 fempty :=
 fspace := $(empty) $(empty)
 fcomma := ,
 
-# The base set
-PROGS =			\
-	init		\
-	getty		\
-	startup		\
-	blkwak		\
-	smolsh		\
-	sha256sum	\
-	xxd		\
-	man		\
-	less
+# The sets below fill this in
+PROGS =
 
-SETS_ALL = net initramfs core hwhandling filesystem
+SETS_ALL = base net initramfs core hwhandling filesystem misc
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
@@ -49,16 +39,18 @@ PROGS += $(3)
 endif
 endef
 
+$(eval $(call set,base,init startup,))
 $(eval $(call set,net,sntp dhcpc ip ping resolv tftp,))
 $(eval $(call tagged,net,telnetd,telnetd))
 $(eval $(call set,initramfs,,))
-$(eval $(call set,core,keeper dmesg uname process su,))
+$(eval $(call set,core,getty keeper dmesg uname process su,))
 $(eval $(call tagged,core,modules,modules))
-$(eval $(call set,hwhandling,lsbus rtc devmem,))
+$(eval $(call set,hwhandling,blkwak lsbus rtc devmem,))
 $(eval $(call tagged,hwhandling,i2c,i2c))
 $(eval $(call tagged,hwhandling,gpio,gpio))
 $(eval $(call tagged,hwhandling,mtd,mtd))
 $(eval $(call set,filesystem,filesystem files ls df,))
+$(eval $(call set,misc,smolsh sha256sum xxd man less,))
 
 # Make sure all of the requested sets actually exist
 $(foreach s,$(_SETS),$(if $(filter $(s),$(SETS_DEFINED)),,$(error unknown set $(s))))
