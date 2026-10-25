@@ -21,13 +21,13 @@ PROGS_USER =		\
 	man		\
 	less
 
-SETS_ALL = net telnetd initramfs core keeper hwhandling filesystem
+SETS_ALL = net initramfs core keeper hwhandling filesystem
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
 _SETS := $(subst $(fcomma),$(fspace),$(SETS))
 
-TAGS_ALL = modules i2c gpio mtd
+TAGS_ALL = modules i2c gpio mtd telnetd
 
 # $(1) set, $(2) system progs, $(3) user progs, $(4) deps
 define set
@@ -53,7 +53,7 @@ endif
 endef
 
 $(eval $(call set,net,sntp dhcpc,ip ping resolv tftp,))
-$(eval $(call set,telnetd,telnetd,,net))
+$(eval $(call tagged,net,telnetd,telnetd,))
 $(eval $(call set,initramfs,,,))
 $(eval $(call set,core,,dmesg uname process su,))
 $(eval $(call tagged,core,modules,modules,))

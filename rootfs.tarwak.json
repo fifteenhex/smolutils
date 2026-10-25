@@ -335,7 +335,7 @@
 						"feature": "net"
 					},
 					"telnetd": {
-						"feature": "telnetd"
+						"feature": "net"
 					},
 					"init": {
 						"group": "users",
