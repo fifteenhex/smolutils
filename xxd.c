@@ -23,27 +23,27 @@ int main (int argc, char **argv, char **envp)
 		switch (c) {
 		case 'm':
 			if (!parse_fd_with_msgs(optarg, &fd))
-				return 1;
+				return EX_USAGE;
 			break;
 
 		case 'o':
 			if (!parse_ul(optarg, 0, &offset)) {
 				error("Not an address: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
 		case 's':
 			if (!parse_ul(optarg, 0, &skip)) {
 				error("Not an offset: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
 		case 'l':
 			if (!parse_ul(optarg, 0, &length)) {
 				error("Not a length: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -63,18 +63,18 @@ int main (int argc, char **argv, char **envp)
 
 		fd = open_with_msgs(path, O_RDONLY, 0);
 		if (fd < 0)
-			return 1;
+			return EX_NOINPUT;
 	}
 
 	if (skip && lseek(fd, (off_t) skip, SEEK_SET) < 0) {
 		error("Failed to seek to %lu: %d\n", skip, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	sz = file_size(fd);
 	if (sz < 0) {
 		error("Failed to size the input: %d\n", errno);
-		return 1;
+		return EX_OSERR;
 	}
 
 	/* Devices, pipes and /proc files have no size: read to -l or the end */
@@ -97,7 +97,7 @@ int main (int argc, char **argv, char **envp)
 		ret = read_full(fd, buf, want);
 		if (ret < 0) {
 			error("Failed to read: %d\n", errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		/* Ran out early: a short device, or -l past the end */
