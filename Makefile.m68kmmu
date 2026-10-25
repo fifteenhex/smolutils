@@ -10,11 +10,10 @@ include common.mk
 
 all: elfs
 
-SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
-USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
+ELFS = $(addsuffix .$(CPU).elf,$(PROGS))
 
 .PHONY: elfs
-elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+elfs: $(ELFS)
 
 .PHONY: m68k-$(CPU).tar
 m68k-$(CPU).tar: rootfs.tarwak.json elfs $(EXTRA_TARS)

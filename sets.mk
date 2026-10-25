@@ -9,12 +9,11 @@ fspace := $(empty) $(empty)
 fcomma := ,
 
 # The base set
-PROGS_SYSTEM = init	\
-	       getty	\
-	       blkwak	\
-	       startup
-
-PROGS_USER =		\
+PROGS =			\
+	init		\
+	getty		\
+	startup		\
+	blkwak		\
 	smolsh		\
 	sha256sum	\
 	xxd		\
@@ -29,39 +28,37 @@ _SETS := $(subst $(fcomma),$(fspace),$(SETS))
 
 TAGS_ALL = modules i2c gpio mtd telnetd
 
-# $(1) set, $(2) system progs, $(3) user progs, $(4) deps
+# $(1) set, $(2) progs, $(3) deps
 define set
 SETS_DEFINED += $(1)
-SET_DEPS_$(1) := $(4)
+SET_DEPS_$(1) := $(3)
 ifneq ($(filter $(1),$(_SETS)),)
-$$(foreach n,$(4),$$(if $$(filter $$(n),$$(_SETS)),,$$(error set $(1) needs $$(n))))
-PROGS_SYSTEM += $(2)
-PROGS_USER += $(3)
+$$(foreach n,$(3),$$(if $$(filter $$(n),$$(_SETS)),,$$(error set $(1) needs $$(n))))
+PROGS += $(2)
 # tarwak calls these features
 _TARWAKFEATURES += -f$(1)
 endif
 endef
 
-# $(1) set, $(2) tag, $(3) system progs, $(4) user progs
+# $(1) set, $(2) tag, $(3) progs
 define tagged
 $(if $(filter $(1),$(SETS_DEFINED)),,$(error tag $(2) is in set $(1) which isn't defined yet))
 $(if $(filter $(2),$(TAGS_ALL)),,$(error unknown tag $(2) in set $(1)))
 ifneq ($(filter $(1),$(_SETS)),)
-PROGS_SYSTEM += $(3)
-PROGS_USER += $(4)
+PROGS += $(3)
 endif
 endef
 
-$(eval $(call set,net,sntp dhcpc,ip ping resolv tftp,))
-$(eval $(call tagged,net,telnetd,telnetd,))
-$(eval $(call set,initramfs,,,))
-$(eval $(call set,core,keeper,dmesg uname process su,))
-$(eval $(call tagged,core,modules,modules,))
-$(eval $(call set,hwhandling,,lsbus rtc devmem,))
-$(eval $(call tagged,hwhandling,i2c,,i2c))
-$(eval $(call tagged,hwhandling,gpio,,gpio))
-$(eval $(call tagged,hwhandling,mtd,,mtd))
-$(eval $(call set,filesystem,,filesystem files ls df,))
+$(eval $(call set,net,sntp dhcpc ip ping resolv tftp,))
+$(eval $(call tagged,net,telnetd,telnetd))
+$(eval $(call set,initramfs,,))
+$(eval $(call set,core,keeper dmesg uname process su,))
+$(eval $(call tagged,core,modules,modules))
+$(eval $(call set,hwhandling,lsbus rtc devmem,))
+$(eval $(call tagged,hwhandling,i2c,i2c))
+$(eval $(call tagged,hwhandling,gpio,gpio))
+$(eval $(call tagged,hwhandling,mtd,mtd))
+$(eval $(call set,filesystem,filesystem files ls df,))
 
 # Make sure all of the requested sets actually exist
 $(foreach s,$(_SETS),$(if $(filter $(s),$(SETS_DEFINED)),,$(error unknown set $(s))))

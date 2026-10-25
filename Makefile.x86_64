@@ -30,11 +30,10 @@ lz4.x86_64.elf.dbg: lz4.c lz4.x86_64.o $(HEADERS)
 	$(LZ4LDOPTS) \
 	-o $@ $< lz4.x86_64.o
 
-SYSTEM_ELFS = $(addsuffix .x86_64.elf,$(PROGS_SYSTEM))
-USER_ELFS = $(addsuffix .x86_64.elf,$(PROGS_USER))
+ELFS = $(addsuffix .x86_64.elf,$(PROGS))
 
 .PHONY: elfs
-elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.x86_64.elf
+elfs: $(ELFS) lz4.x86_64.elf
 
 .PHONY: x86_64.tar
 x86_64.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
@@ -54,8 +53,6 @@ x86_64.cpio.gz: x86_64.tar
 .PHONY: clean
 clean:
 	$(Q)rm -f $(SMOL_BUILDMODE) $(LOCAL_CONFIG_STAMP) *.x86_64.o *.x86_64.elf *.x86_64.elf.dbg x86_64.tar x86_64.erofs x86_64.cpio.gz
-
-PROGS ?= $(PROGS_SYSTEM) $(PROGS_USER)
 
 .PHONY: multicall-size
 multicall-size:

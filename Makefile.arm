@@ -32,11 +32,10 @@ lz4.$(CPU).elf.dbg: lz4.c lz4.$(CPU).o $(HEADERS)
 	$(STATICPIE) \
 	-o $@ $< lz4.$(CPU).o -lgcc
 
-SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
-USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
+ELFS = $(addsuffix .$(CPU).elf,$(PROGS))
 
 .PHONY: elfs
-elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.$(CPU).elf
+elfs: $(ELFS) lz4.$(CPU).elf
 
 .PHONY: arm-$(CPU).tar
 arm-$(CPU).tar: rootfs.tarwak.json elfs $(EXTRA_TARS)

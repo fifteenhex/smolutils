@@ -28,10 +28,9 @@ all: elfs
 #	-Wl,--no-dynamic-linker \
 
 .PHONY: system_elfs user_elfs
-SYSTEM_ELFS = $(addsuffix .68000.elf,$(PROGS_SYSTEM))
-USER_ELFS = $(addsuffix .68000.elf,$(PROGS_USER))
+ELFS = $(addsuffix .68000.elf,$(PROGS))
 
-elfs: $(SYSTEM_ELFS) $(USER_ELFS)
+elfs: $(ELFS)
 
 .PHONY: m68k.tar
 m68k.tar: rootfs.tarwak.json elfs $(EXTRA_TARS)
