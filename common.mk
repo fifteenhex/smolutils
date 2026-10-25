@@ -5,26 +5,6 @@ ifndef TARWAK
 $(error Please pass TARWAK with the path of your tarwak binary)
 endif
 
-PROGS_SYSTEM = init	\
-	       getty	\
-	       blkwak	\
-	       startup
-
-PROGS_USER =		\
-	smolsh		\
-	dmesg		\
-	ls		\
-	process		\
-	files		\
-	sha256sum	\
-	xxd		\
-	man		\
-	less		\
-	uname		\
-	df		\
-	su		\
-	filesystem
-
 include sets.mk
 
 # Include config.h.local first so it overrides the defaults

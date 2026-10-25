@@ -1,11 +1,33 @@
 # "Sets" - Like BSD sets or something
 #
 # Pass SETS="net mtd .." to select what you want, look at SETS_ALL for what you
-# can have. The base set is always there and lives in common.mk.
+# can have. Currently there is a "base" set that includes everything that isn't
+# in a set, this will change.
 
 fempty :=
 fspace := $(empty) $(empty)
 fcomma := ,
+
+# The base set
+PROGS_SYSTEM = init	\
+	       getty	\
+	       blkwak	\
+	       startup
+
+PROGS_USER =		\
+	smolsh		\
+	dmesg		\
+	ls		\
+	process		\
+	files		\
+	sha256sum	\
+	xxd		\
+	man		\
+	less		\
+	uname		\
+	df		\
+	su		\
+	filesystem
 
 SETS_ALL = net telnetd initramfs modules mtd i2c gpio keeper hwhandling
 SETS ?= $(SETS_ALL)
