@@ -106,6 +106,25 @@ build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned
 	$(MAKE) -f Makefile.m68kmmu $(SIXEIGHTOPTS) CPU=$(MMUCPU) m68k-$(MMUCPU).erofs
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
 
+# So you can reproduce a failing random build, you'll need to have the same commit though
+CONFIG_SEED ?=
+
+.PHONY: config-default config-all-y config-all-n config-random
+config-default:
+	rm -f config.h.local
+
+config-all-y:
+	./tools/genconfig.py --all y -o config.h.local
+	cat config.h.local
+
+config-all-n:
+	./tools/genconfig.py --all n -o config.h.local
+	cat config.h.local
+
+config-random:
+	./tools/genconfig.py --random $(if $(CONFIG_SEED),--seed $(CONFIG_SEED)) -o config.h.local
+	cat config.h.local
+
 BOOT_TIMEOUT ?= 30
 
 # By default use whatever the newest installed kernel is

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Generate a config.h.local from the options configopts.py finds in config.h,
-# either everything y, everything n or a random mix. The random one records
-# the seed so it can be reproduced with --seed.
+# Config generator for CI
 
 import argparse
 import os

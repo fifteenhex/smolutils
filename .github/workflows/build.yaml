@@ -5,6 +5,11 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [default, all-y, all-n, random]
+    name: build (${{ matrix.config }})
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -30,8 +35,12 @@ jobs:
           restore-keys: toolchains-${{ runner.os }}-
 
       - name: clang-tidy
+        if: matrix.config == 'default'
         continue-on-error: true
         run: make -f Makefile.ci clang-tidy
+
+      - name: config
+        run: make -f Makefile.ci config-${{ matrix.config }}
 
       - name: build
         run: make -f Makefile.ci build
