@@ -58,9 +58,10 @@ class Smolutils:
         securetty = self.machine.securetty
         deadline = time.monotonic() + timeout
         start = securetty.find(f"{who} joined the party, code ", self.seen, timeout)
-        end = securetty.find("\r\n", start, deadline - time.monotonic())
+        end = securetty.find("\n", start, deadline - time.monotonic())
         self.seen = end
-        console.send(securetty.output[start:end - 2].decode())
+        # \r\r\n on the wire: the message's own \r\n, then the tty's ONLCR
+        console.send(securetty.output[start:end].decode().strip())
 
     def _answer_and_wait(self, console, who, timeout):
         """Answer the code, then either the prompt turns up or getty/su say no."""
@@ -72,20 +73,6 @@ class Smolutils:
         while not PROMPT.search(out):
             out += console.read_until(" > ", deadline - time.monotonic())
 
-    def sync(self, console, timeout=60):
-        """
-        Make sure the shell is really listening before typing anything that
-        matters: an empty line has to come back as a blank line and a prompt.
-        A fresh shell has been seen to print a prompt and drop the first
-        line typed at it, a prompt without our echo in front doesn't count.
-        """
-        deadline = time.monotonic() + timeout
-        while True:
-            console.send("")
-            out = PROMPT.sub("", self.wait_prompt(console, deadline - time.monotonic()))
-            if out.endswith("\r\n"):
-                return
-
     def login(self, console, timeout=60):
         """Get a shell: the secure tty just has one, a normal tty wants a code."""
         deadline = time.monotonic() + timeout
@@ -94,7 +81,6 @@ class Smolutils:
         else:
             console.read_until("code: ", timeout)
             self._answer_and_wait(console, console.device, deadline - time.monotonic())
-        self.sync(console, deadline - time.monotonic())
         return console
 
     def su(self, console, timeout=60):
@@ -108,7 +94,6 @@ class Smolutils:
         else:
             console.read_until("code: ", timeout)
             self._answer_and_wait(console, "su", deadline - time.monotonic())
-        self.sync(console, deadline - time.monotonic())
         return console
 
     def run(self, console, command, timeout=60):
