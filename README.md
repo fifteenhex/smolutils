@@ -40,13 +40,13 @@ Even for the mmu enjoyers out there:
 | gpioinfo    |          | gpio                       |                     |
 | gpiomon     |          | gpio                       |                     |
 | gpioset     |          | gpio                       |                     |
-| halt        |          | init                       |                     |
+| halt        |          | smold                      |                     |
 | hwclock     |          | rtc                        |                     |
 | i2cdetect   |          | i2c                        |                     |
 | i2cdump     |          | i2c                        |                     |
 | i2cget      |          | i2c                        |                     |
 | i2cset      |          | i2c                        |                     |
-| init        |          |                            |                     |
+| init        |          | smold                      |                     |
 | insmod      |          | modules                    |                     |
 | ip          |          |                            |                     |
 | keeper      |          |                            | daemonise a program |
@@ -63,9 +63,9 @@ Even for the mmu enjoyers out there:
 | nanddump    |          | mtd                        |                     |
 | nandwrite   |          | mtd                        |                     |
 | ping        |          |                            |                     |
-| poweroff    |          | init                       |                     |
+| poweroff    |          | smold                      |                     |
 | ps          |          | process                    |                     |
-| reboot      |          | init                       |                     |
+| reboot      |          | smold                      |                     |
 | resolv      |          |                            |                     |
 | rm          |          | files                      |                     |
 | rmdir       |          | files                      |                     |
@@ -103,7 +103,7 @@ with MTD devices. So we end up with a set for MTD and a config for MTD.
 
 The default is every set. Pass SETS="" with a list of what you want.
 
-- base       - init and startup
+- base       - smold (init, reboot, poweroff, halt) and startup
 - core       - getty, dmesg, uname, insmod, rmmod, ps, kill, free, chroot, su and keeper
 - net        - Add networking utils
 - hwhandling - blkwak, lsbus, rtc, devmem and the mtd, i2c and gpio tools, for poking at hardware

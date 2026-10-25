@@ -215,17 +215,17 @@
 					"reboot": {
 						"feature": "base",
 						"type": "symlink",
-						"target": "/sbin/init"
+						"target": "/lib/smol/smold"
 					},
 					"poweroff": {
 						"feature": "base",
 						"type": "symlink",
-						"target": "/sbin/init"
+						"target": "/lib/smol/smold"
 					},
 					"halt": {
 						"feature": "base",
 						"type": "symlink",
-						"target": "/sbin/init"
+						"target": "/lib/smol/smold"
 					},
 					"mount": {
 						"feature": "filesystem",
@@ -281,6 +281,14 @@
 							"mode": "0555"
 						},
 						"entities": {
+							"smold": {
+								"feature": "base",
+								"group": "users",
+								"mode": "0750",
+								"xattrs": {
+									"security.capability": "cap_kill+ep"
+								}
+							},
 							"files": {
 								"feature": "filesystem"
 							},
@@ -358,11 +366,8 @@
 					},
 					"init": {
 						"feature": "base",
-						"group": "users",
-						"mode": "0750",
-						"xattrs": {
-							"security.capability": "cap_kill+ep"
-						}
+						"type": "symlink",
+						"target": "/lib/smol/smold"
 					}
 				}
 			},

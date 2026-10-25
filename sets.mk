@@ -39,7 +39,7 @@ PROGS += $(3)
 endif
 endef
 
-$(eval $(call set,base,init startup,))
+$(eval $(call set,base,smold startup,))
 # initramfs doesn't actually install anything, it just creates the link so linux can start init
 $(eval $(call tagged,base,initramfs,))
 $(eval $(call set,net,sntp dhcpc ip ping resolv tftp,))
