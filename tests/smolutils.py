@@ -72,27 +72,43 @@ class Smolutils:
         while not PROMPT.search(out):
             out += console.read_until(" > ", deadline - time.monotonic())
 
+    def sync(self, console, timeout=60):
+        """
+        Make sure the shell is really listening before typing anything that
+        matters: an empty line has to come back as a blank line and a prompt.
+        A fresh shell has been seen to print a prompt and drop the first
+        line typed at it, a prompt without our echo in front doesn't count.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            console.send("")
+            out = PROMPT.sub("", self.wait_prompt(console, deadline - time.monotonic()))
+            if out.endswith("\r\n"):
+                return
+
     def login(self, console, timeout=60):
         """Get a shell: the secure tty just has one, a normal tty wants a code."""
+        deadline = time.monotonic() + timeout
         if console is self.machine.securetty:
             self.wait_prompt(console, timeout)
         else:
-            deadline = time.monotonic() + timeout
             console.read_until("code: ", timeout)
             self._answer_and_wait(console, console.device, deadline - time.monotonic())
+        self.sync(console, deadline - time.monotonic())
         return console
 
     def su(self, console, timeout=60):
         """Become root, answering the code unless this is the secure tty."""
+        deadline = time.monotonic() + timeout
         console.send("su")
         if console is self.machine.securetty:
             out = self.wait_prompt(console, timeout)
             if "You shall not pass" in out:
                 raise LoginFailed(f"{console.name}: su refused")
         else:
-            deadline = time.monotonic() + timeout
             console.read_until("code: ", timeout)
             self._answer_and_wait(console, "su", deadline - time.monotonic())
+        self.sync(console, deadline - time.monotonic())
         return console
 
     def run(self, console, command, timeout=60):
