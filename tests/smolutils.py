@@ -12,6 +12,7 @@ import sys
 import time
 from dataclasses import dataclass
 
+from console import Closed, Timeout
 from qemu import Qemu
 
 PROMPT = re.compile(r"smolsh .*? > $")
@@ -118,22 +119,34 @@ class Smolutils:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="boot smolutils under qemu, log in and run uname")
+    parser = argparse.ArgumentParser(description="boot smolutils under qemu, log in on both ttys and run uname")
     parser.add_argument("--qemu", required=True)
     parser.add_argument("--kernel", required=True)
     parser.add_argument("--initramfs")
     parser.add_argument("--rootfs")
+    parser.add_argument("--append", default="", help="extra kernel command line")
+    parser.add_argument("--init", default="", help="extra options for init, after the --")
+    parser.add_argument("--nic", help="network card model to put on the user mode network")
+    parser.add_argument("--timeout", type=float, default=60, help="seconds to wait for each prompt")
     args = parser.parse_args()
 
-    q = Qemu(args.qemu, args.kernel, initramfs=args.initramfs, rootfs=args.rootfs)
-    q.append = kernel_args(q.securetty.device, q.tty.device)
+    q = Qemu(args.qemu, args.kernel, initramfs=args.initramfs, rootfs=args.rootfs, nic=args.nic)
+    q.append = kernel_args(q.securetty.device, q.tty.device, args.append, args.init)
     smol = Smolutils(q)
     try:
         q.boot()
         for console in (q.securetty, q.tty):
-            smol.login(console)
-            print(f"{console.name}: {smol.run(console, 'uname').output}")
+            smol.login(console, args.timeout)
+            print(f"{console.name}: {smol.run(console, 'uname', args.timeout).output}")
         return 0
+    except (Timeout, Closed, LoginFailed, RuntimeError) as e:
+        print(f"--- {e}")
+        for console in q.consoles.values():
+            print(f"--- {console.name} said:")
+            print(console.output.decode(errors="replace"))
+        print("--- qemu said:")
+        print(q.output())
+        return 1
     finally:
         q.shutdown()
 
