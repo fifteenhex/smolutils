@@ -45,10 +45,6 @@ PROGS_SYSTEM += modules
 _TARWAKFEATURES += -fmodules
 endif
 
-ifneq ($(filter minions,$(DISABLE_LIST)),)
-_COPTS += -DCONFIG_MINIONS=n
-endif
-
 ifneq ($(filter mtd,$(DISABLE_LIST)),)
 _COPTS += -DCONFIG_MTD=n
 else
