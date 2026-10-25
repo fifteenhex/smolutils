@@ -46,7 +46,9 @@
 					"df": {
 						"feature": "filesystem"
 					},
-					"dmesg": { },
+					"dmesg": {
+						"feature": "core"
+					},
 					"smolsh": { },
 					"mtdinfo": {
 						"type": "symlink",
@@ -142,13 +144,16 @@
 					},
 					"man": { },
 					"less": { },
-					"uname": { },
+					"uname": {
+						"feature": "core"
+					},
 					"touch": {
 						"feature": "filesystem",
 						"type": "symlink",
 						"target": "/lib/smol/files"
 					},
 					"free": {
+						"feature": "core",
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
@@ -158,6 +163,7 @@
 						"target": "/lib/smol/files"
 					},
 					"kill": {
+						"feature": "core",
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
@@ -165,6 +171,7 @@
 						"feature": "filesystem"
 					},
 					"ps": {
+						"feature": "core",
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
@@ -190,6 +197,7 @@
 						}
 					},
 					"su": {
+						"feature": "core",
 						"xattrs": {
 							"security.capability": "cap_setuid,cap_setgid+ep"
 						}
@@ -266,7 +274,9 @@
 							"filesystem": {
 								"feature": "filesystem"
 							},
-							"process": { },
+							"process": {
+								"feature": "core"
+							},
 							"lsbus": {
 								"feature": "hwhandling"
 							},
@@ -278,7 +288,7 @@
 							},
 							"modules": {
 								"mode": "0500",
-								"feature": "modules"
+								"feature": "core"
 							},
 							"mtd": {
 								"feature": "mtd"
@@ -299,6 +309,7 @@
 				"entities": {
 					"blkwak": { },
 					"chroot": {
+						"feature": "core",
 						"type": "symlink",
 						"target": "/lib/smol/process"
 					},
@@ -309,12 +320,12 @@
 					"insmod": {
 						"type": "symlink",
 						"target": "/lib/smol/modules",
-						"feature": "modules"
+						"feature": "core"
 					},
 					"rmmod": {
 						"type": "symlink",
 						"target": "/lib/smol/modules",
-						"feature": "modules"
+						"feature": "core"
 					},
 					"startup": { },
 					"sntp": {

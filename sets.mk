@@ -16,16 +16,12 @@ PROGS_SYSTEM = init	\
 
 PROGS_USER =		\
 	smolsh		\
-	dmesg		\
-	process		\
 	sha256sum	\
 	xxd		\
 	man		\
-	less		\
-	uname		\
-	su
+	less
 
-SETS_ALL = net telnetd initramfs modules mtd i2c gpio keeper hwhandling filesystem
+SETS_ALL = net telnetd initramfs core mtd i2c gpio keeper hwhandling filesystem
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
@@ -47,7 +43,7 @@ endef
 $(eval $(call set,net,sntp dhcpc,ip ping resolv tftp,))
 $(eval $(call set,telnetd,telnetd,,net))
 $(eval $(call set,initramfs,,,))
-$(eval $(call set,modules,modules,,))
+$(eval $(call set,core,modules,dmesg uname process su,))
 $(eval $(call set,mtd,,mtd,))
 $(eval $(call set,i2c,,i2c,))
 $(eval $(call set,gpio,,gpio,))

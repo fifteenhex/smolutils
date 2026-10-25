@@ -106,13 +106,13 @@ set, init, the shell and so on, is always there.
 
 - net       - Add networking utils
 - telnetd   - telnetd, part of net
-- modules   - Add modules support
 - keeper    - Start background processes as a user
 - mtd       - Raw flash tools, an mtd-utils subset
 - gpio      - GPIO tools, basic libgpiod-tools
 - i2c       - I2C tools, basic i2c-tools
 - hwhandling - lsbus, rtc and devmem, for poking at hardware
 - filesystem - mount, umount, ls, df and the file tools like cp and cat
+- core      - dmesg, uname, insmod, rmmod, ps, kill, free, chroot and su
 - initramfs - Support for running as an initramfs
 
 ### No config files
