@@ -33,9 +33,7 @@ lz4.$(CPU).elf.dbg: lz4.c lz4.$(CPU).o $(HEADERS)
 	-o $@ $< lz4.$(CPU).o -lgcc
 
 SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
-SYSTEM_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_SYSTEM))
 USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
-USER_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_USER))
 
 .PHONY: elfs
 elfs: $(SYSTEM_ELFS) $(USER_ELFS) lz4.$(CPU).elf

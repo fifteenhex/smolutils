@@ -11,9 +11,7 @@ include common.mk
 all: elfs
 
 SYSTEM_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_SYSTEM))
-SYSTEM_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_SYSTEM))
 USER_ELFS = $(addsuffix .$(CPU).elf,$(PROGS_USER))
-USER_ELFS += $(addsuffix .$(CPU).elf,$(PROGS_NET_USER))
 
 .PHONY: elfs
 elfs: $(SYSTEM_ELFS) $(USER_ELFS)

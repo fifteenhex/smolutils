@@ -42,8 +42,7 @@ LOCAL_CONFIG_STAMP = .localconfig.$(SMOL_SUFFIX)
 $(LOCAL_CONFIG_STAMP): FORCE
 	$(Q)echo '$(LOCAL_CONFIG)' | cmp -s - $@ 2>/dev/null || echo '$(LOCAL_CONFIG)' > $@
 
-C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER)) \
-	  $(addsuffix .c,$(PROGS_NET_SYSTEM)) $(addsuffix .c,$(PROGS_NET_USER))
+C_FILES = $(addsuffix .c,$(PROGS_SYSTEM)) $(addsuffix .c,$(PROGS_USER))
 
 HEADERS = $(LOCAL_CONFIG) $(LOCAL_CONFIG_STAMP) \
 	  config.h \
