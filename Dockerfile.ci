@@ -1,0 +1,15 @@
+# The CI image, rebuilt when this or the toolchains in Makefile.ci change
+FROM ubuntu:26.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	build-essential meson git wget ca-certificates python3 python3-yaml \
+	libarchive-dev libcjson-dev libcap-dev erofs-utils libarchive-tools \
+	linux-libc-dev-m68k-cross clang-tidy \
+	qemu-system-x86 linux-image-virtual \
+	&& rm -rf /var/lib/apt/lists/*
+
+# What Makefile.ci wants in _build
+WORKDIR /ci
+COPY Makefile.ci .
+RUN make -f Makefile.ci deps && rm -f Makefile.ci

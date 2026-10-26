@@ -84,6 +84,10 @@ define build_m68k
 	$(MAKE) -f Makefile.m68kmmu $(OPTS_m68k) CPU=$(MMUCPU) m68k-$(MMUCPU).erofs
 endef
 
+# For building the CI image
+.PHONY: deps
+deps: $(DEPS) $(foreach a,$(ARCHES),$(TOOLCHAINDEP_$(a)))
+
 .PHONY: build
 build: $(DEPS) $(TOOLCHAINDEP_$(ARCH))
 	$(build_$(ARCH))

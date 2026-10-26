@@ -3,14 +3,58 @@ name: Build
 on: [push]
 
 jobs:
-  build:
+  # Build the image once, the matrix runs in it
+  image:
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Work out the image name
+        id: name
+        run: |
+          key=$(cat Dockerfile.ci <(grep -E '^TOOLCHAIN_' Makefile.ci) | sha256sum | cut -c1-16)
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:ci-$key" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the image if needed
+        run: |
+          image=${{ steps.name.outputs.image }}
+          if docker manifest inspect "$image" >/dev/null 2>&1; then
+            echo "$image exists"
+          else
+            docker build --provenance=false -f Dockerfile.ci -t "$image" .
+            docker push "$image"
+          fi
+
+  build:
+    needs: image
+    runs-on: ubuntu-26.04
+    container:
+      image: ${{ needs.image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
         arch: [x86_64, m68k]
         config: [default, all-y, all-n, random]
-        # Only x86_64 boots under qemu so far, and only with a getty and a shell
+        # Only x86_64 boots so far
         include:
           - arch: x86_64
             boots: true
@@ -19,39 +63,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Update apt
-        run: sudo apt-get update
-
-      - name: Install dependencies
-        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils libarchive-tools
-
-      - name: Install m68k headers
-        if: matrix.arch == 'm68k'
-        run: sudo apt-get install -y linux-libc-dev-m68k-cross
-
-      # Linting tools, once
-      - name: Install lint dependencies
-        if: matrix.arch == 'x86_64' && matrix.config == 'default'
-        run: sudo apt-get install -y clang-tidy
-
-      # QEMU and linux, only where something boots
-      - name: Install boot dependencies
-        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
-        run: sudo apt-get install -y qemu-system-x86 linux-image-generic
-
-      # Only refresh the toolchain when it changes. The makefile might change even if the toolchain doesn't
-      - name: Work out the toolchain key
-        id: toolchainkey
-        run: |
-          key=$(grep -E '^TOOLCHAIN_(URL|DIR|${{ matrix.arch }})=' Makefile.ci | sha256sum | cut -d' ' -f1)
-          echo "key=$key" >> "$GITHUB_OUTPUT"
-
-      - name: Cache toolchain
-        uses: actions/cache@v5
-        with:
-          path: _build/*.tar.*
-          key: toolchain-${{ matrix.arch }}-${{ runner.os }}-${{ steps.toolchainkey.outputs.key }}
-          restore-keys: toolchain-${{ matrix.arch }}-${{ runner.os }}-
+      - name: Use the deps from the image
+        run: ln -s /ci/_build _build
 
       - name: clang-tidy
         if: matrix.arch == 'x86_64' && matrix.config == 'default'
@@ -64,31 +77,13 @@ jobs:
       - name: build
         run: make -f Makefile.ci build ARCH=${{ matrix.arch }}
 
-      # Magic to find a kernel image we can actually read
-      - name: pick a kernel
-        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
-        run: |
-          kernel=
-          for k in $(ls -1 /boot/vmlinuz-* | sort -V -r); do
-            if [ -r "$k" ]; then kernel=$k; break; fi
-          done
-          if [ -z "$kernel" ]; then
-            newest=$(ls -1 /boot/vmlinuz-* | sort -V | tail -1)
-            echo "no readable kernel, taking a copy of $newest"
-            mkdir -p _build
-            sudo cat "$newest" > _build/vmlinuz
-            kernel=_build/vmlinuz
-          fi
-          echo "using $kernel"
-          echo "KERNEL=$kernel" >> "$GITHUB_ENV"
-
       - name: boot
         if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
-        run: make -f Makefile.ci boot ARCH=${{ matrix.arch }} KERNEL="$KERNEL"
+        run: make -f Makefile.ci boot ARCH=${{ matrix.arch }}
 
       - name: test
         if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
-        run: make -f Makefile.ci test ARCH=${{ matrix.arch }} KERNEL="$KERNEL"
+        run: make -f Makefile.ci test ARCH=${{ matrix.arch }}
 
       - name: set sizes
         if: matrix.config == 'default'
