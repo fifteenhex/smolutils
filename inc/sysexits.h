@@ -8,6 +8,8 @@
  */
 #define EX_OK		0
 #define EX_USAGE	64
+#if is_enabled(CONFIG_EXITCODES_FINEGRAINED)
+
 #define EX_DATAERR	65
 #define EX_NOINPUT	66
 #define EX_UNAVAILABLE	69
@@ -42,5 +44,27 @@ static inline int ex_errno(int err)
 		return EX_OSERR;
 	}
 }
+
+#else
+
+/*
+ * Most error exits become 1 so the compiler
+ * can squash them all into the same exit path
+ */
+#define EX_DATAERR	1
+#define EX_NOINPUT	1
+#define EX_UNAVAILABLE	1
+#define EX_SOFTWARE	1
+#define EX_OSERR	1
+#define EX_CANTCREAT	1
+#define EX_IOERR	1
+#define EX_NOPERM	1
+
+static inline int ex_errno(int err)
+{
+	return 1;
+}
+
+#endif /* CONFIG_EXITCODES_FINEGRAINED */
 
 #endif /* _SMOLUTILS_SYSEXITS_H */

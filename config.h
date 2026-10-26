@@ -99,6 +99,11 @@
 #define CONFIG_COLOUR	y
 #endif
 
+/* Say why a tool failed in its exit code, the tests need this, scripts just need 0, 1 and 64 */
+#ifndef CONFIG_EXITCODES_FINEGRAINED
+#define CONFIG_EXITCODES_FINEGRAINED	y
+#endif
+
 /* Magic */
 #define __ARG_PLACEHOLDER_y			0,
 #define __take_second_arg(__ignored, val, ...)	val
