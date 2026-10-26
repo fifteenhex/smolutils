@@ -163,11 +163,11 @@ static int prog_i2cget(int argc, char **argv, char **envp)
 	argc -= first;
 
 	if (!parse_chip(argv[1], &chip))
-		return 1;
+		return EX_USAGE;
 
 	if (argc > 2) {
 		if (!parse_byte(argv[2], "register", &reg))
-			return 1;
+			return EX_USAGE;
 		wl = 1;
 	}
 
@@ -182,14 +182,14 @@ static int prog_i2cget(int argc, char **argv, char **envp)
 
 	fd = open_bus(argv[0]);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (check_chip(fd, chip, force))
-		return 1;
+		return EX_UNAVAILABLE;
 
 	if (xfer(fd, chip, &reg, wl, buf, n)) {
 		error("Read from 0x%02x failed: %d\n", chip, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	/* SMBus byte order */
@@ -238,15 +238,15 @@ static int prog_i2cset(int argc, char **argv, char **envp)
 	}
 
 	if (!parse_chip(argv[1], &chip))
-		return 1;
+		return EX_USAGE;
 
 	if (!parse_byte(argv[2], "register", &msg[0]))
-		return 1;
+		return EX_USAGE;
 
 	if (mode == 'w') {
 		if (!parse_ul_range(argv[3], 0, 0, 0xffff, &v)) {
 			error("Not a word: %s\n", argv[3]);
-			return 1;
+			return EX_USAGE;
 		}
 		msg[1] = v;
 		msg[2] = v >> 8;
@@ -254,20 +254,20 @@ static int prog_i2cset(int argc, char **argv, char **envp)
 	} else {
 		for (i = 0; i < len; i++) {
 			if (!parse_byte(argv[3 + i], "byte", &msg[1 + i]))
-				return 1;
+				return EX_USAGE;
 		}
 	}
 
 	fd = open_bus(argv[0]);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (check_chip(fd, chip, force))
-		return 1;
+		return EX_UNAVAILABLE;
 
 	if (xfer(fd, chip, msg, 1 + len, NULL, 0)) {
 		error("Write to 0x%02x failed: %d\n", chip, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	return 0;
@@ -297,21 +297,21 @@ static int prog_i2cdetect(int argc, char **argv, char **envp)
 
 	if (argc == 3) {
 		if (!parse_chip(argv[1], &first_addr))
-			return 1;
+			return EX_USAGE;
 
 		if (!parse_chip(argv[2], &last_addr))
-			return 1;
+			return EX_USAGE;
 
 		if (first_addr > last_addr) {
 			error("Not an address range: %s %s\n",
 			      argv[1], argv[2]);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	fd = open_bus(argv[0]);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	printf(I2C_GRID_HEADER "\n");
 
@@ -359,14 +359,14 @@ static int prog_i2cdump(int argc, char **argv, char **envp)
 	argc -= first;
 
 	if (!parse_chip(argv[1], &chip))
-		return 1;
+		return EX_USAGE;
 
 	fd = open_bus(argv[0]);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (check_chip(fd, chip, force))
-		return 1;
+		return EX_UNAVAILABLE;
 
 	printf(I2C_GRID_HEADER "    0123456789abcdef\n");
 
@@ -395,7 +395,7 @@ static int prog_i2cdump(int argc, char **argv, char **envp)
 
 	if (failed == 0x100) {
 		error("Read from 0x%02x failed: %d\n", chip, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	return 0;

@@ -46,23 +46,23 @@ static int open_blk(struct blk *b, const char *path, int flags)
 {
 	b->fd = open_with_msgs(path, flags, 0);
 	if (b->fd < 0)
-		return -1;
+		return ex_errno(errno);
 
 	if (fstat(b->fd, &b->st)) {
 		error("Failed to stat %s: %d\n", path, errno);
-		return -1;
+		return ex_errno(errno);
 	}
 
 	if (S_ISBLK(b->st.st_mode)) {
 		if (ioctl(b->fd, BLKGETSIZE64, &b->size)) {
 			error("Failed to size %s: %d\n", path, errno);
-			return -1;
+			return EX_OSERR;
 		}
 	} else if (S_ISREG(b->st.st_mode)) {
 		b->size = b->st.st_size;
 	} else {
 		error("%s isn't a block device or a file\n", path);
-		return -1;
+		return EX_DATAERR;
 	}
 
 	return 0;
@@ -383,6 +383,7 @@ static int finish_compare(const struct walk *w)
 	if (w->bad) {
 		info("%llu of %llu bytes differ, first at 0x%llx\n", w->bad,
 		     w->done, w->first_bad);
+		/* Like cmp(1), 1 means the files differ */
 		return 1;
 	}
 
@@ -400,11 +401,11 @@ static int read_raw(struct blk *b, struct img *out, const char *path,
 		unsigned int n = len - done > bs ? bs : len - done;
 
 		if (read_at(b, off + done, n))
-			return 1;
+			return EX_IOERR;
 
 		if (write_full(out->fd, buf, n)) {
 			error("Failed to write %s: %d\n", path, errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		done += n;
@@ -457,7 +458,7 @@ static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
 	unsigned long long done = 0;
 
 	if (android_sparse_create(&o, out->fd, SPARSE_BLK_SZ))
-		return 1;
+		return EX_IOERR;
 
 	while (done < len) {
 		unsigned int n = len - done > bs ? bs : len - done;
@@ -465,7 +466,7 @@ static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
 		unsigned int i;
 
 		if (read_at(b, off + done, n))
-			return 1;
+			return EX_IOERR;
 
 		/* A run of blocks that share a chunk goes out together */
 		for (i = SPARSE_BLK_SZ; i <= n; i += SPARSE_BLK_SZ) {
@@ -473,7 +474,7 @@ static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
 				continue;
 
 			if (put_blocks(&o, buf + start, i - start))
-				return 1;
+				return EX_IOERR;
 			start = i;
 		}
 
@@ -481,7 +482,7 @@ static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
 	}
 
 	if (android_sparse_finish(&o))
-		return 1;
+		return EX_IOERR;
 
 	info("%llu bytes in %u chunks, %llu bytes of image\n", done, o.chunks,
 	     o.end);
@@ -491,7 +492,7 @@ static int read_sparse(struct blk *b, struct img *out, unsigned long long off,
 
 	/* Read it back against the device */
 	if (walk_image(&w, off))
-		return 1;
+		return EX_IOERR;
 
 	return finish_compare(&w);
 }
@@ -512,21 +513,21 @@ static int cmd_read(struct blk *b, int argc, char **argv)
 		       bs % SPARSE_BLK_SZ)) {
 		error("The region and -b have to be whole %u byte blocks\n",
 		      SPARSE_BLK_SZ);
-		return 1;
+		return EX_USAGE;
 	}
 
 	/* -v reads a sparse image back, so it is opened for that too */
 	if (open_img(&out, argv[0], (sparse ? O_RDWR : O_WRONLY) | O_CREAT,
 		     0644))
-		return 1;
+		return EX_CANTCREAT;
 
 	if (is_nonsense(b, &out))
-		return 1;
+		return EX_USAGE;
 
 	/* If the output is a normal file truncate it first, maybe we need a notrunc mode later? */
 	if (__is_regfile(&out.st) && ftruncate(out.fd, 0)) {
 		error("Failed to truncate %s: %d\n", argv[0], errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	if (sparse)
@@ -551,17 +552,17 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 	}
 
 	if (open_img(&in, argv[0], O_RDONLY, 0))
-		return 1;
+		return ex_errno(errno);
 
 	if (is_nonsense(b, &in))
-		return 1;
+		return EX_USAGE;
 
 	if (walk_image(&w, off))
-		return 1;
+		return EX_IOERR;
 
 	if (fsync(b->fd)) {
 		error("fsync failed: %d\n", errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	info("wrote %llu bytes\n", w.done);
@@ -571,13 +572,13 @@ static int cmd_write(struct blk *b, int argc, char **argv)
 
 	/* drop the caches */
 	if (ioctl(b->fd, BLKFLSBUF, 0) && errno != ENOTTY) {
-		return 1;
+		return EX_IOERR;
 	}
 
 	w.op = OP_COMPARE;
 	w.done = 0;
 	if (walk_image(&w, off))
-		return 1;
+		return EX_IOERR;
 
 	return finish_compare(&w);
 }
@@ -598,13 +599,13 @@ static int cmd_cmp(struct blk *b, int argc, char **argv)
 	}
 
 	if (open_img(&in, argv[0], O_RDONLY, 0))
-		return 1;
+		return ex_errno(errno);
 
 	if (is_nonsense(b, &in))
-		return 1;
+		return EX_USAGE;
 
 	if (walk_image(&w, off))
-		return 1;
+		return EX_IOERR;
 
 	return finish_compare(&w);
 }
@@ -621,7 +622,7 @@ static int cmd_rescan(struct blk *b, int argc, char **argv)
 			error("Device is busy\n");
 		else
 			error("Rescan failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -643,6 +644,7 @@ static const struct command commands[] = {
 
 int main (int argc, char **argv, char **envp)
 {
+	int ret;
 	struct blk __cleanup_blk b = { .fd = -1 };
 	const struct command *cmd = NULL;
 	unsigned long long v;
@@ -653,7 +655,7 @@ int main (int argc, char **argv, char **envp)
 		case 'b':
 			if (!parse_size(optarg, &v) || !v || v > MAX_BS) {
 				error("Not a buffer size: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			bs = v;
 			break;
@@ -683,17 +685,18 @@ int main (int argc, char **argv, char **envp)
 
 	if (!cmd) {
 		error("Unknown command: %s\n", argv[optind]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	buf = malloc(bs);
 	if (!buf) {
 		error("No room for a %u byte buffer\n", bs);
-		return 1;
+		return EX_OSERR;
 	}
 
-	if (open_blk(&b, argv[optind + 1], cmd->writes ? O_RDWR : O_RDONLY))
-		return 1;
+	ret = open_blk(&b, argv[optind + 1], cmd->writes ? O_RDWR : O_RDONLY);
+	if (ret)
+		return ret;
 
 	return cmd->run(&b, argc - optind - 2, argv + optind + 2);
 }

@@ -60,14 +60,14 @@ static int prog_free(int argc, char **argv, char **envp)
 
 	if (!read_file(PROC_MEMINFO, procbuf, sizeof(procbuf))) {
 		error("Failed to read %s: %d\n", PROC_MEMINFO, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	/* Impossible? */
 	if (!meminfo_field("MemTotal:", &total) ||
 	    !meminfo_field("MemFree:", &free_kb) ||
 	    !meminfo_field("MemAvailable:", &avail)) {
-		return 1;
+		return EX_DATAERR;
 	}
 
 	/* Total up buffers, cache,... */
@@ -77,7 +77,7 @@ static int prog_free(int argc, char **argv, char **envp)
 		unsigned long val;
 
 		if (!meminfo_field(*field, &val))
-			return 1;
+			return EX_DATAERR;
 
 		cache += val;
 	}
@@ -159,7 +159,7 @@ static int prog_kill(int argc, char **argv, char **envp)
 	if (argc > 1 && argv[1][0] == '-') {
 		if (!parse_int_range(argv[1] + 1, 10, 0, INT_MAX, &sig)) {
 			error("Not a signal: %s\n", argv[1] + 1);
-			return 1;
+			return EX_USAGE;
 		}
 		i++;
 	}
@@ -172,12 +172,12 @@ static int prog_kill(int argc, char **argv, char **envp)
 	/* pid_t is an int, so this can't be truncated on the way through */
 	if (!parse_int_range(argv[i], 10, 1, INT_MAX, &pid)) {
 		error("Not a pid: %s\n", argv[i]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (kill(pid, sig)) {
 		error("kill() failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -208,18 +208,19 @@ static int prog_chroot(int argc, char **argv, char **envp)
 
 	if (chroot(argv[1])) {
 		error("chroot(%s) failed: %d\n", argv[1], errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	if (chdir("/")) {
 		error("chdir(/) failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	execve(path, cmd, envp);
 	error("Failed to run %s: %d\n", path, errno);
 
-	return 1;
+	/* What the shell says for the same thing */
+	return errno == ENOENT ? 127 : 126;
 }
 
 static const struct multicall_prog progs[] = {

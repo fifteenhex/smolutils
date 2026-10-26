@@ -22,7 +22,7 @@ static int prog_touch(int argc, char **argv, char **envp)
 		fd = creat(path, 0644);
 		if (fd < 0) {
 			error("Failed to create file\n");
-			return 1;
+			return EX_CANTCREAT;
 		}
 	}
 	/* File exists, update timestamp(s) */
@@ -30,7 +30,7 @@ static int prog_touch(int argc, char **argv, char **envp)
 #if 0 // utime/utimes is missing?
 		if (utime(path, NULL)) {
 			error("Failed to update timestamps\n");
-			return 1;
+			return EX_OSERR;
 		}
 #endif
 	}
@@ -69,7 +69,7 @@ static int prog_ln(int argc, char **argv, char **envp)
 	ret = symbolic ? symlink(target, linkpath) : link(target, linkpath);
 	if (ret) {
 		error("ln() failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -85,28 +85,28 @@ static int copy_file(const char *src, const char *dst)
 
 	src_fd = open_with_msgs(src, O_RDONLY, 0);
 	if (src_fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (fstat(src_fd, &st)) {
 		error("Failed to stat %s: %d\n", src, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	if (!S_ISREG(st.st_mode)) {
 		error("%s isn't a regular file\n", src);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	/* Avoid interesting situations where the src and dst are actually the same thing */
 	if (!stat(dst, &dst_st) && __same_file(&st, &dst_st)) {
 		error("%s and %s are the same file\n", src, dst);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, st.st_mode & 07777);
 	if (dst_fd < 0) {
 		error("Failed to create %s: %d\n", dst, errno);
-		return 1;
+		return EX_CANTCREAT;
 	}
 
 	for (left = st.st_size; left > 0; ) {
@@ -114,7 +114,7 @@ static int copy_file(const char *src, const char *dst)
 
 		if (done <= 0) {
 			error("sendfile(%s) failed: %d\n", dst, errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		left -= done;
@@ -125,12 +125,15 @@ static int copy_file(const char *src, const char *dst)
 
 static int move_across(const char *src, const char *dst)
 {
-	if (copy_file(src, dst))
-		return 1;
+	int ret;
+
+	ret = copy_file(src, dst);
+	if (ret)
+		return ret;
 
 	if (unlink(src)) {
 		error("unlink(%s) failed: %d\n", src, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -153,7 +156,7 @@ static int prog_mv(int argc, char **argv, char **envp)
 
 	if (errno != EXDEV) {
 		error("rename(%s) failed: %d\n", dst, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return move_across(src, dst);
@@ -175,7 +178,7 @@ static int prog_rm(int argc, char **argv, char **envp)
 	ret = unlink(path);
 	if (ret) {
 		error("unlink() failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -196,7 +199,7 @@ static int prog_rmdir(int argc, char **argv, char **envp)
 	ret = rmdir(path);
 	if (ret) {
 		error("rmdir() failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -217,7 +220,7 @@ static int prog_mkdir(int argc, char **argv, char **envp)
 	ret = mkdir(path, 0755);
 	if (ret) {
 		error("mkdir() failed: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -242,22 +245,22 @@ static int prog_mknod(int argc, char **argv, char **envp)
 		mode = S_IFCHR;
 	else {
 		error("Not a node type: %s\n", argv[2]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!parse_ul(argv[3], 0, &major)) {
 		error("Couldn't parse major: %s\n", argv[3]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!parse_ul(argv[4], 0, &minor)) {
 		error("Couldn't parse minor: %s\n", argv[4]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (mknod(path, mode | 0600, makedev(major, minor))) {
 		error("mknod(%s) failed: %d\n", path, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -287,27 +290,27 @@ static int prog_cat(int argc, char **argv, char **envp)
 
 	/* No arguments means read stdin */
 	if (argc < 2)
-		return cat_fd(STDIN_FILENO) ? 1 : 0;
+		return cat_fd(STDIN_FILENO) ? EX_IOERR : 0;
 
 	for (i = 1; i < argc; i++) {
 		int __cleanup_fd fd = -1;
 
 		fd = open_with_msgs(argv[i], O_RDONLY, 0);
 		if (fd < 0) {
-			ret = 1;
+			ret = ex_errno(errno);
 			continue;
 		}
 
 		/* cat f >> f would never end */
 		if (same_file(fd, STDOUT_FILENO)) {
 			error("%s is the output\n", argv[i]);
-			ret = 1;
+			ret = EX_DATAERR;
 			continue;
 		}
 
 		if (cat_fd(fd)) {
 			error("Failed to read %s: %d\n", argv[i], errno);
-			ret = 1;
+			ret = EX_IOERR;
 		}
 	}
 
@@ -322,10 +325,7 @@ static int prog_cp(int argc, char **argv, char **envp)
 		return EX_USAGE;
 	}
 
-	if (copy_file(argv[1], argv[2]))
-		return 1;
-
-	return 0;
+	return copy_file(argv[1], argv[2]);
 }
 
 static int prog_chmod(int argc, char **argv, char **envp)
@@ -342,13 +342,13 @@ static int prog_chmod(int argc, char **argv, char **envp)
 	/* Only the octal form, nobody needs u+x that badly */
 	if (!parse_ul(argv[1], 8, &mode) || mode > 07777) {
 		error("Not a mode: %s\n", argv[1]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 2; i < argc; i++) {
 		if (chmod(argv[i], mode)) {
 			error("chmod(%s) failed: %d\n", argv[i], errno);
-			ret = 1;
+			ret = ex_errno(errno);
 		}
 	}
 
@@ -375,18 +375,18 @@ static int prog_chown(int argc, char **argv, char **envp)
 
 	if (!parse_ul_range(argv[1], 10, 0, UINT_MAX, &uid)) {
 		error("Not a uid: %s\n", argv[1]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (group && !parse_ul_range(group, 10, 0, UINT_MAX, &gid)) {
 		error("Not a gid: %s\n", group);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 2; i < argc; i++) {
 		if (chown(argv[i], uid, gid)) {
 			error("chown(%s) failed: %d\n", argv[i], errno);
-			ret = 1;
+			ret = ex_errno(errno);
 		}
 	}
 

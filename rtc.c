@@ -33,7 +33,7 @@ static int show_rtc(int fd)
 	struct rtc_time t;
 
 	if (read_rtc(fd, &t))
-		return 1;
+		return ex_errno(errno);
 
 	print_rtc(&t);
 	printf("\n");
@@ -61,13 +61,13 @@ static int hctosys(int fd)
 	struct rtc_time t;
 
 	if (read_rtc(fd, &t))
-		return 1;
+		return ex_errno(errno);
 
 	ts.tv_sec = rtc_to_epoch(&t);
 
 	if (clock_settime(CLOCK_REALTIME, &ts)) {
 		error("Failed to set the system clock: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -97,14 +97,14 @@ static int systohc(int fd)
 	clock_gettime(CLOCK_REALTIME, &ts);
 	if (ts.tv_sec < 0) {
 		error("The system clock is before 1970\n");
-		return 1;
+		return EX_DATAERR;
 	}
 
 	epoch_to_rtc(ts.tv_sec, &t);
 
 	if (ioctl(fd, RTC_SET_TIME, &t)) {
 		error("Failed to set the RTC: %d\n", errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -148,7 +148,7 @@ static int prog_hwclock(int argc, char **argv, char **envp)
 
 	fd = open_with_msgs(path, O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	switch (what) {
 	case 's':
@@ -182,7 +182,7 @@ static int show_alarm(int fd)
 
 	if (ioctl(fd, RTC_WKALM_RD, &a)) {
 		error("Failed to read the alarm: %d\n", errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	if (!a.enabled) {
@@ -201,7 +201,7 @@ static int disable_alarm(int fd)
 {
 	if (ioctl(fd, RTC_AIE_OFF, 0)) {
 		error("Failed to disable the alarm: %d\n", errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	return 0;
@@ -215,7 +215,7 @@ static int set_alarm(int fd, time_t when)
 
 	if (ioctl(fd, RTC_WKALM_SET, &a)) {
 		error("Failed to set the alarm: %d\n", errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	return 0;
@@ -251,7 +251,7 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 			}
 			if (mode < 0) {
 				error("Not a mode: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -259,14 +259,14 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 			if (!parse_ul_range(optarg, 0, 1, ULONG_MAX,
 					    &seconds)) {
 				error("Bad number of seconds: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
 		case 't':
 			if (!parse_ull(optarg, 0, &epoch) || !epoch) {
 				error("Bad time: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -283,12 +283,12 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 
 	if (mode >= MODE_NO && !seconds && !epoch) {
 		error("Need -s or -t to say when\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(path, O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (mode == MODE_SHOW)
 		return show_alarm(fd);
@@ -298,7 +298,7 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 
 	/* The alarm is compared against the RTC, not the system clock */
 	if (read_rtc(fd, &now))
-		return 1;
+		return ex_errno(errno);
 
 	rtc_now = rtc_to_epoch(&now);
 
@@ -311,18 +311,18 @@ static int prog_rtcwake(int argc, char **argv, char **envp)
 
 	if (when <= rtc_now) {
 		error("The alarm would be in the past\n");
-		return 1;
+		return EX_DATAERR;
 	}
 
 	if (set_alarm(fd, when))
-		return 1;
+		return EX_IOERR;
 
 	if (mode == MODE_NO)
 		return 0;
 
 	if (write_file(POWER_STATE_PATH, rtcwake_modes[mode],
 		       strlen(rtcwake_modes[mode])))
-		return 1;
+		return EX_IOERR;
 
 	return 0;
 }

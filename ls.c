@@ -122,8 +122,12 @@ static int cb_long(const char *name, int dir, void *priv)
 	char type = '-';
 	struct stat st;
 
-	if (fstatat(dir, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
+	if (fstatat(dir, name, &st, AT_SYMLINK_NOFOLLOW) == -1) {
+		/* /proc entries come and go, skip what vanished */
+		if (errno == ENOENT)
+			return 0;
 		return -1;
+	}
 
 	/* Type */
 	if (S_ISDIR(st.st_mode))
@@ -199,7 +203,7 @@ int main(int argc, char **argv, char **envp)
 
 	if (iterate_dir(path, long_format ? cb_long : cb_short, NULL) < 0) {
 		error("Failed to list %s: %d\n", path, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	if (!long_format)

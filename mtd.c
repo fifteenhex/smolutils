@@ -72,10 +72,10 @@ static int prog_mtdinfo(int argc, char **argv, char **envp)
 
 	fd = open_with_msgs(argv[1], O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (!get_info(fd, &info))
-		return 1;
+		return EX_DATAERR;
 
 	printf("%s\n", path_basename(argv[1]));
 
@@ -160,24 +160,24 @@ static int prog_flash_erase(int argc, char **argv, char **envp)
 
 	if (!parse_size(argv[optind + 1], &start)) {
 		error("Not an offset: %s\n", argv[optind + 1]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!parse_ul(argv[optind + 2], 0, &count)) {
 		error("Not a count: %s\n", argv[optind + 2]);
-		return 1;
+		return EX_USAGE;
 	}
 
 	fd = open_with_msgs(argv[optind], O_RDWR, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (!get_info(fd, &info))
-		return 1;
+		return EX_DATAERR;
 
 	if (start % info.erasesize || start >= info.size) {
 		error("0x%llx isn't an eraseblock on this device\n", start);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!count)
@@ -185,7 +185,7 @@ static int prog_flash_erase(int argc, char **argv, char **envp)
 
 	if (count > (info.size - start) / info.erasesize) {
 		error("%lu blocks from 0x%llx is past the end\n", count, start);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -204,7 +204,7 @@ static int prog_flash_erase(int argc, char **argv, char **envp)
 			       (i + 1) * 100 / count);
 
 		if (erase_block(fd, off, info.erasesize))
-			return 1;
+			return EX_IOERR;
 	}
 
 	if (!quiet)
@@ -236,14 +236,14 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 		case 's':
 			if (!parse_size(optarg, &start)) {
 				error("Not an offset: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
 		case 'l':
 			if (!parse_size(optarg, &length)) {
 				error("Not a length: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -260,14 +260,14 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 
 	fd = open_with_msgs(argv[optind], O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (!get_info(fd, &info))
-		return 1;
+		return EX_DATAERR;
 
 	if (start >= info.size || !off_len_fits(start, length, info.size)) {
 		error("0x%llx + 0x%llx is past the end\n", start, length);
-		return 1;
+		return EX_USAGE;
 	}
 
 	if (!length)
@@ -278,7 +278,7 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 	else
 		out = dup(STDOUT_FILENO);
 	if (out < 0)
-		return 1;
+		return EX_CANTCREAT;
 
 	while (length) {
 		unsigned int n = info.erasesize - (start % info.erasesize);
@@ -297,12 +297,12 @@ static int prog_nanddump(int argc, char **argv, char **envp)
 		} else if (lseek(fd, start, SEEK_SET) != (off_t) start ||
 			   read_full(fd, chunk, n) != (int) n) {
 			error("Failed to read at 0x%llx: %d\n", start, errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		if (write_full(out, chunk, n)) {
 			error("Failed to write: %d\n", errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		start += n;
@@ -333,7 +333,7 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 		case 's':
 			if (!parse_size(optarg, &start)) {
 				error("Not an offset: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -350,24 +350,24 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 
 	fd = open_with_msgs(argv[optind], O_RDWR, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (!get_info(fd, &info))
-		return 1;
+		return EX_DATAERR;
 
 	if (info.writesize > CHUNK_SIZE || CHUNK_SIZE % info.writesize) {
 		error("Unsupported page size: %u\n", info.writesize);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	if (start % info.writesize || start >= info.size) {
 		error("0x%llx isn't a page on this device\n", start);
-		return 1;
+		return EX_USAGE;
 	}
 
 	in = open_with_msgs(argv[optind + 1], O_RDONLY, 0);
 	if (in < 0)
-		return 1;
+		return ex_errno(errno);
 
 	while (true) {
 		unsigned int n = info.erasesize - (start % info.erasesize);
@@ -381,7 +381,7 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 		if (got < 0) {
 			error("Failed to read %s: %d\n", argv[optind + 1],
 			      errno);
-			return 1;
+			return EX_IOERR;
 		}
 		if (!got)
 			break;
@@ -390,7 +390,7 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 			  info.writesize;
 		if (padding && !pad) {
 			error("%d bytes isn't whole pages, use -p\n", got);
-			return 1;
+			return EX_USAGE;
 		}
 		memset(chunk + got, 0xff, padding);
 		got += padding;
@@ -401,13 +401,13 @@ static int prog_nandwrite(int argc, char **argv, char **envp)
 
 		if (!off_len_fits(start, got, info.size)) {
 			error("Ran out of good blocks at 0x%llx\n", start);
-			return 1;
+			return EX_IOERR;
 		}
 
 		if (lseek(fd, start, SEEK_SET) != (off_t) start ||
 		    write_full(fd, chunk, got)) {
 			error("Failed to write at 0x%llx: %d\n", start, errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		start += got;
@@ -448,29 +448,29 @@ static int prog_flashcp(int argc, char **argv, char **envp)
 
 	in = open_with_msgs(file, O_RDONLY, 0);
 	if (in < 0)
-		return 1;
+		return ex_errno(errno);
 
 	size = file_size(in);
 	if (size <= 0) {
 		error("Nothing to write in %s\n", file);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	fd = open_with_msgs(argv[optind + 1], O_RDWR, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (!get_info(fd, &info))
-		return 1;
+		return EX_DATAERR;
 
 	if (is_nand(&info)) {
 		error("%s is NAND, use nandwrite\n", argv[optind + 1]);
-		return 1;
+		return EX_DATAERR;
 	}
 
 	if (size > (off_t) info.size) {
 		error("%s is bigger than the device\n", file);
-		return 1;
+		return EX_USAGE;
 	}
 
 	blocks = (size + info.erasesize - 1) / info.erasesize;
@@ -480,7 +480,7 @@ static int prog_flashcp(int argc, char **argv, char **envp)
 			printf("\rErasing block %lu of %lu", i + 1, blocks);
 
 		if (erase_block(fd, i * (off_t) info.erasesize, info.erasesize))
-			return 1;
+			return EX_IOERR;
 	}
 
 	for (done = 0; done < size; done += CHUNK_SIZE) {
@@ -495,18 +495,18 @@ static int prog_flashcp(int argc, char **argv, char **envp)
 
 		if (read_full(in, chunk, n) != (int) n) {
 			error("\nFailed to read %s: %d\n", file, errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		if (write_full(fd, chunk, n)) {
 			error("\nFailed to write at 0x%lx: %d\n", done, errno);
-			return 1;
+			return EX_IOERR;
 		}
 	}
 
 	if (lseek(in, 0, SEEK_SET) != 0 || lseek(fd, 0, SEEK_SET) != 0) {
 		error("\nFailed to seek back: %d\n", errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	for (done = 0; done < size; done += CHUNK_SIZE) {
@@ -523,13 +523,13 @@ static int prog_flashcp(int argc, char **argv, char **envp)
 		    read_full(fd, check, n) != (int) n) {
 			error("\nFailed to read back at 0x%lx: %d\n", done,
 			      errno);
-			return 1;
+			return EX_IOERR;
 		}
 
 		if (memcmp(chunk, check, n)) {
 			error("\n%s doesn't match the flash at 0x%lx\n", file,
 			      done);
-			return 1;
+			return EX_DATAERR;
 		}
 	}
 

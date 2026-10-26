@@ -9,6 +9,10 @@
 #define MAX_CMDLINE 256
 #define MAX_TOKENS 16
 
+/* What a shell exits with for a command it couldn't run */
+#define STATUS_NOT_EXECUTABLE	126
+#define STATUS_NOT_FOUND	127
+
 static bool keeprocking = true;
 static int exit_status;
 
@@ -26,7 +30,7 @@ static int run_cmd(const char *bin, char * const *argv, const int *fds,
 	if (nowait) {
 		if (spawn_redirect(bin, argv, environ, fds) < 0) {
 			error("Failed to run %s: %d\n", bin, errno);
-			return 1;
+			return errno == ENOENT ? STATUS_NOT_FOUND : STATUS_NOT_EXECUTABLE;
 		}
 
 		return 0;
@@ -73,7 +77,7 @@ static int cd_handler(int argc, char **argv, int stdout)
 			error("chdir() failed: %d\n", errno);
 			break;
 		}
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -82,7 +86,7 @@ static int cd_handler(int argc, char **argv, int stdout)
 static int clear_handler(int argc, char **argv, int stdout)
 {
 	if (!no_arguments(argc, argv))
-		return 1;
+		return EX_USAGE;
 
 	printf("\033[3J\033[H\033[2J");
 
@@ -114,10 +118,10 @@ static int pwd_handler(int argc, char **argv, int stdout)
 	char cwd[1024];
 
 	if (!no_arguments(argc, argv))
-		return 1;
+		return EX_USAGE;
 
 	if (!getcwd(cwd, ARRAY_SIZE(cwd)))
-		return 1;
+		return ex_errno(errno);
 
 	dprintf(stdout, "%s\n", cwd);
 
@@ -144,7 +148,7 @@ static int whoami_handler(int argc, char **argv, int stdout)
 	const char *user = users_map_user(uid);
 
 	if (!no_arguments(argc, argv))
-		return 1;
+		return EX_USAGE;
 
 	if (user)
 		dprintf(stdout, "%s\n", user);
@@ -171,7 +175,7 @@ static int sleep_handler(int argc, char **argv, int stdout)
 static int sync_handler(int argc, char **argv, int stdout)
 {
 	if (!no_arguments(argc, argv))
-		return 1;
+		return EX_USAGE;
 
 	sync();
 
@@ -463,8 +467,6 @@ static void report_status(int status, bool killed)
 		error("Exited with non-zero return code: %d\n", status);
 }
 
-#define STATUS_NOT_EXECUTABLE	126
-#define STATUS_NOT_FOUND	127
 
 static void run_command(struct command *cmd, int in_fd, int out_fd, bool nowait)
 {

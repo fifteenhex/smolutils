@@ -215,7 +215,7 @@ int main (int argc, char **argv, char **envp)
 
 		if (width < 8 && (value >> (width * 8))) {
 			error("%s doesn't fit in %lu bytes\n", setarg, width);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
@@ -229,12 +229,12 @@ int main (int argc, char **argv, char **envp)
 	naddrs = argc - optind;
 	if (naddrs > MAX_ADDRESSES) {
 		error("Too many addresses, %d is the limit\n", MAX_ADDRESSES);
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0; i < naddrs; i++)
 		if (!parse_address(argv[optind + i], width, &addrs[i]))
-			return 1;
+			return EX_USAGE;
 
 	if (!setarg) {
 		block = mmap(NULL, MAX_LENGTH, PROT_READ | PROT_WRITE,
@@ -242,26 +242,27 @@ int main (int argc, char **argv, char **envp)
 		if (block == MAP_FAILED) {
 			error("No room for a %d byte buffer: %d\n", MAX_LENGTH,
 			      errno);
-			return 1;
+			return EX_OSERR;
 		}
 	}
 
 	fd = open_with_msgs(DEVMEM_PATH, setarg ? O_RDWR : O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	for (i = 0; i < naddrs; i++) {
 		unsigned long addr = addrs[i];
 
 		if (setarg) {
 			if (!write_block(fd, addr, length, width, value))
-				ret = 1;
+				ret = ex_errno(errno);
 			continue;
 		}
 
-		if (!read_block(fd, addr, length, width) ||
-		    !show(addr, length))
-			ret = 1;
+		if (!read_block(fd, addr, length, width))
+			ret = ex_errno(errno);
+		else if (!show(addr, length))
+			ret = EX_OSERR;
 	}
 
 	return ret;

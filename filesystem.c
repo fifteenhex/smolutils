@@ -76,7 +76,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 
 		case 'o':
 			if (parse_options(optarg, &flags))
-				return 1;
+				return EX_USAGE;
 			break;
 
 		default:
@@ -96,7 +96,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 	ret = mount(source, target, type, flags, NULL);
 	if (ret) {
 		error("mount(%s) failed: %d\n", target, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;
@@ -115,7 +115,8 @@ static int prog_umount(int argc, char **argv, char **envp)
 
 	if (umount2(target, 0)) {
 		error("umount(%s) failed: %d\n", target, errno);
-		return 1;
+		/* EINVAL: not a mount point */
+		return errno == EINVAL ? EX_DATAERR : ex_errno(errno);
 	}
 
 	return 0;

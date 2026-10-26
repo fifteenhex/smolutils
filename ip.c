@@ -153,13 +153,13 @@ int main (int argc, char **argv, char **envp)
 
 	sock = smolutils_net_inet_socket();
 	if (sock < 0)
-		return 1;
+		return EX_OSERR;
 
 	cntx.sock = sock;
 
 	if (iterate_dir(NET_CLASS, cb, &cntx) < 0) {
 		error("Failed to read %s: %d\n", NET_CLASS, errno);
-		return 1;
+		return EX_IOERR;
 	}
 
 	return 0;

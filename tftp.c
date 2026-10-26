@@ -55,6 +55,9 @@ struct tftp {
 	size_t txlen;
 	uint8_t rx[TFTP_HDR_LEN + TFTP_MAX_BLKSIZE + 1];
 	size_t rxlen;
+
+	/* Why a transfer failed, for the exit code */
+	int status;
 };
 
 static struct tftp tftp;
@@ -67,6 +70,7 @@ static int tftp_send(struct tftp *t)
 		     (struct sockaddr *) &t->server, sizeof(t->server));
 	if (ret != (int) t->txlen) {
 		error("Failed to send: %d\n", errno);
+		t->status = EX_OSERR;
 		return -1;
 	}
 
@@ -119,6 +123,7 @@ static int tftp_build_request(struct tftp *t, enum tftp_op op,
 
 	if (!tftp_add_string(t, filename)) {
 		error("Remote filename is too long\n");
+		t->status = EX_USAGE;
 		return -1;
 	}
 
@@ -180,6 +185,7 @@ static int tftp_parse_oack(struct tftp *t)
 			    blksize > t->want_blksize) {
 				error("Server offered a bad block size: %s\n", value);
 				tftp_send_error(t, ERR_OPTION, "bad blksize");
+				t->status = EX_DATAERR;
 				return -1;
 			}
 
@@ -208,6 +214,7 @@ static int tftp_recv(struct tftp *t)
 				return 0;
 
 			error("Failed to receive: %d\n", errno);
+			t->status = EX_OSERR;
 			return -1;
 		}
 
@@ -232,9 +239,20 @@ static int tftp_recv(struct tftp *t)
 
 		op = get_unaligned_be16(t->rx);
 		if (op == OP_ERROR) {
-			error("Server error %d: %s\n",
-			      get_unaligned_be16(t->rx + 2),
+			uint16_t code = get_unaligned_be16(t->rx + 2);
+
+			error("Server error %d: %s\n", code,
 			      (const char *) t->rx + TFTP_HDR_LEN);
+			switch (code) {
+			case ERR_NOT_FOUND:
+				t->status = EX_NOINPUT;
+				break;
+			case ERR_ACCESS:
+				t->status = EX_NOPERM;
+				break;
+			default:
+				t->status = EX_UNAVAILABLE;
+			}
 			return -1;
 		}
 
@@ -285,6 +303,7 @@ static int tftp_transact(struct tftp *t, enum tftp_op op, uint16_t block,
 	}
 
 	error("Timed out waiting for the server\n");
+	t->status = EX_UNAVAILABLE;
 
 	return -1;
 }
@@ -319,12 +338,14 @@ static int tftp_get(struct tftp *t, const char *remote, int fd)
 		if (len > t->blksize) {
 			error("Block %d is too big: %u\n", block, (unsigned int) len);
 			tftp_send_error(t, ERR_ILLEGAL_OP, "block too big");
+			t->status = EX_DATAERR;
 			return -1;
 		}
 
 		if (write_full(fd, t->rx + TFTP_HDR_LEN, len)) {
 			error("Failed to write local file: %d\n", errno);
 			tftp_send_error(t, ERR_DISK_FULL, "write failed");
+			t->status = EX_IOERR;
 			return -1;
 		}
 
@@ -356,6 +377,7 @@ static int tftp_read_block(struct tftp *t, int fd, uint16_t block)
 	if (len < 0) {
 		error("Failed to read local file: %d\n", errno);
 		tftp_send_error(t, ERR_UNDEFINED, "read failed");
+		t->status = EX_IOERR;
 		return -1;
 	}
 
@@ -457,7 +479,7 @@ int main (int argc, char **argv, char **envp)
 			    blksize > TFTP_MAX_BLKSIZE) {
 				error("Block size must be %d to %d\n",
 				      TFTP_MIN_BLKSIZE, TFTP_MAX_BLKSIZE);
-				return 1;
+				return EX_USAGE;
 			}
 			t->want_blksize = blksize;
 			break;
@@ -477,7 +499,7 @@ int main (int argc, char **argv, char **envp)
 	if (optind + 1 < argc) {
 		if (!parse_port(argv[optind + 1], &port)) {
 			error("Not a port: %s\n", argv[optind + 1]);
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
@@ -489,23 +511,23 @@ int main (int argc, char **argv, char **envp)
 
 	if (resolv_host(host, &t->server.sin_addr)) {
 		error("Failed to resolve %s\n", host);
-		return 1;
+		return EX_NOINPUT;
 	}
 
 	sock = smolutils_net_udp_socket(TFTP_TIMEOUT);
 	if (sock < 0)
-		return 1;
+		return EX_OSERR;
 
 	t->sock = sock;
 
 	fd = open_local(local, op == OP_RRQ);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (op == OP_RRQ)
 		ret = tftp_get(t, remote, fd);
 	else
 		ret = tftp_put(t, remote, fd);
 
-	return ret ? 1 : 0;
+	return ret ? (t->status ? t->status : EX_IOERR) : 0;
 }

@@ -56,8 +56,10 @@ static int info_chip(const char *arg)
 	unsigned int i;
 
 	fd = gpio_open_chip(arg, O_RDONLY);
-	if (fd < 0 || !gpio_chip_info(fd, arg, &info))
-		return 1;
+	if (fd < 0)
+		return ex_errno(errno);
+	if (!gpio_chip_info(fd, arg, &info))
+		return EX_DATAERR;
 
 	printf("%s - %u lines:\n", info.name, info.lines);
 
@@ -65,7 +67,7 @@ static int info_chip(const char *arg)
 		struct gpio_v2_line_info line;
 
 		if (gpio_line_info(fd, i, &line))
-			return 1;
+			return EX_IOERR;
 
 		print_line(&line);
 	}
@@ -75,24 +77,34 @@ static int info_chip(const char *arg)
 
 static int info_cb(const char *name, int dir, void *priv)
 {
+	int *status = priv;
+
 	if (!gpio_is_chip(name))
 		return 0;
 
-	return info_chip(name) ? -1 : 0;
+	*status = info_chip(name);
+
+	return *status ? -1 : 0;
 }
 
 #define GPIOINFO_USAGE "usage: gpioinfo [<chip>...]\n"
 
 static int prog_gpioinfo(int argc, char **argv, char **envp)
 {
+	int ret;
 	int i;
 
-	if (argc == 1)
-		return iterate_dir(GPIO_DEV_DIR, info_cb, NULL) ? 1 : 0;
+	if (argc == 1) {
+		ret = 0;
+		if (iterate_dir(GPIO_DEV_DIR, info_cb, &ret))
+			return ret ? ret : ex_errno(errno);
+		return 0;
+	}
 
 	for (i = 1; i < argc; i++) {
-		if (info_chip(argv[i]))
-			return 1;
+		ret = info_chip(argv[i]);
+		if (ret)
+			return ret;
 	}
 
 	return 0;
@@ -127,19 +139,20 @@ static int prog_gpioget(int argc, char **argv, char **envp)
 
 	for (i = 0; i < num; i++) {
 		if (!gpio_parse_offset(argv[optind + 1 + i], &offsets[i]))
-			return 1;
+			return EX_USAGE;
 	}
 
 	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
-		return 1;
+		return ex_errno(errno);
 
 	lines = gpio_request_lines(chip, offsets, num, flags, 0, "gpioget");
 	if (lines < 0)
-		return 1;
+		/* Busy, or no such line */
+		return EX_UNAVAILABLE;
 
 	if (gpio_get_values(lines, gpio_lines_mask(num), &values))
-		return 1;
+		return EX_IOERR;
 
 	for (i = 0; i < num; i++)
 		printf("%s%u", i ? " " : "",
@@ -174,7 +187,7 @@ static int prog_gpioset(int argc, char **argv, char **envp)
 		case 't':
 			if (!parse_ul(optarg, 10, &hold)) {
 				error("Not a number of seconds: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -197,24 +210,25 @@ static int prog_gpioset(int argc, char **argv, char **envp)
 
 		if (!eq || !parse_ul_range(eq + 1, 10, 0, 1, &v)) {
 			error("Not an <offset>=<value>: %s\n", arg);
-			return 1;
+			return EX_USAGE;
 		}
 
 		*eq = '\0';
 		if (!gpio_parse_offset(arg, &offsets[i]))
-			return 1;
+			return EX_USAGE;
 
 		values |= (uint64_t) v << i;
 	}
 
 	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
-		return 1;
+		return ex_errno(errno);
 
 	lines = gpio_request_lines(chip, offsets, num, flags, values,
 				   "gpioset");
 	if (lines < 0)
-		return 1;
+		/* Busy, or no such line */
+		return EX_UNAVAILABLE;
 
 	if (hold)
 		sleep(hold);
@@ -251,7 +265,7 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 		case 'n':
 			if (!parse_ul(optarg, 10, &wanted) || !wanted) {
 				error("Not a number of events: %s\n", optarg);
-				return 1;
+				return EX_USAGE;
 			}
 			break;
 
@@ -273,22 +287,23 @@ static int prog_gpiomon(int argc, char **argv, char **envp)
 
 	for (i = 0; i < num; i++) {
 		if (!gpio_parse_offset(argv[optind + 1 + i], &offsets[i]))
-			return 1;
+			return EX_USAGE;
 	}
 
 	chip = gpio_open_chip(argv[optind], O_RDONLY);
 	if (chip < 0)
-		return 1;
+		return ex_errno(errno);
 
 	lines = gpio_request_lines(chip, offsets, num, flags, 0, "gpiomon");
 	if (lines < 0)
-		return 1;
+		/* Busy, or no such line */
+		return EX_UNAVAILABLE;
 
 	while (!wanted || seen < wanted) {
 		struct gpio_v2_line_event event;
 
 		if (gpio_read_event(lines, &event))
-			return 1;
+			return EX_IOERR;
 
 		printf("event: %s EDGE offset: %u timestamp: [%llu.%09llu]\n",
 		       event.id == GPIO_V2_LINE_EVENT_RISING_EDGE ? " RISING" : "FALLING",

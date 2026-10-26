@@ -46,20 +46,31 @@ static int prog_insmod(int argc, char **argv, char **envp)
 
 		if (strlcat(params, argv[i], sizeof(params)) >= sizeof(params)) {
 			error("Too many parameters\n");
-			return 1;
+			return EX_USAGE;
 		}
 	}
 
 	fd = open_with_msgs(argv[1], O_RDONLY, 0);
 	if (fd < 0)
-		return 1;
+		return ex_errno(errno);
 
 	if (is_compressed(argv[1]))
 		flags |= MODULE_INIT_COMPRESSED_FILE;
 
 	if (finit_module(fd, params, flags)) {
 		error("Failed to load %s: %d\n", argv[1], errno);
-		return 1;
+		switch (errno) {
+		/* Not a module, built for another kernel, an unresolved symbol */
+		case ENOEXEC:
+		case EINVAL:
+		case ENOENT:
+			return EX_DATAERR;
+		/* Already loaded */
+		case EEXIST:
+			return EX_UNAVAILABLE;
+		default:
+			return ex_errno(errno);
+		}
 	}
 
 	return 0;
@@ -96,7 +107,7 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 
 	if (strlcpy(buf, name, sizeof(buf)) >= sizeof(buf)) {
 		error("Module name too long\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	dot = strrchr(buf, '.');
@@ -108,7 +119,7 @@ static int prog_rmmod(int argc, char **argv, char **envp)
 
 	if (delete_module(buf, flags)) {
 		error("Failed to unload %s: %d\n", buf, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	return 0;

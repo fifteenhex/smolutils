@@ -211,21 +211,6 @@ static int parse_response(const uint8_t *buf, int len,
 	return found;
 }
 
-static int setup_memfd(const char *memfd_str, struct mapping *map)
-{
-	int memfd;
-
-	if (!parse_fd_with_msgs(memfd_str, &memfd))
-		return -1;
-
-	if (!resolv_mapbuf(map, memfd))
-		return -1;
-
-	memset(map->at, 0, sizeof(struct resolv_buf));
-
-	return 0;
-}
-
 /* Try to get dns servers from dhcpc's state, fallback otherwise */
 static unsigned int dns_servers(uint32_t *servers, unsigned int max)
 {
@@ -251,6 +236,7 @@ static unsigned int dns_servers(uint32_t *servers, unsigned int max)
 
 int main (int argc, char **argv, char **envp)
 {
+	int memfd;
 	uint32_t servers[DHCPC_MAX_DNS];
 	struct sockaddr_in srv;
 	int __cleanup_fd sock = -1;
@@ -271,9 +257,11 @@ int main (int argc, char **argv, char **envp)
 	while ((c = getopt(argc, argv, "m:")) != -1) {
 		switch (c) {
 		case 'm':
-			ret = setup_memfd(optarg, &result_map);
-			if (ret)
-				return 1;
+			if (!parse_fd_with_msgs(optarg, &memfd))
+				return EX_USAGE;
+			if (!resolv_mapbuf(&result_map, memfd))
+				return EX_OSERR;
+			memset(result_map.at, 0, sizeof(struct resolv_buf));
 			memfd_mode = true;
 			break;
 
@@ -294,14 +282,14 @@ int main (int argc, char **argv, char **envp)
 
 	sock = smolutils_net_udp_socket(DNS_TIMEOUT);
 	if (sock < 0)
-		return 1;
+		return EX_OSERR;
 
 	dns_id = (uint16_t) random_u32();
 
 	qlen = build_query(hostname, buf, sizeof(buf));
 	if (qlen < 0) {
 		error("Bad hostname\n");
-		return 1;
+		return EX_USAGE;
 	}
 
 	for (i = 0, len = 0; i < num_servers && len < 1; i++) {
@@ -327,7 +315,7 @@ int main (int argc, char **argv, char **envp)
 		rcode = DNS_RCODE(ntohs(((struct dns_hdr *) reply)->flags));
 		if (rcode == DNS_NXDOMAIN) {
 			error("%s: no such name\n", hostname);
-			return 1;
+			return EX_NOINPUT;
 		}
 
 		if (rcode) {
@@ -338,7 +326,7 @@ int main (int argc, char **argv, char **envp)
 
 	if (len < 1) {
 		error("%s: no answer\n", hostname);
-		return 1;
+		return EX_UNAVAILABLE;
 	}
 
 	if (memfd_mode)
@@ -350,7 +338,7 @@ int main (int argc, char **argv, char **envp)
 	if (ret <= 0) {
 		error("%s: %s\n", hostname,
 		      ret ? "bad response" : "no address");
-		return 1;
+		return ret ? EX_DATAERR : EX_NOINPUT;
 	}
 
 	return 0;

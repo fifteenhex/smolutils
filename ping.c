@@ -139,12 +139,12 @@ static int prog_ping(int argc, char **argv, char **envp)
 	ret = resolv_host(host, &dst.sin_addr);
 	if (ret) {
 		error("Failed to resolv host\n");
-		return 1;
+		return EX_NOINPUT;
 	}
 
 	sock = smolutils_net_socket_timeout(SOCK_RAW, IPPROTO_ICMP, TIMEOUT);
 	if (sock < 0)
-		return 1;
+		return EX_OSERR;
 
 	/* Set a filter for ping replies */
 	filter.data = ~(1U << ICMP_ECHOREPLY);
@@ -160,7 +160,7 @@ static int prog_ping(int argc, char **argv, char **envp)
 
 		ret = send_request(sock, &dst, id, seq);
 		if (ret)
-			return 1;
+			return EX_IOERR;
 
 		gettimeofday(&t0, NULL);
 
@@ -169,7 +169,7 @@ static int prog_ping(int argc, char **argv, char **envp)
 			continue;
 
 		if (ret < 0)
-			return 1;
+			return EX_IOERR;
 
 		gettimeofday(&t1, NULL);
 

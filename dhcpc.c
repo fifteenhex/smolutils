@@ -207,16 +207,14 @@ static int wait_for_packet(struct context *cntx, struct dhcp_packet *p)
 	recvd  = recvfrom(cntx->sock, p, sizeof(*p), 0, (struct sockaddr *)&addr, &addr_len);
 	if (recvd < 0) {
 		error("Timed out waiting for packet\n");
-		return 1;
+		return -1;
 	}
 
-	if (recvd < (ssize_t) offsetof(struct dhcp_packet, options)) {
-		return 1;
-	}
+	if (recvd < (ssize_t) offsetof(struct dhcp_packet, options))
+		return -1;
 
-	if (ntohl(p->magic) != MAGIC_COOKIE) {
-		return 1;
-	}
+	if (ntohl(p->magic) != MAGIC_COOKIE)
+		return -1;
 
 	verbose("Got packet\n");
 
@@ -595,18 +593,18 @@ int main(int argc, char **argv, char **envp)
 	if (ret) {
 		/* Probably you set the wrong interface */
 		error("Failed to bring %s up: %d\n", cntx.interface, errno);
-		return 1;
+		return ex_errno(errno);
 	}
 
 	verbose("Getting MAC address for %s\n", cntx.interface);
 	ret = get_mac(cntx.interface, cntx.mac);
 	if (ret)
-		return 1;
+		return EX_OSERR;
 
 	verbose("Creating broadcast socket\n");
 	ret = setup_socket(&cntx);
 	if (ret)
-		return 1;
+		return EX_OSERR;
 
 	for (tries = 0; tries < 10; tries++) {
 			/*
@@ -629,7 +627,7 @@ int main(int argc, char **argv, char **envp)
 	if (!have_address) {
 		error("Giving up..\n");
 		ask_to_run_again(cntx.interface, RETRY_SECONDS);
-		return 1;
+		return EX_UNAVAILABLE;
 	}
 
 	verbose("Configuring %s, address " IPPRINT " subnet mask " IPPRINT "\n",
