@@ -78,6 +78,10 @@ jobs:
         if: matrix.config == 'default' || matrix.config == 'all-y'
         run: make -f Makefile.ci boot KERNEL="$KERNEL"
 
+      - name: test
+        if: matrix.config == 'default' || matrix.config == 'all-y'
+        run: make -f Makefile.ci test KERNEL="$KERNEL"
+
       - name: set sizes
         if: matrix.config == 'default'
         run: make -f Makefile.ci set-sizes | tee -a "$GITHUB_STEP_SUMMARY"

@@ -141,14 +141,13 @@ BOOT_NIC = e1000
 # By default use whatever the newest installed kernel is
 KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 
-.PHONY: boot
-boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
+.PHONY: bootimage
+bootimage: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
 	kernel="$(KERNEL)"; \
 	if [ ! -r "$$kernel" ]; then \
 		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
 	fi; \
-	initrd=x86_64.cpio.gz; insmod=; \
 	module=`find /lib/modules/$${kernel##*/vmlinuz-} -name '$(BOOT_MODULE).ko*' 2>/dev/null | head -1`; \
 	if [ -n "$$module" ]; then \
 		echo "packing $$module"; \
@@ -158,15 +157,26 @@ boot: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned 
 		( cd _build/modules && bsdtar --format=newc --uid 0 --gid 0 -cf - lib ) \
 			| gzip -9 > modules.cpio.gz; \
 		cat x86_64.cpio.gz modules.cpio.gz > boot.cpio.gz; \
-		initrd=boot.cpio.gz; \
-		insmod="smolinit.insmod=/lib/modules/`basename $$module`"; \
+		echo "smolinit.insmod=/lib/modules/`basename $$module`" > _build/boot.init; \
 	else \
 		echo "no $(BOOT_MODULE) module for this kernel, booting without a network"; \
-	fi; \
-	echo "booting with $$kernel"; \
-	./tests/smolutils.py --qemu $(QEMU) --kernel $$kernel --initramfs $$initrd \
+		cp x86_64.cpio.gz boot.cpio.gz; \
+		: > _build/boot.init; \
+	fi
+
+# Boot it, log in on both ttys and run uname
+.PHONY: boot
+boot: bootimage
+	./tests/smolutils.py --qemu $(QEMU) --kernel $(KERNEL) --initramfs boot.cpio.gz \
 		--nic $(BOOT_NIC) --timeout $(BOOT_TIMEOUT) \
-		--init "smolinit.hostname=eighty6 smolinit.dhcpif=eth0 $$insmod"
+		--init "smolinit.hostname=eighty6 smolinit.dhcpif=eth0 `cat _build/boot.init`"
+
+# Run the tests against it, TESTS="test_uname test_ls" for just some
+TESTS ?=
+.PHONY: test
+test: bootimage
+	./tests/run.py --qemu $(QEMU) --kernel $(KERNEL) --initramfs boot.cpio.gz \
+		--nic $(BOOT_NIC) --init "`cat _build/boot.init`" $(TESTS)
 
 .PHONY: clean
 clean:
