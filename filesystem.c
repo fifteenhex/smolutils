@@ -88,7 +88,7 @@ static int prog_mount(int argc, char **argv, char **envp)
 	source = (optind < argc) ? argv[optind++] : NULL;
 	target = (optind < argc) ? argv[optind++] : NULL;
 
-	if (!type || !source || !target) {
+	if (!type || !source || !target || optind != argc) {
 		usage(MOUNT_USAGE);
 		return EX_USAGE;
 	}
