@@ -4,14 +4,23 @@ _build:
 NOLIBCBRANCH=nolibc-staticpie-20260829
 NOLIBCREPO=https://github.com/fifteenhex/linux.git
 
-TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
-TOOLCHAIN_M68K=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
-TOOLCHAIN_DIR=gcc-15.2.0-nolibc
-#TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.3.0/"
-#TOOLCHAIN_M68K=x86_64-gcc-14.3.0-nolibc-m68k-linux.tar.xz
-#TOOLCHAIN_DIR=gcc-14.3.0-nolibc
+# Everything here is per architecture, pass ARCH=x86_64 or ARCH=m68k. The
+# arch specific bits are the TOOLCHAIN_, CROSS_, UAPI_, build_ and boot
+# variables below, add a set of those to add an arch.
+ARCHES = x86_64 m68k
+ARCH ?= x86_64
 
-TOOLCHAIN_X86_64=x86_64-gcc-15.2.0-nolibc-x86_64-linux.tar.gz
+TOOLCHAIN_URL="https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/15.2.0"
+TOOLCHAIN_DIR=gcc-15.2.0-nolibc
+TOOLCHAIN_x86_64=x86_64-gcc-15.2.0-nolibc-x86_64-linux.tar.gz
+TOOLCHAIN_m68k=x86_64-gcc-15.2.0-nolibc-m68k-linux.tar.xz
+
+CROSS_x86_64 = `realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-`
+# Overridable, a toolchain that doesn't generate unaligned accesses on 68000 can be set
+CROSS_m68k ?= `realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
+
+UAPI_x86_64 = /usr/include /usr/include/x86_64-linux-gnu
+UAPI_m68k = /usr/m68k-linux-gnu/include
 
 _build/.stamp.linux_cloned: | _build
 	git -C _build clone --depth 1 --branch $(NOLIBCBRANCH) \
@@ -33,23 +42,6 @@ _build/.stamp.tarwak_cloned: | _build
 	git -C _build clone --depth 1 --branch $(TARWAKBRANCH) $(TARWAKREPO)
 	touch $@
 
-define toolchain_targets
-_build/$(TOOLCHAIN_$(1)): | _build
-	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_$(1)) -O $$@
-
-_build/.stamp.toolchain_$(2)_extracted: _build/$(TOOLCHAIN_$(1))
-	tar -C _build/ -xaf _build/$(TOOLCHAIN_$(1))
-	touch $$@
-
-TOOLCHAINDEP += _build/.stamp.toolchain_$(2)_extracted
-endef
-
-$(eval $(call toolchain_targets,M68K,m68k))
-$(eval $(call toolchain_targets,X86_64,x86_64))
-
-UAPI_M68K = /usr/m68k-linux-gnu/include
-UAPI_X86_64 = /usr/include /usr/include/x86_64-linux-gnu
-
 NOLIBCPATH = `realpath _build/linux/tools/include/nolibc/`
 NOLIBCEXTPATH = `realpath _build/nolibc-extensions`
 
@@ -58,25 +50,50 @@ $(TARWAK): _build/.stamp.tarwak_cloned
 	cd _build/tarwak && meson setup build
 	cd _build/tarwak/build && meson compile
 
-M68K_CROSS_COMPILE ?= `realpath _build/$(TOOLCHAIN_DIR)/m68k-linux/bin/m68k-linux-`
+DEPS = _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
 
-SIXEIGHTOPTS = UAPIDIR="$(UAPI_M68K)" \
-		NOLIBCDIR=$(NOLIBCPATH) \
-		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
-		CROSS_COMPILE=$(M68K_CROSS_COMPILE) \
-		TARWAK=`realpath $(TARWAK)`
+# $(1) arch: fetch its toolchain, and the options for the arch makefiles
+define arch_targets
+_build/$(TOOLCHAIN_$(1)): | _build
+	wget $(TOOLCHAIN_URL)/$(TOOLCHAIN_$(1)) -O $$@
 
+_build/.stamp.toolchain_$(1)_extracted: _build/$(TOOLCHAIN_$(1))
+	tar -C _build/ -xaf _build/$(TOOLCHAIN_$(1))
+	touch $$@
+
+TOOLCHAINDEP_$(1) = _build/.stamp.toolchain_$(1)_extracted
+
+OPTS_$(1) = UAPIDIR="$$(UAPI_$(1))" \
+	NOLIBCDIR=$$(NOLIBCPATH) \
+	NOLIBCEXTDIR=$$(NOLIBCEXTPATH) \
+	CROSS_COMPILE=$$(CROSS_$(1)) \
+	TARWAK=`realpath $$(TARWAK)`
+endef
+
+$(foreach a,$(ARCHES),$(eval $(call arch_targets,$(a))))
 
 MMUCPU ?= 68040
 
-PEKEHACHIROKUOPTS = UAPIDIR="$(UAPI_X86_64)" \
-		NOLIBCDIR=$(NOLIBCPATH) \
-		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
-		CROSS_COMPILE=`realpath _build/$(TOOLCHAIN_DIR)/x86_64-linux/bin/x86_64-linux-` \
-		TARWAK=`realpath $(TARWAK)`
+# What building an arch means, m68k is two images
+define build_x86_64
+	$(MAKE) -f Makefile.x86_64 $(OPTS_x86_64) x86_64.erofs
+endef
+
+define build_m68k
+	$(MAKE) -f Makefile.68000 $(OPTS_m68k) m68k.erofs
+	$(MAKE) -f Makefile.m68kmmu $(OPTS_m68k) CPU=$(MMUCPU) m68k-$(MMUCPU).erofs
+endef
+
+.PHONY: build
+build: $(DEPS) $(TOOLCHAINDEP_$(ARCH))
+	$(build_$(ARCH))
+
+.PHONY: build-all
+build-all:
+	$(foreach a,$(ARCHES),$(MAKE) -f Makefile.ci build ARCH=$(a);)
 
 # Let clang-tidy work without all the other jank
-TIDYOPTS = UAPIDIR="$(UAPI_X86_64)" \
+TIDYOPTS = UAPIDIR="$(UAPI_x86_64)" \
 		NOLIBCDIR=$(NOLIBCPATH) \
 		NOLIBCEXTDIR=$(NOLIBCEXTPATH) \
 		CROSS_COMPILE=none \
@@ -100,12 +117,6 @@ clang-format-check:
 clang-format:
 	$(MAKE) -f Makefile.x86_64 $(FORMATOPTS) clang-format
 
-.PHONY: build
-build: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
-	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) m68k.erofs
-	$(MAKE) -f Makefile.m68kmmu $(SIXEIGHTOPTS) CPU=$(MMUCPU) m68k-$(MMUCPU).erofs
-	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.erofs
-
 # So you can reproduce a failing random build, you'll need to have the same commit though
 CONFIG_SEED ?=
 
@@ -125,30 +136,48 @@ config-random:
 	./tools/genconfig.py --random $(if $(CONFIG_SEED),--seed $(CONFIG_SEED)) -o config.h.local
 	cat config.h.local
 
+# The makefile and image name the size table and the boot bits use
+MAKEFILE_x86_64 = Makefile.x86_64
+IMAGE_x86_64 = x86_64
+MAKEFILE_m68k = Makefile.68000
+IMAGE_m68k = m68k
+
 # Print a table of how much each set adds to the rootfs
 .PHONY: set-sizes
-set-sizes: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
-	@echo "## x86_64"
-	@./tools/setsizes.py x86_64 -- $(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS)
-	@echo "## m68k"
-	@./tools/setsizes.py m68k -- $(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS)
+set-sizes: $(DEPS) $(TOOLCHAINDEP_$(ARCH))
+	@echo "## $(ARCH)"
+	@./tools/setsizes.py $(IMAGE_$(ARCH)) -- $(MAKE) -f $(MAKEFILE_$(ARCH)) $(OPTS_$(ARCH))
 
-QEMU ?= qemu-system-x86_64
+# Booting: only x86_64 so far, on the host's kernel with its e1000 module
+# packed into the initramfs for a network. The init options to go with it
+# end up in _build/boot.init.
+QEMU_x86_64 ?= qemu-system-x86_64
+KERNEL_x86_64 ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
+NIC_x86_64 = e1000
+MODULE_x86_64 = e1000
 BOOT_TIMEOUT ?= 60
-BOOT_MODULE = e1000
-BOOT_NIC = e1000
 
-# By default use whatever the newest installed kernel is
-KERNEL ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
+# The workflow still passes KERNEL=
+ifdef KERNEL
+KERNEL_x86_64 = $(KERNEL)
+endif
+
+QEMU = $(QEMU_$(ARCH))
+BOOTKERNEL = $(KERNEL_$(ARCH))
+BOOTIMAGE = $(IMAGE_$(ARCH)).cpio.gz
+
+.PHONY: bootable
+bootable:
+	$(if $(QEMU),,$(error no way to boot $(ARCH) yet))
 
 .PHONY: bootimage
-bootimage: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cloned $(TARWAK)
-	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) x86_64.cpio.gz
-	kernel="$(KERNEL)"; \
+bootimage: bootable $(DEPS) $(TOOLCHAINDEP_$(ARCH))
+	$(MAKE) -f $(MAKEFILE_$(ARCH)) $(OPTS_$(ARCH)) $(BOOTIMAGE)
+	kernel="$(BOOTKERNEL)"; \
 	if [ ! -r "$$kernel" ]; then \
 		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
 	fi; \
-	module=`find /lib/modules/$${kernel##*/vmlinuz-} -name '$(BOOT_MODULE).ko*' 2>/dev/null | head -1`; \
+	module=`find /lib/modules/$${kernel##*/vmlinuz-} -name '$(MODULE_$(ARCH)).ko*' 2>/dev/null | head -1`; \
 	if [ -n "$$module" ]; then \
 		echo "packing $$module"; \
 		rm -rf _build/modules; \
@@ -156,31 +185,31 @@ bootimage: $(TOOLCHAINDEP) _build/.stamp.linux_cloned _build/.stamp.nolibcext_cl
 		cp $$module _build/modules/lib/modules/; \
 		( cd _build/modules && bsdtar --format=newc --uid 0 --gid 0 -cf - lib ) \
 			| gzip -9 > modules.cpio.gz; \
-		cat x86_64.cpio.gz modules.cpio.gz > boot.cpio.gz; \
+		cat $(BOOTIMAGE) modules.cpio.gz > boot.cpio.gz; \
 		echo "smolinit.insmod=/lib/modules/`basename $$module`" > _build/boot.init; \
 	else \
-		echo "no $(BOOT_MODULE) module for this kernel, booting without a network"; \
-		cp x86_64.cpio.gz boot.cpio.gz; \
+		echo "no $(MODULE_$(ARCH)) module for this kernel, booting without a network"; \
+		cp $(BOOTIMAGE) boot.cpio.gz; \
 		: > _build/boot.init; \
 	fi
 
 # Boot it, log in on both ttys and run uname
 .PHONY: boot
 boot: bootimage
-	./tests/smolutils.py --qemu $(QEMU) --kernel $(KERNEL) --initramfs boot.cpio.gz \
-		--nic $(BOOT_NIC) --timeout $(BOOT_TIMEOUT) \
+	./tests/smolutils.py --qemu $(QEMU) --kernel $(BOOTKERNEL) --initramfs boot.cpio.gz \
+		--nic $(NIC_$(ARCH)) --timeout $(BOOT_TIMEOUT) \
 		--init "smolinit.hostname=eighty6 smolinit.dhcpif=eth0 `cat _build/boot.init`"
 
 # Run the tests against it, TESTS="test_uname test_ls" for just some
 TESTS ?=
 .PHONY: test
 test: bootimage
-	./tests/run.py --qemu $(QEMU) --kernel $(KERNEL) --initramfs boot.cpio.gz \
-		--nic $(BOOT_NIC) --init "`cat _build/boot.init`" $(TESTS)
+	./tests/run.py --qemu $(QEMU) --kernel $(BOOTKERNEL) --initramfs boot.cpio.gz \
+		--nic $(NIC_$(ARCH)) --init "`cat _build/boot.init`" $(TESTS)
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.68000 $(SIXEIGHTOPTS) clean
-	$(MAKE) -f Makefile.m68kmmu $(SIXEIGHTOPTS) CPU=$(MMUCPU) clean
-	$(MAKE) -f Makefile.x86_64 $(PEKEHACHIROKUOPTS) clean
-	rm -rf modules.cpio.gz boot.cpio.gz _build/modules
+	$(MAKE) -f Makefile.68000 $(OPTS_m68k) clean
+	$(MAKE) -f Makefile.m68kmmu $(OPTS_m68k) CPU=$(MMUCPU) clean
+	$(MAKE) -f Makefile.x86_64 $(OPTS_x86_64) clean
+	rm -rf modules.cpio.gz boot.cpio.gz _build/modules _build/boot.init

@@ -8,8 +8,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [x86_64, m68k]
         config: [default, all-y, all-n, random]
-    name: build (${{ matrix.config }})
+        # Only x86_64 boots under qemu so far, and only with a getty and a shell
+        include:
+          - arch: x86_64
+            boots: true
+    name: ${{ matrix.arch }} (${{ matrix.config }})
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -18,34 +23,38 @@ jobs:
         run: sudo apt-get update
 
       - name: Install dependencies
-        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils linux-libc-dev-m68k-cross libarchive-tools
+        run: sudo apt-get install -y build-essential meson libarchive-dev libcjson-dev libcap-dev erofs-utils libarchive-tools
 
-      # Linting tools, only for default
+      - name: Install m68k headers
+        if: matrix.arch == 'm68k'
+        run: sudo apt-get install -y linux-libc-dev-m68k-cross
+
+      # Linting tools, once
       - name: Install lint dependencies
-        if: matrix.config == 'default'
+        if: matrix.arch == 'x86_64' && matrix.config == 'default'
         run: sudo apt-get install -y clang-tidy
 
-      # QEMU and linux, only for default and all-y as they boot and run tests
+      # QEMU and linux, only where something boots
       - name: Install boot dependencies
-        if: matrix.config == 'default' || matrix.config == 'all-y'
+        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
         run: sudo apt-get install -y qemu-system-x86 linux-image-generic
 
-      # Only refresh the toolchains when they change. The makefile might change even if the toolchains don't
+      # Only refresh the toolchain when it changes. The makefile might change even if the toolchain doesn't
       - name: Work out the toolchain key
         id: toolchainkey
         run: |
-          key=$(grep -E '^TOOLCHAIN_(URL|M68K|X86_64|DIR)=' Makefile.ci | sha256sum | cut -d' ' -f1)
+          key=$(grep -E '^TOOLCHAIN_(URL|DIR|${{ matrix.arch }})=' Makefile.ci | sha256sum | cut -d' ' -f1)
           echo "key=$key" >> "$GITHUB_OUTPUT"
 
-      - name: Cache toolchains
+      - name: Cache toolchain
         uses: actions/cache@v5
         with:
           path: _build/*.tar.*
-          key: toolchains-${{ runner.os }}-${{ steps.toolchainkey.outputs.key }}
-          restore-keys: toolchains-${{ runner.os }}-
+          key: toolchain-${{ matrix.arch }}-${{ runner.os }}-${{ steps.toolchainkey.outputs.key }}
+          restore-keys: toolchain-${{ matrix.arch }}-${{ runner.os }}-
 
       - name: clang-tidy
-        if: matrix.config == 'default'
+        if: matrix.arch == 'x86_64' && matrix.config == 'default'
         continue-on-error: true
         run: make -f Makefile.ci clang-tidy
 
@@ -53,12 +62,11 @@ jobs:
         run: make -f Makefile.ci config-${{ matrix.config }}
 
       - name: build
-        run: make -f Makefile.ci build
+        run: make -f Makefile.ci build ARCH=${{ matrix.arch }}
 
       # Magic to find a kernel image we can actually read
-      # Booting needs a getty and a shell, which all-n and random might not have
       - name: pick a kernel
-        if: matrix.config == 'default' || matrix.config == 'all-y'
+        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
         run: |
           kernel=
           for k in $(ls -1 /boot/vmlinuz-* | sort -V -r); do
@@ -75,13 +83,13 @@ jobs:
           echo "KERNEL=$kernel" >> "$GITHUB_ENV"
 
       - name: boot
-        if: matrix.config == 'default' || matrix.config == 'all-y'
-        run: make -f Makefile.ci boot KERNEL="$KERNEL"
+        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
+        run: make -f Makefile.ci boot ARCH=${{ matrix.arch }} KERNEL="$KERNEL"
 
       - name: test
-        if: matrix.config == 'default' || matrix.config == 'all-y'
-        run: make -f Makefile.ci test KERNEL="$KERNEL"
+        if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
+        run: make -f Makefile.ci test ARCH=${{ matrix.arch }} KERNEL="$KERNEL"
 
       - name: set sizes
         if: matrix.config == 'default'
-        run: make -f Makefile.ci set-sizes | tee -a "$GITHUB_STEP_SUMMARY"
+        run: make -f Makefile.ci set-sizes ARCH=${{ matrix.arch }} | tee -a "$GITHUB_STEP_SUMMARY"
