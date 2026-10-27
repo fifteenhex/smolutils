@@ -22,7 +22,7 @@ jobs:
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:ci-$key" >> "$GITHUB_OUTPUT"
 
       - name: Log in to the registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
