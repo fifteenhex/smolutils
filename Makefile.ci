@@ -209,7 +209,8 @@ TESTS ?=
 .PHONY: test
 test: bootimage
 	./tests/run.py --qemu $(QEMU) --kernel $(BOOTKERNEL) --initramfs boot.cpio.gz \
-		--nic $(NIC_$(ARCH)) --init "`cat _build/boot.init`" $(TESTS)
+		--nic $(NIC_$(ARCH)) --init "`cat _build/boot.init`" \
+		$(if $(SUMMARY),--summary $(SUMMARY)) $(TESTS)
 
 .PHONY: clean
 clean:

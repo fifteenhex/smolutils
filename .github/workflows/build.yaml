@@ -83,7 +83,7 @@ jobs:
 
       - name: test
         if: matrix.boots && (matrix.config == 'default' || matrix.config == 'all-y')
-        run: make -f Makefile.ci test ARCH=${{ matrix.arch }}
+        run: make -f Makefile.ci test ARCH=${{ matrix.arch }} SUMMARY="$GITHUB_STEP_SUMMARY"
 
       - name: set sizes
         if: matrix.config == 'default'
