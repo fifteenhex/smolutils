@@ -52,12 +52,14 @@ class Smolutils:
     def answer_code(self, console, who, timeout=60):
         """
         Type the code getty or su asked for, the secure tty announced it as
-        "<who> joined the party, code xxxxxx". Only looks at announcements
-        we haven't used yet so a stale one can't be picked up.
+        "<who> joined the party, code xxxxxx". who may be a prefix, telnet
+        sessions are a pty with a number. Only looks at announcements we
+        haven't used yet so a stale one can't be picked up.
         """
         securetty = self.machine.securetty
         deadline = time.monotonic() + timeout
-        start = securetty.find(f"{who} joined the party, code ", self.seen, timeout)
+        start = securetty.find(who, self.seen, timeout)
+        start = securetty.find(" joined the party, code ", start, deadline - time.monotonic())
         end = securetty.find("\n", start, deadline - time.monotonic())
         self.seen = end
         # \r\r\n on the wire: the message's own \r\n, then the tty's ONLCR
