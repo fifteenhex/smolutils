@@ -86,12 +86,12 @@ class Smolutils:
     def su(self, console, timeout=60):
         """Become root, answering the code unless this is the secure tty."""
         deadline = time.monotonic() + timeout
-        console.send("su")
         if console is self.machine.securetty:
-            out = self.wait_prompt(console, timeout)
-            if "You shall not pass" in out:
+            # no code to answer, su either hands over a shell or exits with a status
+            if self.run(console, "su", timeout).status:
                 raise LoginFailed(f"{console.name}: su refused")
         else:
+            console.send("su")
             console.read_until("code: ", timeout)
             self._answer_and_wait(console, "su", deadline - time.monotonic())
         return console
