@@ -23,8 +23,12 @@ class TestLsbus(SmolTest):
     def test_lsusb(self):
         if not Ls().exists("/sys/bus/usb"):
             self.skipTest("no USB on this machine")
+        # Interfaces are listed too, as "1-0:1.0". Only devices get a line.
+        devices = [n for n in Ls().names("/sys/bus/usb/devices") if ":" not in n]
+        if not devices:
+            self.skipTest("no USB controller on this machine")
         lines = Lsusb().ok().splitlines()
-        self.assertTrue(lines, "a USB bus with nothing on it, not even a root hub?")
+        self.assertEqual(len(lines), len(devices))
         for line in lines:
             self.assertRegex(line, r"^Bus \d{3} Device \d{3}: ID [0-9a-f]{4}:[0-9a-f]{4}")
 
