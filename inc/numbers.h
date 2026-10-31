@@ -12,7 +12,11 @@
 /* Did we parse the whole string into a number without trailing junk? */
 static inline bool __whole_number(const char *s, const char *end)
 {
-	return end != s && *end == '\0';
+	if (end == s || *end != '\0')
+		return false;
+
+	/* WORKAROUND: nolibc's strtoul() currently parses "0x" as 0, glibc stops after the 0 */
+	return (end[-1] | 0x20) != 'x';
 }
 
 /* explictly check if there is a sign before parsing the number */
