@@ -16,6 +16,16 @@ def needs(path, reason):
         raise unittest.SkipTest(reason)
 
 
+def wait_for(check, timeout=5):
+    """Poll check() until it returns something true or the time is up, returns the last result."""
+    deadline = time.monotonic() + timeout
+    while True:
+        result = check()
+        if result or time.monotonic() > deadline:
+            return result
+        time.sleep(0.1)
+
+
 class Echo(Tool):
     name = "echo"
 
@@ -170,11 +180,7 @@ class Ps(Tool):
 
     def wait_for(self, cmd, timeout=5):
         """The pids of cmd once it is running, it takes the shell a moment to exec it."""
-        deadline = time.monotonic() + timeout
-        while True:
-            pids = self.pid_of(cmd)
-            if pids or time.monotonic() > deadline:
-                return pids
+        return wait_for(lambda: self.pid_of(cmd), timeout)
 
 
 class Kill(Tool):

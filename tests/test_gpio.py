@@ -3,11 +3,10 @@
 or a gpio-sim one made here through configfs when it has that instead."""
 
 import re
-import time
 import unittest
 
 from base import EX_DATAERR, EX_NOINPUT, EX_UNAVAILABLE, EX_USAGE, SmolTest, Tool
-from tools import Chmod, Echo, Ls, Mkdir, Mount, Rmdir, Umount, needs
+from tools import Chmod, Echo, Ls, Mkdir, Mount, Rmdir, Umount, needs, wait_for
 
 CHIP = "gpiochip0"
 SIM = "/sys/kernel/config/gpio-sim"
@@ -100,12 +99,8 @@ class TestGpio(SmolTest):
     def test_set_holds_the_line(self):
         self.user.send(f"gpioset -t 10 {CHIP} 1=1")
         try:
-            deadline = time.monotonic() + 5          # until gpioset has got the line
-            while True:
-                name, consumer, direction, active, flags = Gpioinfo(self.root).lines(CHIP)[1]
-                if consumer == "gpioset" or time.monotonic() > deadline:
-                    break
-                time.sleep(0.1)
+            wait_for(lambda: Gpioinfo(self.root).lines(CHIP)[1][1] == "gpioset")   # until it has the line
+            name, consumer, direction, active, flags = Gpioinfo(self.root).lines(CHIP)[1]
             self.assertEqual((consumer, direction), ("gpioset", "output"))
             self.assertIn("[used]", flags)
             Gpioget(self.root).rejects(CHIP, "1", status=EX_UNAVAILABLE)   # busy while held
