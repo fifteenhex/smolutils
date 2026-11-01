@@ -120,7 +120,7 @@ static bool parse_cmdline_minion(const char *arg)
 	minion = &minions[num_minions];
 
 	pos = (char *) val;
-	while ((field = next_field(&pos))) {
+	while ((field = cmdline_next_arg(&pos))) {
 		if (num == DUNGEON_ARGS) {
 			error("Too many arguments: %s\n", val);
 			return true;
