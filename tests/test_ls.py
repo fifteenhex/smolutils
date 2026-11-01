@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from base import EX_NOINPUT, EX_USAGE, SmolTest
-from tools import Echo, Ls
+from tools import Echo, Ls, Mode
 
 
 class TestLs(SmolTest):
@@ -15,7 +15,7 @@ class TestLs(SmolTest):
         path = self.tmp("long")
         Echo().to_file(path, "12345")
         entry = Ls().entry(path)
-        self.assertEqual(entry.mode, "-rw-r--r--")
+        self.assertEqual(entry.mode, Mode("-", 0o644))
         self.assertEqual((entry.links, entry.uid, entry.gid, entry.size), (1, "1024", "1024", "6"))
 
     def test_root_directory(self):

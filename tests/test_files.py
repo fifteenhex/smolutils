@@ -2,7 +2,7 @@
 """The file tools in files.c."""
 
 from base import EX_CANTCREAT, EX_DATAERR, EX_NOINPUT, EX_NOPERM, EX_USAGE, SmolTest
-from tools import Cat, Chmod, Chown, Cp, Echo, Ln, Ls, Mkdir, Mknod, Mv, Rm, Rmdir, Touch
+from tools import Cat, Chmod, Chown, Cp, Echo, Ln, Ls, Mkdir, Mknod, Mode, Mv, Rm, Rmdir, Touch
 
 
 class TestFiles(SmolTest):
@@ -97,7 +97,7 @@ class TestFiles(SmolTest):
     def test_mkdir_and_rmdir(self):
         path = self.tmp("dir")
         Mkdir().ok(path)
-        self.assertEqual(self.ls.entry(path).mode, "drwxr-xr-x")
+        self.assertEqual(self.ls.entry(path).mode, Mode("d", 0o755))
         Mkdir().rejects(path, status=EX_CANTCREAT)        # already there
         Rmdir().ok(path)
         self.assertFalse(self.ls.exists(path))
@@ -107,9 +107,9 @@ class TestFiles(SmolTest):
         path = self.tmp("mode")
         Echo().to_file(path, "x")
         Chmod().ok("600", path)
-        self.assertEqual(self.ls.entry(path).mode, "-rw-------")
+        self.assertEqual(self.ls.entry(path).mode, Mode("-", 0o600))
         Chmod().ok("755", path)
-        self.assertEqual(self.ls.entry(path).mode, "-rwxr-xr-x")
+        self.assertEqual(self.ls.entry(path).mode, Mode("-", 0o755))
         Chmod().rejects("rwx", path, status=EX_USAGE)
 
     def test_chown_needs_root(self):
@@ -128,7 +128,7 @@ class TestFiles(SmolTest):
         Mknod().rejects(path, "c", "1", "3", status=EX_NOPERM)
         Mknod(self.root).ok(path, "c", "1", "3")
         entry = self.ls.entry(path)
-        self.assertEqual(entry.mode, "crw-------")
+        self.assertEqual(entry.mode, Mode("c", 0o600))
         self.assertEqual(entry.device, (1, 3))
         Mknod(self.root).rejects(path, "x", "1", "3", status=EX_USAGE)
 

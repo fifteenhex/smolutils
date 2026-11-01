@@ -92,6 +92,20 @@ class Umount(Tool):
     name = "umount"
 
 
+class Mode:
+    """What ls -l shows for a kind of file and its permissions, Mode("d", 0o755) is "drwxr-xr-x"."""
+
+    def __init__(self, kind, perms):
+        self.kind, self.perms = kind, perms
+
+    def __str__(self):
+        bits = "".join(c if self.perms & (1 << (8 - i)) else "-" for i, c in enumerate("rwxrwxrwx"))
+        return self.kind + bits
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+
 class Entry:
     """One line of ls -l. For a device node the size is the major and minor."""
 
