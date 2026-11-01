@@ -1,17 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-from base import EX_NOINPUT, EX_NOPERM, EX_USAGE, SmolTest, Tool
-from tools import Cat, Echo, Mkdir, Rmdir
-
-
-class Mount(Tool):
-    name = "mount"
-
-    def tmpfs(self, target):
-        return self.ok("-t", "tmpfs", "tmp", target)
-
-
-class Umount(Tool):
-    name = "umount"
+from base import EX_NOINPUT, EX_NOPERM, EX_USAGE, SmolTest
+from tools import Cat, Echo, Mkdir, Mount, Rmdir, Umount
 
 
 class TestMount(SmolTest):

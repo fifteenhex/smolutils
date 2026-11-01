@@ -64,6 +64,17 @@ class Mknod(Tool):
     name = "mknod"
 
 
+class Mount(Tool):
+    name = "mount"
+
+    def tmpfs(self, target):
+        return self.ok("-t", "tmpfs", "tmp", target)
+
+
+class Umount(Tool):
+    name = "umount"
+
+
 class Entry:
     """One line of ls -l. For a device node the size is the major and minor."""
 
