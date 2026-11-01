@@ -61,6 +61,15 @@ static int spawn(const char *path, char * const argv[], char * const envp[])
 	return spawn_redirect(path, argv, envp, NULL);
 }
 
+/*
+ * nolibc's WIFSIGNALED() is true for a normal exit before 7.4,
+ * this works around the bug by calling WIFEXITED() first.
+ */
+static inline bool was_signaled(int status)
+{
+	return !WIFEXITED(status) && WIFSIGNALED(status);
+}
+
 static int spawn_and_wait_redirect(const char *path,
 				   char * const argv[],
 				   char * const envp[],
@@ -88,7 +97,7 @@ static int spawn_and_wait_redirect(const char *path,
 	if (WIFEXITED(waitpid_stat))
 		return WEXITSTATUS(waitpid_stat);
 
-	if (WIFSIGNALED(waitpid_stat)) {
+	if (was_signaled(waitpid_stat)) {
 		if (killed)
 			*killed = true;
 		return WTERMSIG(waitpid_stat);

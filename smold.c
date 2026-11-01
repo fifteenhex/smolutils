@@ -275,7 +275,7 @@ static bool minion_restartable(struct minion *minion, int status)
 	 * minions killed by a signal can restart immediately
 	 * otherwise killing one within the timeout would perma-kill it.
 	 */
-	if (WIFSIGNALED(status))
+	if (was_signaled(status))
 		return true;
 
 	/*
