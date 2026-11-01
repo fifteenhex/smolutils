@@ -22,4 +22,11 @@ static inline const char *cmdline_option(const char *arg, const char *name)
 	return arg + len;
 }
 
+/* The next argument of an option's value */
+static inline char *cmdline_next_arg(char **pos)
+{
+	/* White space or comma, white space might be removed later to make things consistent */
+	return __next_field(pos, " \t,");
+}
+
 #endif /* _SMOLUTILS_CMDLINE_H */

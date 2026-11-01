@@ -11,25 +11,30 @@
 #define STARTS_WITH(_string, _chararray) \
 	(strncmp(_string, _chararray, STRLEN(_chararray)) == 0)
 
-/* get the next whitespace separated field from a string and terminate it */
-static inline char *next_field(char **pos)
+static inline char *__next_field(char **pos, const char *delimiters)
 {
 	char *start = *pos;
 	char *end;
 
-	while (*start == ' ' || *start == '\t')
+	while (*start && strchr(delimiters, *start))
 		start++;
 
 	if (!*start)
 		return NULL;
 
-	for (end = start; *end && *end != ' ' && *end != '\t'; end++)
+	for (end = start; *end && !strchr(delimiters, *end); end++)
 		;
 
 	*pos = *end ? end + 1 : end;
 	*end = '\0';
 
 	return start;
+}
+
+/* get the next whitespace separated field from a string and terminate it */
+static inline char *next_field(char **pos)
+{
+	return __next_field(pos, " \t");
 }
 
 /* replace every from with to, returns the number of chars changed */
