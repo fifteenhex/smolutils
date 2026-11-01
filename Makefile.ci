@@ -152,13 +152,13 @@ set-sizes: $(DEPS) $(TOOLCHAINDEP_$(ARCH))
 	@echo "## $(ARCH)"
 	@./tools/setsizes.py $(IMAGE_$(ARCH)) -- $(MAKE) -f $(MAKEFILE_$(ARCH)) $(OPTS_$(ARCH))
 
-# Booting: only x86_64 so far, on the host's kernel with its e1000 module
-# packed into the initramfs for a network. The init options to go with it
-# end up in _build/boot.init.
+# Booting: only x86_64 so far, on the host's kernel. Its modules are packed
+# into the initramfs in this order, with their parameters, and the insmod
+# options end up in _build/boot.init.
 QEMU_x86_64 ?= qemu-system-x86_64
 KERNEL_x86_64 ?= $(shell ls -1 /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 NIC_x86_64 = e1000
-MODULE_x86_64 = e1000
+MODULES_x86_64 = e1000 mtd mtdram,total_size=1024,erase_size=64 i2c-core i2c-dev i2c-stub,chip_addr=0x50 configfs gpio-sim
 BOOT_TIMEOUT ?= 60
 
 # The workflow still passes KERNEL=
@@ -181,21 +181,24 @@ bootimage: bootable $(DEPS) $(TOOLCHAINDEP_$(ARCH))
 	if [ ! -r "$$kernel" ]; then \
 		echo "can't read a kernel to boot: $${kernel:-none found}"; exit 1; \
 	fi; \
-	module=`find /lib/modules/$${kernel##*/vmlinuz-} -name '$(MODULE_$(ARCH)).ko*' 2>/dev/null | head -1`; \
-	if [ -n "$$module" ]; then \
+	rm -rf _build/modules; \
+	mkdir -p _build/modules/lib/modules; \
+	: > _build/boot.init; \
+	for entry in $(MODULES_$(ARCH)); do \
+		name=$${entry%%,*}; \
+		params=$${entry#$$name}; \
+		module=`find /lib/modules/$${kernel##*/vmlinuz-} -name "$$name.ko*" 2>/dev/null | head -1`; \
+		if [ -z "$$module" ]; then \
+			echo "this kernel has no $$name module"; \
+			continue; \
+		fi; \
 		echo "packing $$module"; \
-		rm -rf _build/modules; \
-		mkdir -p _build/modules/lib/modules; \
 		cp $$module _build/modules/lib/modules/; \
-		( cd _build/modules && bsdtar --format=newc --uid 0 --gid 0 -cf - lib ) \
-			| gzip -9 > modules.cpio.gz; \
-		cat $(BOOTIMAGE) modules.cpio.gz > boot.cpio.gz; \
-		echo "smolinit.insmod=/lib/modules/`basename $$module`" > _build/boot.init; \
-	else \
-		echo "no $(MODULE_$(ARCH)) module for this kernel, booting without a network"; \
-		cp $(BOOTIMAGE) boot.cpio.gz; \
-		: > _build/boot.init; \
-	fi
+		printf 'smolinit.insmod=/lib/modules/%s%s ' `basename $$module` "$$params" >> _build/boot.init; \
+	done; \
+	( cd _build/modules && bsdtar --format=newc --uid 0 --gid 0 -cf - lib ) \
+		| gzip -9 > modules.cpio.gz; \
+	cat $(BOOTIMAGE) modules.cpio.gz > boot.cpio.gz
 
 # Boot it, log in on both ttys and run uname
 .PHONY: boot
