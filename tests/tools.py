@@ -92,8 +92,10 @@ class Ls(Tool):
         return {e.name: e for e in map(Entry, self.ok("-l", path).splitlines())}
 
     def exists(self, path):
+        """False when the directory it would be in isn't there either."""
         directory, _, name = path.rpartition("/")
-        return name in self.names(directory or "/")
+        result = self.run(directory or "/")
+        return result.status == 0 and name in COLOUR.sub("", result.output).split()
 
     def entry(self, path):
         """The ls -l Entry for one path."""
