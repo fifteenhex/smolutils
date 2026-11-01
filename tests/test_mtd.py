@@ -3,7 +3,7 @@
 mtdram gives the test kernel (mtdram.total_size=1024 mtdram.erase_size=64)."""
 
 from base import EX_DATAERR, EX_NOINPUT, EX_USAGE, SmolTest, Tool
-from tools import Cat, Echo, Ls, Sha256sum, Xxd
+from tools import Cat, Echo, Ls, Sha256sum, Xxd, needs
 
 DEV = "/dev/mtd0"
 
@@ -43,13 +43,11 @@ class Flashcp(Tool):
 
 class TestMtd(SmolTest):
     def setUp(self):
-        if not Ls().exists("/bin/mtdinfo"):
-            self.skipTest("no mtd tools in this image")
+        needs("/bin/mtdinfo", "no mtd tools in this image")
 
     def device(self):
         """The tests that need the device, the argument checks don't."""
-        if not Ls().exists(DEV):
-            self.skipTest("no MTD on this machine")
+        needs(DEV, "no MTD on this machine")
         self.info = Mtdinfo(self.root).info(DEV)
         self.erasesize = int(self.info["Eraseblock size"].split()[0])
         self.size = int(self.info["Amount of eraseblocks"].split("(")[1].split()[0])

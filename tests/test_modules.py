@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from base import EX_NOINPUT, EX_USAGE, SmolTest, Tool
-from tools import Ls
+from tools import needs
 
 
 class Insmod(Tool):
@@ -14,8 +14,7 @@ class Rmmod(Tool):
 class TestModules(SmolTest):
     # both live in /sbin, which only root gets to
     def setUp(self):
-        if not Ls().exists("/proc/modules"):
-            self.skipTest("this kernel has no modules")
+        needs("/proc/modules", "this kernel has no modules")
 
     def test_insmod(self):
         Insmod(self.root).rejects(status=EX_USAGE)

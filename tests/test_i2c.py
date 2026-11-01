@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from base import EX_NOINPUT, EX_USAGE, SmolTest, Tool
-from tools import Ls
+from tools import needs
 
 
 class I2cdetect(Tool):
@@ -21,12 +21,10 @@ class I2cdump(Tool):
 
 class TestI2c(SmolTest):
     def setUp(self):
-        if not Ls().exists("/bin/i2cdetect"):
-            self.skipTest("no i2c tools in this image")
+        needs("/bin/i2cdetect", "no i2c tools in this image")
 
     def test_detect_scans_a_bus(self):
-        if not Ls().exists("/dev/i2c-0"):
-            self.skipTest("no I2C bus on this machine")
+        needs("/dev/i2c-0", "no I2C bus on this machine")
         grid = I2cdetect(self.root).ok("-y", "0").splitlines()
         self.assertTrue(grid[0].startswith("     0  1  2"))
         self.assertEqual(len(grid), 9)

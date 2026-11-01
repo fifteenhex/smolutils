@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from base import EX_USAGE, SmolTest, Tool
-from tools import Ls
+from tools import Ls, needs
 
 
 class Lspci(Tool):
@@ -13,16 +13,14 @@ class Lsusb(Tool):
 
 class TestLsbus(SmolTest):
     def test_lspci(self):
-        if not Ls().exists("/sys/bus/pci"):
-            self.skipTest("no PCI on this machine")
+        needs("/sys/bus/pci", "no PCI on this machine")
         lines = Lspci().ok().splitlines()
         self.assertEqual(len(lines), len(Ls().names("/sys/bus/pci/devices")))
         for line in lines:
             self.assertRegex(line, r"^\S+ \[[0-9a-f]{4}\]: [0-9a-f]{4}:[0-9a-f]{4}$")
 
     def test_lsusb(self):
-        if not Ls().exists("/sys/bus/usb"):
-            self.skipTest("no USB on this machine")
+        needs("/sys/bus/usb", "no USB on this machine")
         # Interfaces are listed too, as "1-0:1.0". Only devices get a line.
         devices = [n for n in Ls().names("/sys/bus/usb/devices") if ":" not in n]
         if not devices:

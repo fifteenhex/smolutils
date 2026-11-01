@@ -3,7 +3,7 @@ import re
 import time
 
 from base import EX_NOPERM, EX_USAGE, SmolTest, Tool
-from tools import Ls
+from tools import needs
 
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
 
@@ -18,8 +18,7 @@ class Rtcwake(Tool):
 
 class TestRtc(SmolTest):
     def setUp(self):
-        if not Ls().exists("/dev/rtc0"):
-            self.skipTest("no RTC on this machine")
+        needs("/dev/rtc0", "no RTC on this machine")
 
     def test_read_clock(self):
         self.assertRegex(Hwclock(self.root).ok("-r"), DATE)
@@ -37,8 +36,7 @@ class TestRtc(SmolTest):
         return time.mktime(time.strptime(date, "%Y-%m-%d %H:%M:%S"))
 
     def test_alarm(self):
-        if not Ls().exists("/sys/class/rtc/rtc0/wakealarm"):
-            self.skipTest("this RTC has no alarm")
+        needs("/sys/class/rtc/rtc0/wakealarm", "this RTC has no alarm")
         rtcwake = Rtcwake(self.root)
         self.addCleanup(rtcwake.run, "-m", "disable")        # don't leave it armed
         rtcwake.ok("-m", "no", "-s", "3600")

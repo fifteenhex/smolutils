@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from base import EX_NOPERM, EX_USAGE, SmolTest, Tool
-from tools import Ls, Uname
+from tools import Uname, needs
 
 
 class Devmem(Tool):
@@ -9,8 +9,7 @@ class Devmem(Tool):
 
 class TestDevmem(SmolTest):
     def setUp(self):
-        if not Ls().exists("/dev/mem"):
-            self.skipTest("no /dev/mem on this machine")
+        needs("/dev/mem", "no /dev/mem on this machine")
 
     def test_read_the_bios_area(self):
         # the first megabyte is readable even with STRICT_DEVMEM, on a PC

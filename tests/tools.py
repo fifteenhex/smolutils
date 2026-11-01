@@ -3,10 +3,17 @@
 
 import re
 import time
+import unittest
 
 from base import Tool, ToolFailed
 
 COLOUR = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def needs(path, reason):
+    """Skip the test unless path exists, for hardware and tools the image may not have."""
+    if not Ls().exists(path):
+        raise unittest.SkipTest(reason)
 
 
 class Echo(Tool):

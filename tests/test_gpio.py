@@ -7,7 +7,7 @@ import time
 import unittest
 
 from base import EX_DATAERR, EX_NOINPUT, EX_UNAVAILABLE, EX_USAGE, SmolTest, Tool
-from tools import Chmod, Echo, Ls, Mkdir, Mount, Rmdir, Umount
+from tools import Chmod, Echo, Ls, Mkdir, Mount, Rmdir, Umount, needs
 
 CHIP = "gpiochip0"
 SIM = "/sys/kernel/config/gpio-sim"
@@ -56,8 +56,7 @@ class TestGpio(SmolTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        if not Ls().exists("/bin/gpiodetect"):
-            raise unittest.SkipTest("no gpio tools in this image")
+        needs("/bin/gpiodetect", "no gpio tools in this image")
         if not Ls().exists(f"/dev/{CHIP}"):
             cls.simulate()
         # the node is root only and the tests use both shells, put it back afterwards
