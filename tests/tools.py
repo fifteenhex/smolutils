@@ -182,6 +182,11 @@ class Ps(Tool):
         """The pids of cmd once it is running, it takes the shell a moment to exec it."""
         return wait_for(lambda: self.pid_of(cmd), timeout)
 
+    def kill_all(self, cmd):
+        """kill -9 every cmd, to clean up what a test left running."""
+        for pid in self.pid_of(cmd):
+            Kill(self.shell).run("-9", str(pid))
+
 
 class Kill(Tool):
     name = "kill"

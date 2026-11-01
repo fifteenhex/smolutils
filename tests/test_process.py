@@ -28,8 +28,7 @@ class TestProcess(SmolTest):
             self.assertEqual(len(pids), 1)
             Kill(self.root).ok("-9", str(pids[0]))
         finally:
-            for pid in Ps(self.root).pid_of("cat"):
-                Kill(self.root).run("-9", str(pid))
+            Ps(self.root).kill_all("cat")
             self.wait_prompt(self.user)
         self.assertEqual(Ps(self.root).pid_of("cat"), [])
 

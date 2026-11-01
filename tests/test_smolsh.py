@@ -88,9 +88,7 @@ class TestSmolsh(SmolTest):
         try:
             output = self.wait_prompt(self.user)
         finally:
-            for pid in Ps(self.root).pid_of("cat"):
-                self.root.send(f"kill -9 {pid}")
-                self.wait_prompt(self.root)
+            Ps(self.root).kill_all("cat")
         killed = KILLED.search(PROMPT.sub("", output).rstrip())
         self.assertIsNotNone(killed, output)
         self.assertEqual(killed.group(1), "2")                      # SIGINT
