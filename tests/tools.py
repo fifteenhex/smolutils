@@ -204,3 +204,7 @@ class Ps(Tool):
 
 class Kill(Tool):
     name = "kill"
+
+
+class Sleep(Tool):
+    name = "sleep"

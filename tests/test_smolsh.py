@@ -3,7 +3,7 @@
 
 from base import EX_NOINPUT, EX_USAGE, SmolTest, Tool
 from smolutils import KILLED, PROMPT
-from tools import Cat, Echo, Ps
+from tools import Cat, Echo, Ps, Sleep
 
 
 class Pwd(Tool):
@@ -16,10 +16,6 @@ class Whoami(Tool):
 
 class Cd(Tool):
     name = "cd"
-
-
-class Sleep(Tool):
-    name = "sleep"
 
 
 class Sync(Tool):

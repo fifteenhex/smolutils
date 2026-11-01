@@ -209,10 +209,12 @@ boot: bootimage
 
 # Run the tests against it, TESTS="test_uname test_ls" for just some
 TESTS ?=
+# For test_smold
+MINIONS = smolinit.minion=/bin/uname
 .PHONY: test
 test: bootimage
 	./tests/run.py --qemu $(QEMU) --kernel $(BOOTKERNEL) --initramfs boot.cpio.gz \
-		--nic $(NIC_$(ARCH)) --init "`cat _build/boot.init`" \
+		--nic $(NIC_$(ARCH)) --init "`cat _build/boot.init` $(MINIONS)" \
 		$(if $(SUMMARY),--summary $(SUMMARY)) $(TESTS)
 
 .PHONY: clean
