@@ -1,14 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The gpio tools, against a gpio-mockup chip when the kernel has one (gpio_mockup.gpio_mockup_ranges=-1,8)."""
+"""The gpio tools, against a gpio-mockup chip when the kernel has one (gpio_mockup.gpio_mockup_ranges=-1,8),
+or a gpio-sim one made here through configfs when it has that instead."""
 
 import re
 import time
 import unittest
 
 from base import EX_DATAERR, EX_NOINPUT, EX_UNAVAILABLE, EX_USAGE, SmolTest, Tool
-from tools import Chmod, Ls
+from tools import Chmod, Echo, Ls, Mkdir, Mount, Rmdir, Umount
 
 CHIP = "gpiochip0"
+SIM = "/sys/kernel/config/gpio-sim"
 
 
 class Gpiodetect(Tool):
@@ -54,13 +56,31 @@ class TestGpio(SmolTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        if not Ls().exists(f"/dev/{CHIP}"):
-            raise unittest.SkipTest("no gpio chip on this machine")
         if not Ls().exists("/bin/gpiodetect"):
             raise unittest.SkipTest("no gpio tools in this image")
+        if not Ls().exists(f"/dev/{CHIP}"):
+            cls.simulate()
         # the node is root only and the tests use both shells, put it back afterwards
         Chmod(cls.root).ok("666", f"/dev/{CHIP}")
         cls.addClassCleanup(Chmod(cls.root).run, "600", f"/dev/{CHIP}")
+
+    @classmethod
+    def simulate(cls):
+        """An 8 line gpio-sim chip, taken down again after, or skip without gpio-sim."""
+        root = cls.root
+        if not Ls(root).exists(SIM):
+            mounted = Mount(root).run("-t", "configfs", "none", "/sys/kernel/config").status == 0
+            if not mounted or not Ls(root).exists(SIM):
+                raise unittest.SkipTest("no gpio chip on this machine")
+            cls.addClassCleanup(Umount(root).run, "/sys/kernel/config")
+        chip = f"{SIM}/chip0"
+        Mkdir(root).ok(chip)
+        cls.addClassCleanup(Rmdir(root).run, chip)
+        Mkdir(root).ok(f"{chip}/bank0")
+        cls.addClassCleanup(Rmdir(root).run, f"{chip}/bank0")
+        Echo(root).to_file(f"{chip}/bank0/num_lines", "8")
+        Echo(root).to_file(f"{chip}/live", "1")
+        cls.addClassCleanup(Echo(root).to_file, f"{chip}/live", "0")
 
     def test_detect(self):
         label, lines = Gpiodetect().chips()[CHIP]
