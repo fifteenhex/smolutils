@@ -24,6 +24,7 @@
 
 #define INSMOD_PATH "/sbin/insmod"
 #define INSMOD_NAME "insmod"
+#define INSMOD_PARAMS 8
 
 #define STARTUP_PATH "/sbin/startup"
 
@@ -130,14 +131,29 @@ static void load_modules(void)
 		return;
 
 	for (i = 0; i < num_modules; i++) {
-		char * const newargv[] = {
-			INSMOD_NAME,
-			(char *) modules[i],
-			NULL
-		};
+		char *newargv[INSMOD_PARAMS + 3] = { INSMOD_NAME };
+		char *pos = (char *) modules[i];
+		unsigned num = 1;
+		char *arg;
+
+		/* The module, then its parameters */
+		while ((arg = cmdline_next_arg(&pos))) {
+			if (num == INSMOD_PARAMS + 2) {
+				error("Too many parameters for %s\n", newargv[1]);
+				break;
+			}
+
+			newargv[num++] = arg;
+		}
+		newargv[num] = NULL;
+
+		if (num < 2) {
+			error("No module to load\n");
+			continue;
+		}
 
 		if (spawn_and_wait_args(INSMOD_PATH, newargv))
-			error("Failed to load %s\n", modules[i]);
+			error("Failed to load %s\n", newargv[1]);
 	}
 }
 

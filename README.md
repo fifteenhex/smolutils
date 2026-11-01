@@ -128,7 +128,7 @@ the `--` tells the kernel to pass the remining junk to init.
 Currently these parameters are implemented:
 - `smolinit.getty=<tty device>`         - This causes a getty to be spawned on that tty, this can be specified multiple times
 - `smolinit.hostname=<string>`          - Set the hostname, only the first instance is used.
-- `smolinit.insmod=<module>`            - Causes a module to be insmod'd, this can be specificed multiple times and happens before dhcp etc
+- `smolinit.insmod=<module>[,<param>=<value>...]` - Causes a module to be insmod'd with those parameters, this can be specified multiple times and happens before dhcp etc
 - `smolinit.dhcpif=<network interface>` - Causes DHCP to be used to configure this interface, for now only the first instance is used
 - `smolinit.minion=<program>[,<arg>...]` - A program to start backgrounds and managed (restarted) by init.
 
