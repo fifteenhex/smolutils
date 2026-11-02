@@ -36,7 +36,7 @@ static int auth_say(const char *who, const char *code)
 		       who, code);
 
 	if (len > 0)
-		write_full(fd, line, len);
+		return write_full(fd, line, len);
 
 	return 0;
 }
