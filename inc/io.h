@@ -6,7 +6,7 @@
 #include "cleanup.h"
 
 /* write() with loop to make sure the full write happens */
-static inline int write_full(int fd, const void *buf, int len)
+static inline __warn_if_unused int write_full(int fd, const void *buf, int len)
 {
 	int done = 0;
 
