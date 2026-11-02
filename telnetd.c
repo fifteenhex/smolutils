@@ -116,7 +116,8 @@ static void session_start(struct session *s, int *sock)
 	s->sock = keep_fd(sock);
 	s->state = IAC_DATA;
 
-	write_full(s->sock, hello, sizeof(hello));
+	if (write_full(s->sock, hello, sizeof(hello)))
+		session_end(s);
 }
 
 /*
