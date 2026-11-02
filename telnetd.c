@@ -266,15 +266,14 @@ static void service(struct session *s, struct pollfd *sock,
 static void accept_one(int listener)
 {
 	int __cleanup_fd sock = -1;
-	int i;
 
 	sock = accept4(listener, NULL, NULL, SOCK_CLOEXEC);
 	if (sock < 0)
 		return;
 
-	for (i = 0; i < MAX_SESSIONS; i++) {
-		if (sessions[i].sock < 0) {
-			session_start(&sessions[i], &sock);
+	foreach(s, sessions) {
+		if (s->sock < 0) {
+			session_start(s, &sock);
 			return;
 		}
 	}
@@ -306,8 +305,8 @@ int main (int argc, char **argv, char **envp)
 		}
 	}
 
-	for (i = 0; i < MAX_SESSIONS; i++)
-		session_init(&sessions[i]);
+	foreach(s, sessions)
+		session_init(s);
 
 	setup_signals();
 
@@ -322,18 +321,18 @@ int main (int argc, char **argv, char **envp)
 			;
 
 		for (i = 0; i < MAX_SESSIONS; i++) {
+			struct session *s = &sessions[i];
+
 			/* The socket side */
-			fds[POLLFDS_SESSION_SOCK(i)].fd = sessions[i].sock;
+			fds[POLLFDS_SESSION_SOCK(i)].fd = s->sock;
 			fds[POLLFDS_SESSION_SOCK(i)].events = POLLRDHUP |
-				(nonblockingio_room(&sessions[i].master) >=
-					MIN_READ ? POLLIN : 0);
+				(nonblockingio_room(&s->master) >= MIN_READ ?
+					POLLIN : 0);
 
 			/* The pty master side */
-			fds[POLLFDS_SESSION_MASTER(i)].fd =
-				sessions[i].master.fd;
+			fds[POLLFDS_SESSION_MASTER(i)].fd = s->master.fd;
 			fds[POLLFDS_SESSION_MASTER(i)].events =
-				POLLIN |
-				nonblockingio_events(&sessions[i].master);
+				POLLIN | nonblockingio_events(&s->master);
 		}
 
 		fds[POLLFDS_SOCK].fd = listener;
