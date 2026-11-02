@@ -5,6 +5,7 @@
 #define TAG "telnetd"
 
 #include "common.h"
+#include "inc/nonblockingio.h"
 #include "inc/net.h"
 #include "inc/pts.h"
 #include "inc/users.h"
@@ -16,6 +17,14 @@
 #define DEFAULT_PORT	23
 #define MAX_SESSIONS	4
 #define BUF_SIZE	512
+#define QUEUE_SIZE	512
+/*
+ * This is the minimum amount of free space in our "nonblockingio"
+ * buffer to bother polling for data to read, this should let the output
+ * make some space so we can do a bigger read and jam that into the
+ * output instead.
+ */
+#define MIN_READ	16
 
 /* RFC 854: https://datatracker.ietf.org/doc/html/rfc854 */
 #define IAC		255
@@ -46,7 +55,8 @@ enum iac {
 
 struct session {
 	int sock;
-	int master;
+	struct nonblockingio master;
+	RINGBUF(to_master, QUEUE_SIZE);
 	enum iac state;
 };
 
@@ -60,13 +70,13 @@ static void setup_signals(void)
 
 static void session_init(struct session *s)
 {
-	s->master = -1;
+	nonblockingio_init(&s->master, ringbuf_init(&s->to_master));
 	s->sock = -1;
 }
 
 static void session_end(struct session *s)
 {
-	close(s->master);
+	close(s->master.fd);
 	close(s->sock);
 
 	session_init(s);
@@ -97,7 +107,12 @@ static void session_start(struct session *s, int *sock)
 		return;
 	}
 
-	s->master = keep_fd(&master);
+	if (nonblockingio_attach(&s->master, master)) {
+		error("Failed to set up the pty: %d\n", errno);
+		return;
+	}
+
+	s->master.fd = keep_fd(&master);
 	s->sock = keep_fd(sock);
 	s->state = IAC_DATA;
 
@@ -199,21 +214,35 @@ static void service(struct session *s, struct pollfd *sock,
 		    struct pollfd *master)
 {
 	char buf[BUF_SIZE];
+	unsigned int want;
 	int len;
 
 	if (s->sock < 0)
 		return;
 
-	/* We got data from the client */
+	if ((master->revents & POLLOUT) && nonblockingio_drain(&s->master)) {
+		session_end(s);
+		return;
+	}
+
+	/* The client left while its input was still waiting for the pty */
+	if (sock->revents & POLLRDHUP) {
+		session_end(s);
+		return;
+	}
+
 	if (sock->revents & POLLIN) {
-		len = read(s->sock, buf, sizeof(buf));
+		want = nonblockingio_room(&s->master);
+		if (want > sizeof(buf))
+			want = sizeof(buf);
+		len = read(s->sock, buf, want);
 		if (len <= 0) {
 			session_end(s);
 			return;
 		}
 
 		len = strip_iac(s, buf, len);
-		if (len && write_full(s->master, buf, len)) {
+		if (len && nonblockingio_write(&s->master, buf, len)) {
 			session_end(s);
 			return;
 		}
@@ -221,8 +250,8 @@ static void service(struct session *s, struct pollfd *sock,
 
 	/* We want to send data to the client */
 	if (master->revents & POLLIN) {
-		len = read(s->master, buf, sizeof(buf));
-		if (len <= 0 || write_escaped(s->sock, buf, len)) {
+		len = nonblockingio_read(&s->master, buf, sizeof(buf));
+		if (len < 0 || write_escaped(s->sock, buf, len)) {
 			session_end(s);
 			return;
 		}
@@ -293,10 +322,18 @@ int main (int argc, char **argv, char **envp)
 			;
 
 		for (i = 0; i < MAX_SESSIONS; i++) {
+			/* The socket side */
 			fds[POLLFDS_SESSION_SOCK(i)].fd = sessions[i].sock;
-			fds[POLLFDS_SESSION_SOCK(i)].events = POLLIN;
-			fds[POLLFDS_SESSION_MASTER(i)].fd = sessions[i].master;
-			fds[POLLFDS_SESSION_MASTER(i)].events = POLLIN;
+			fds[POLLFDS_SESSION_SOCK(i)].events = POLLRDHUP |
+				(nonblockingio_room(&sessions[i].master) >=
+					MIN_READ ? POLLIN : 0);
+
+			/* The pty master side */
+			fds[POLLFDS_SESSION_MASTER(i)].fd =
+				sessions[i].master.fd;
+			fds[POLLFDS_SESSION_MASTER(i)].events =
+				POLLIN |
+				nonblockingio_events(&sessions[i].master);
 		}
 
 		fds[POLLFDS_SOCK].fd = listener;
