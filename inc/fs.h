@@ -113,14 +113,9 @@ static int iterate_dir(const char *path,
  * Mainly for reading /proc, /sys single line files.
  * Reads, NULL terminates and strips newline.
  */
-static inline bool read_file(const char *path, char *out, size_t len)
+static inline bool __read_file(int fd, char *out, size_t len)
 {
-	int __cleanup_fd fd = -1;
 	int got;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		return false;
 
 	got = read_full(fd, out, len - 1);
 	if (got <= 0)
@@ -132,6 +127,22 @@ static inline bool read_file(const char *path, char *out, size_t len)
 		out[--got] = '\0';
 
 	return true;
+}
+
+static inline bool read_file(const char *path, char *out, size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return false;
+
+	return __read_file(fd, out, len);
+}
+
+static inline int open_dir_at(int dir, const char *name)
+{
+	return openat(dir, name, O_RDONLY | O_DIRECTORY);
 }
 
 /* open() that prints the error so you don't need to copy/paste this string */
