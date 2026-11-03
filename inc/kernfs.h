@@ -36,11 +36,9 @@ static inline bool read_hex_number_in(const char *dir, const char *name,
 static inline bool __read_number_at(int dir, const char *name, int base,
 				    unsigned long *out)
 {
-	int __cleanup_fd fd = -1;
 	char tmp[128];
 
-	fd = openat(dir, name, O_RDONLY);
-	if (fd < 0 || !__read_file(fd, tmp, sizeof(tmp)))
+	if (!read_file_at(dir, name, tmp, sizeof(tmp)))
 		return false;
 
 	return parse_ul(tmp, base, out);

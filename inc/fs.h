@@ -145,6 +145,18 @@ static inline int open_dir_at(int dir, const char *name)
 	return openat(dir, name, O_RDONLY | O_DIRECTORY);
 }
 
+static inline bool read_file_at(int dir, const char *name, char *out,
+				size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = openat(dir, name, O_RDONLY);
+	if (fd < 0)
+		return false;
+
+	return __read_file(fd, out, len);
+}
+
 /* open() that prints the error so you don't need to copy/paste this string */
 static inline int open_with_msgs(const char *path, int flags, mode_t mode)
 {

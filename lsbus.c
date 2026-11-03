@@ -31,23 +31,24 @@ static int cb_pci(const char *name, int dir, void *priv)
 
 static int cb_usb(const char *name, int dir, void *priv)
 {
-	unsigned long bus, dev, vendor, product;
+	unsigned long bus, devnum, vendor, product;
 	char what[SYSFS_VALUE_MAX];
-	char path[256];
+	int __cleanup_fd dev = -1;
 
-	if (!path_join(path, sizeof(path), USB_DEVICES, name))
+	dev = open_dir_at(dir, name);
+	if (dev < 0)
 		return 0;
 
-	if (!sysfs_read_number(path, "busnum", &bus) ||
-	    !sysfs_read_number(path, "devnum", &dev) ||
-	    !read_hex_number_in(path, "idVendor", &vendor) ||
-	    !read_hex_number_in(path, "idProduct", &product))
+	if (!sysfs_read_number_at(dev, "busnum", &bus) ||
+	    !sysfs_read_number_at(dev, "devnum", &devnum) ||
+	    !sysfs_read_hex_number_at(dev, "idVendor", &vendor) ||
+	    !sysfs_read_hex_number_at(dev, "idProduct", &product))
 		return 0;
 
-	printf("Bus %03lu Device %03lu: ID %04lx:%04lx", bus, dev,
-	       vendor, product);
+	printf("Bus %03lu Device %03lu: ID %04lx:%04lx", bus, devnum, vendor,
+	       product);
 
-	if (sysfs_read(path, "product", what, sizeof(what)))
+	if (sysfs_read_at(dev, "product", what, sizeof(what)))
 		printf(" %s", what);
 
 	printf("\n");
