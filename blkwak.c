@@ -36,7 +36,7 @@ static void cleanup_blk(struct blk *b)
 		close(b->fd);
 }
 
-#define __cleanup_blk __attribute__((cleanup(cleanup_blk)))
+#define __cleanup_blk __cleanup(cleanup_blk)
 
 static unsigned int bs = DEFAULT_BS;
 static bool sparse;
@@ -167,7 +167,7 @@ static void cleanup_img(struct img *i)
 		close(i->fd);
 }
 
-#define __cleanup_img __attribute__((cleanup(cleanup_img)))
+#define __cleanup_img __cleanup(cleanup_img)
 
 static int open_img(struct img *i, const char *path, int flags, mode_t mode)
 {

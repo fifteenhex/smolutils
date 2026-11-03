@@ -13,7 +13,7 @@ static void cleanup_fd(const int *_fd)
 		close(fd);
 }
 
-#define __cleanup_fd __attribute__((cleanup(cleanup_fd)))
+#define __cleanup_fd __cleanup(cleanup_fd)
 
 /*
  * Take a reference to an fd that you don't want cleaned up,
@@ -36,7 +36,7 @@ static void cleanup_dir(DIR **_dir)
 		closedir(dir);
 }
 
-#define __cleanup_dir __attribute__((cleanup(cleanup_dir)))
+#define __cleanup_dir __cleanup(cleanup_dir)
 
 static void cleanup_free(void *_p)
 {
@@ -51,6 +51,6 @@ static void cleanup_free(void *_p)
 	free(*p);
 }
 
-#define __cleanup_free __attribute__((cleanup(cleanup_free)))
+#define __cleanup_free __cleanup(cleanup_free)
 
 #endif /* _SMOLUTILS_CLEANUP_H */

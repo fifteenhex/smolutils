@@ -25,7 +25,7 @@ static void cleanup_mapping(struct mapping *m)
 		munmap(m->mapped, m->sz);
 }
 
-#define __cleanup_mapping __attribute__((cleanup(cleanup_mapping)))
+#define __cleanup_mapping __cleanup(cleanup_mapping)
 
 /* Do mmap() but also handle the alignment stuff etc */
 static inline bool mapping_map(struct mapping *m, int fd, off_t offset,

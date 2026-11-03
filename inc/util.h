@@ -3,7 +3,7 @@
 #ifndef _SMOLUTILS_UTIL_H
 #define _SMOLUTILS_UTIL_H
 
-#define __warn_if_unused __attribute__((warn_unused_result))
+#include "compiler.h"
 
 /* Linux kernel trick to force a build failure */
 #define __build_bug_on_zero(_e) ((int) sizeof(struct { int : (-!!(_e)); }))
@@ -17,8 +17,6 @@
 /* round up/down to a power of 2 */
 #define round_down(_x, _align) ((_x) & ~((__typeof__(_x)) (_align) - 1))
 #define round_up(_x, _align) round_down((_x) + (_align) - 1, _align)
-
-#define __smol_always_inline inline __attribute__((always_inline))
 
 /* for each item in an array */
 #define foreach(_p, _array)						\
