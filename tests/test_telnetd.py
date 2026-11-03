@@ -63,10 +63,23 @@ class TestTelnetd(SmolTest):
         client.read_until("code: ")
         self.assertTrue(client.raw.startswith(bytes([IAC, WILL, ECHO, IAC, WILL, SGA, IAC, DO, SGA])))
 
-    def test_log_in_and_run_a_command(self):
+    def login(self):
         client = self.connect()
         client.read_until("code: ")
         base.smol.answer_code(client, "/dev/pts/")   # the session is a pty, the code goes to the secure tty
         client.read_until(" > ")
+        return client
+
+    def test_log_in_and_run_a_command(self):
+        client = self.login()
         client.send("echo over telnet")
         self.assertIn("over telnet", client.read_until("over telnet\r\n"))
+
+    def test_input_for_a_busy_shell_waits_rather_than_being_lost(self):
+        # the shell isn't reading while sleep runs and its pty only holds so much, the rest must wait its turn
+        client = self.login()
+        client.send("sleep 5")
+        lines = "".join(f"echo flood {i}\r\n" for i in range(5000))   # far more than a pty buffers
+        client.sock.settimeout(60)
+        client.sock.sendall(lines.encode() + b"echo the end\r\n")
+        self.assertIn("flood 4999", client.read_until("the end\r\n", timeout=120))
