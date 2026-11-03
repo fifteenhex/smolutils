@@ -12,14 +12,15 @@
 static int cb_pci(const char *name, int dir, void *priv)
 {
 	unsigned long vendor, device, class;
-	char path[256];
+	int __cleanup_fd dev = -1;
 
-	if (!path_join(path, sizeof(path), PCI_DEVICES, name))
+	dev = open_dir_at(dir, name);
+	if (dev < 0)
 		return 0;
 
-	if (!sysfs_read_number(path, "vendor", &vendor) ||
-	    !sysfs_read_number(path, "device", &device) ||
-	    !sysfs_read_number(path, "class", &class))
+	if (!sysfs_read_number_at(dev, "vendor", &vendor) ||
+	    !sysfs_read_number_at(dev, "device", &device) ||
+	    !sysfs_read_number_at(dev, "class", &class))
 		return 0;
 
 	printf("%s [%04lx]: %04lx:%04lx\n", name, (class >> 8) & 0xffff,

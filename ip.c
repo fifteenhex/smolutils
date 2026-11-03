@@ -96,11 +96,12 @@ static void print_address(struct context *cntx, const char *name)
 static int cb(const char *name, int dir, void *priv)
 {
 	struct context *cntx = priv;
+	int __cleanup_fd iface = -1;
 	unsigned long mtu = 0;
 	struct ifreq ifr;
-	char path[256];
 
-	if (!path_join(path, sizeof(path), NET_CLASS, name))
+	iface = open_dir_at(dir, name);
+	if (iface < 0)
 		return 0;
 
 	printf("%s: ", name);
@@ -110,7 +111,7 @@ static int cb(const char *name, int dir, void *priv)
 	else
 		printf("<>");
 
-	if (sysfs_read_number(path, "mtu", &mtu))
+	if (sysfs_read_number_at(iface, "mtu", &mtu))
 		printf(" mtu %lu", mtu);
 
 	printf("\n");

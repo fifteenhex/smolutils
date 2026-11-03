@@ -4,6 +4,7 @@
 #define _SMOLUTILS_KERNFS_H
 
 #include "fs.h"
+#include "numbers.h"
 
 /* Single line files holding a number, as /proc and /sys have */
 static inline bool __read_number_in(const char *dir, const char *name,
@@ -30,6 +31,30 @@ static inline bool read_hex_number_in(const char *dir, const char *name,
 				      unsigned long *out)
 {
 	return __read_number_in(dir, name, 16, out);
+}
+
+static inline bool __read_number_at(int dir, const char *name, int base,
+				    unsigned long *out)
+{
+	int __cleanup_fd fd = -1;
+	char tmp[128];
+
+	fd = openat(dir, name, O_RDONLY);
+	if (fd < 0 || !__read_file(fd, tmp, sizeof(tmp)))
+		return false;
+
+	return parse_ul(tmp, base, out);
+}
+
+static inline bool read_number_at(int dir, const char *name, unsigned long *out)
+{
+	return __read_number_at(dir, name, 0, out);
+}
+
+static inline bool read_hex_number_at(int dir, const char *name,
+				      unsigned long *out)
+{
+	return __read_number_at(dir, name, 16, out);
 }
 
 static inline bool write_number_in(const char *dir, const char *name,

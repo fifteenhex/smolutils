@@ -11,4 +11,9 @@
 #define sysfs_read(_dir, _name, _out, _len)	read_file_in(_dir, _name, _out, _len)
 #define sysfs_read_number(_dir, _name, _out)	read_number_in(_dir, _name, _out)
 
+#define sysfs_read_number_at(_dir, _name, _out) \
+	read_number_at(_dir, _name, _out)
+#define sysfs_read_hex_number_at(_dir, _name, _out) \
+	read_hex_number_at(_dir, _name, _out)
+
 #endif /* _SMOLUTILS_SYSFS_H */
