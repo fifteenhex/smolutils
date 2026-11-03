@@ -16,9 +16,11 @@ ECHO, SGA = 1, 3
 class Telnet:
     """Just enough of a client: the raw bytes, and the text with the telnet commands taken out."""
 
-    def __init__(self, port):
+    def __init__(self, port, rcvbuf=None):
         self.sock = socket.socket()
         self.sock.settimeout(10)
+        if rcvbuf:
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, rcvbuf)
         self.sock.connect(("127.0.0.1", port))
         self.raw = b""
 
@@ -53,8 +55,8 @@ class TestTelnetd(SmolTest):
         self.net = self.network()
         Dhcpc(self.root).lease()                    # qemu forwards to the leased address
 
-    def connect(self):
-        client = Telnet(self.net.host_telnet_port)
+    def connect(self, rcvbuf=None):
+        client = Telnet(self.net.host_telnet_port, rcvbuf)
         self.addCleanup(client.close)
         return client
 
@@ -63,8 +65,8 @@ class TestTelnetd(SmolTest):
         client.read_until("code: ")
         self.assertTrue(client.raw.startswith(bytes([IAC, WILL, ECHO, IAC, WILL, SGA, IAC, DO, SGA])))
 
-    def login(self):
-        client = self.connect()
+    def login(self, rcvbuf=None):
+        client = self.connect(rcvbuf)
         client.read_until("code: ")
         base.smol.answer_code(client, "/dev/pts/")   # the session is a pty, the code goes to the secure tty
         client.read_until(" > ")
@@ -74,6 +76,15 @@ class TestTelnetd(SmolTest):
         client = self.login()
         client.send("echo over telnet")
         self.assertIn("over telnet", client.read_until("over telnet\r\n"))
+
+    def test_a_client_that_stops_reading_doesnt_stall_the_others(self):
+        # one loop serves every session, so a write to a client that isn't draining its socket must not hang it
+        stuck = self.login(rcvbuf=4096)               # so the buffers fill quickly
+        stuck.send("xxd -l 8000000 /dev/zero")       # far more than they hold, and never read
+        time.sleep(20)                                # for them to fill, the pty only trickles
+        other = self.login()
+        other.send("echo still here")
+        self.assertIn("still here", other.read_until("still here\r\n"))
 
     def test_input_for_a_busy_shell_waits_rather_than_being_lost(self):
         # the shell isn't reading while sleep runs and its pty only holds so much, the rest must wait its turn
