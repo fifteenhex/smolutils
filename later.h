@@ -57,11 +57,11 @@ static inline int later_ask(const char *name, unsigned int secs,
 	return write_file(path, &job, sizeof(job));
 }
 
-static inline int later_read(const char *path, struct later_job *job)
+static inline int later_read(int dir, const char *name, struct later_job *job)
 {
 	unsigned int i;
 
-	if (read_struct(path, job))
+	if (read_struct_at(dir, name, job))
 		return -1;
 
 	for (i = 0; i < LATER_ARGS; i++)

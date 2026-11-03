@@ -384,14 +384,10 @@ static int run_if_due(const char *name, int dir, void *priv)
 	struct due_state *state = priv;
 	char *argv[LATER_ARGS + 1] = { 0 };
 	struct later_job job;
-	char path[64];
 	unsigned int i;
 
-	if (!path_join(path, sizeof(path), LATER_DIR, name))
-		return 0;
-
-	if (later_read(path, &job)) {
-		verbose("%s isn't a job, leaving it\n", path);
+	if (later_read(dir, name, &job)) {
+		verbose("%s isn't a job, leaving it\n", name);
 		return 0;
 	}
 
@@ -405,7 +401,7 @@ static int run_if_due(const char *name, int dir, void *priv)
 	}
 
 	/* Remove the job now to avoid looping */
-	unlink(path);
+	unlinkat(dir, name, 0);
 
 	for (i = 0; i < LATER_ARGS && job.argv[i][0]; i++)
 		argv[i] = job.argv[i];

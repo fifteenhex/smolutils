@@ -41,15 +41,11 @@ static inline __warn_if_unused int read_full(int fd, void *buf, int len)
 	return got;
 }
 
-/* open() + read() + close(), the file has to be exactly len bytes */
-static int __read_struct(const char *path, void *out, size_t len)
-{
-	int __cleanup_fd fd = -1;
-	struct stat st;
+#define READ_STRUCT_FLAGS (O_RDONLY | O_NONBLOCK | O_NOFOLLOW)
 
-	fd = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
-	if (fd < 0)
-		return -1;
+static int __read_struct_fd(int fd, void *out, size_t len)
+{
+	struct stat st;
 
 	if (fstat(fd, &st) || !S_ISREG(st.st_mode))
 		return -1;
@@ -63,7 +59,33 @@ static int __read_struct(const char *path, void *out, size_t len)
 	return 0;
 }
 
+/* open() + read() + close(), the file has to be exactly len bytes - by path*/
+static int __read_struct(const char *path, void *out, size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = open(path, READ_STRUCT_FLAGS);
+	if (fd < 0)
+		return -1;
+
+	return __read_struct_fd(fd, out, len);
+}
+
+/* open() + read() + close(), the file has to be exactly len bytes - relative to dir */
+static int __read_struct_at(int dir, const char *name, void *out, size_t len)
+{
+	int __cleanup_fd fd = -1;
+
+	fd = openat(dir, name, READ_STRUCT_FLAGS);
+	if (fd < 0)
+		return -1;
+
+	return __read_struct_fd(fd, out, len);
+}
+
 /* treat a path as an on-disk copy of a struct and read it into a struct */
 #define read_struct(_path, _out) __read_struct(_path, _out, sizeof(*(_out)))
+#define read_struct_at(_dir, _name, _out) \
+	__read_struct_at(_dir, _name, _out, sizeof(*(_out)))
 
 #endif /* _SMOLUTILS_IO_H */
