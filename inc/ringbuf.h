@@ -62,6 +62,14 @@ unsigned int ringbuf_span(const struct ringbuf *r, const char **at)
 	return run > r->len ? r->len : run;
 }
 
+/* Put a single byte into the buffer */
+static inline __attribute__((nonnull))
+void ringbuf_put(struct ringbuf *r, char c)
+{
+	r->buf[(r->start + r->len) & (r->size - 1)] = c;
+	r->len++;
+}
+
 static inline __attribute__((nonnull))
 void ringbuf_nomnom(struct ringbuf *r, unsigned int len)
 {
