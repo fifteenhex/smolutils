@@ -54,7 +54,8 @@ enum iac {
 };
 
 struct session {
-	int sock;
+	struct nonblockingio sock;
+	RINGBUF(to_sock, QUEUE_SIZE);
 	struct nonblockingio master;
 	RINGBUF(to_master, QUEUE_SIZE);
 	enum iac state;
@@ -71,13 +72,13 @@ static void setup_signals(void)
 static void session_init(struct session *s)
 {
 	nonblockingio_init(&s->master, ringbuf_init(&s->to_master));
-	s->sock = -1;
+	nonblockingio_init(&s->sock, ringbuf_init(&s->to_sock));
 }
 
 static void session_end(struct session *s)
 {
 	close(s->master.fd);
-	close(s->sock);
+	close(s->sock.fd);
 
 	session_init(s);
 }
@@ -112,11 +113,17 @@ static void session_start(struct session *s, int *sock)
 		return;
 	}
 
+	if (nonblockingio_attach(&s->sock, *sock)) {
+		error("Failed to set up the socket: %d\n", errno);
+		session_init(s);
+		return;
+	}
+
 	s->master.fd = keep_fd(&master);
-	s->sock = keep_fd(sock);
+	s->sock.fd = keep_fd(sock);
 	s->state = IAC_DATA;
 
-	if (write_full(s->sock, hello, sizeof(hello)))
+	if (nonblockingio_write(&s->sock, hello, sizeof(hello)))
 		session_end(s);
 }
 
@@ -184,31 +191,25 @@ static int strip_iac(struct session *s, char *buf, int len)
 	return out;
 }
 
-/* Write with handling for 255 */
-static int write_escaped(int fd, const char *buf, int len)
+/* Push data to the client while handling the escaping of 0xff */
+static __warn_if_unused
+int escape(struct nonblockingio *b, const char *in, int len)
 {
-	int start = 0;
 	int i;
 
-	for (i = 0; i < len; i++) {
-		/* Is this byte the same value as IAC? */
-		if ((uint8_t) buf[i] != IAC)
-			continue;
-
-		/* Yes, write from the buffer head to this byte inclusive */
-		if (write_full(fd, buf + start, i - start + 1))
-			return -1;
-
-		/* And another IAC to make this into 255 */
-		if (write_full(fd, buf + i, 1))
-			return -1;
-
-		/* Move buffer head to after the IAC */
-		start = i + 1;
+	/* This should never happen because you should never read too much */
+	if ((unsigned int) len * 2 > nonblockingio_room(b)) {
+		errno = ENOBUFS;
+		return -1;
 	}
 
-	/* Write the remaining tail */
-	return write_full(fd, buf + start, len - start);
+	for (i = 0; i < len; i++) {
+		nonblockingio_put(b, in[i]);
+		if ((uint8_t) in[i] == IAC)
+			nonblockingio_put(b, in[i]);
+	}
+
+	return 0;
 }
 
 static void service(struct session *s, struct pollfd *sock,
@@ -218,10 +219,14 @@ static void service(struct session *s, struct pollfd *sock,
 	unsigned int want;
 	int len;
 
-	if (s->sock < 0)
+	if (s->sock.fd < 0)
 		return;
 
 	if ((master->revents & POLLOUT) && nonblockingio_drain(&s->master)) {
+		session_end(s);
+		return;
+	}
+	if ((sock->revents & POLLOUT) && nonblockingio_drain(&s->sock)) {
 		session_end(s);
 		return;
 	}
@@ -236,8 +241,8 @@ static void service(struct session *s, struct pollfd *sock,
 		want = nonblockingio_room(&s->master);
 		if (want > sizeof(buf))
 			want = sizeof(buf);
-		len = read(s->sock, buf, want);
-		if (len <= 0) {
+		len = nonblockingio_read(&s->sock, buf, want);
+		if (len < 0) {
 			session_end(s);
 			return;
 		}
@@ -249,10 +254,13 @@ static void service(struct session *s, struct pollfd *sock,
 		}
 	}
 
-	/* We want to send data to the client */
 	if (master->revents & POLLIN) {
-		len = nonblockingio_read(&s->master, buf, sizeof(buf));
-		if (len < 0 || write_escaped(s->sock, buf, len)) {
+		want = nonblockingio_room(&s->sock) / 2;
+		if (want > sizeof(buf))
+			want = sizeof(buf);
+		len = nonblockingio_read(&s->master, buf, want);
+		if (len < 0 || escape(&s->sock, buf, len) ||
+		    nonblockingio_drain(&s->sock)) {
 			session_end(s);
 			return;
 		}
@@ -273,7 +281,7 @@ static void accept_one(int listener)
 		return;
 
 	foreach(s, sessions) {
-		if (s->sock < 0) {
+		if (s->sock.fd < 0) {
 			session_start(s, &sock);
 			return;
 		}
@@ -325,15 +333,18 @@ int main (int argc, char **argv, char **envp)
 			struct session *s = &sessions[i];
 
 			/* The socket side */
-			fds[POLLFDS_SESSION_SOCK(i)].fd = s->sock;
+			fds[POLLFDS_SESSION_SOCK(i)].fd = s->sock.fd;
 			fds[POLLFDS_SESSION_SOCK(i)].events = POLLRDHUP |
+				nonblockingio_events(&s->sock) |
 				(nonblockingio_room(&s->master) >= MIN_READ ?
 					POLLIN : 0);
 
 			/* The pty master side */
 			fds[POLLFDS_SESSION_MASTER(i)].fd = s->master.fd;
 			fds[POLLFDS_SESSION_MASTER(i)].events =
-				POLLIN | nonblockingio_events(&s->master);
+				nonblockingio_events(&s->master) |
+				(nonblockingio_room(&s->sock) / 2 >= MIN_READ ?
+					POLLIN : 0);
 		}
 
 		fds[POLLFDS_SOCK].fd = listener;
