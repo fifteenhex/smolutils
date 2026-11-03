@@ -83,7 +83,7 @@ struct dhcp_packet {
 	uint8_t  file[128];
 	uint32_t magic;
 	uint8_t  options[308];
-} __attribute__((packed));
+} __packed;
 
 static_assert_size(struct dhcp_packet, 548);
 

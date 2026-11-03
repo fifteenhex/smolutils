@@ -24,7 +24,7 @@ struct dns_hdr {
 	uint16_t ancount;
 	uint16_t nscount;
 	uint16_t arcount;
-} __attribute__((packed));
+} __packed;
 
 static_assert_size(struct dns_hdr, 12);
 

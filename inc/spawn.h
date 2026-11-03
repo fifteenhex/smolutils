@@ -12,7 +12,7 @@
  *
  * returns a pid or -1 to the caller.
  */
-static __attribute__((noinline)) int __spawn(const char *path,
+static __noinline int __spawn(const char *path,
 					     char * const argv[],
 					     char * const envp[],
 					     const int *fds, bool detach)
