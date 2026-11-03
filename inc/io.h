@@ -23,7 +23,7 @@ static inline __warn_if_unused int write_full(int fd, const void *buf, int len)
 }
 
 /* read() with loop to make sure the full read happens */
-static inline int read_full(int fd, void *buf, int len)
+static inline __warn_if_unused int read_full(int fd, void *buf, int len)
 {
 	int got = 0;
 
