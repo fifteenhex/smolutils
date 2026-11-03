@@ -67,6 +67,12 @@ static inline int nonblockingio_drain(struct nonblockingio *b)
 	return 0;
 }
 
+/* put a byte into the queue */
+static inline void nonblockingio_put(struct nonblockingio *b, char c)
+{
+	ringbuf_put(b->queue, c);
+}
+
 /* Queue the data behind what is waiting and write what goes now */
 static inline int nonblockingio_write(struct nonblockingio *b,
 				      const void *data, unsigned int len)
