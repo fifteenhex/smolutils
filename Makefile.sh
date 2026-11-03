@@ -1,7 +1,7 @@
 CPU ?= sh4
 
-ifeq ($(filter $(CPU),sh4),)
-$(error CPU=$(CPU) is not sh4)
+ifeq ($(filter $(CPU),sh3 sh4),)
+$(error CPU=$(CPU) is not sh3 or sh4)
 endif
 
 SMOL_ARCH = $(CPU)
