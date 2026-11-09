@@ -10,7 +10,7 @@ fcomma := ,
 # The sets below fill this in
 PROGS =
 
-SETS_ALL = base net core hwhandling filesystem misc
+SETS_ALL = base net core hwhandling filesystem misc samples
 SETS ?= $(SETS_ALL)
 
 # Internalise SETS as it can't be overridden if it came from the command line
@@ -52,6 +52,8 @@ $(eval $(call tagged,hwhandling,gpio,gpio))
 $(eval $(call tagged,hwhandling,mtd,mtd))
 $(eval $(call set,filesystem,filesystem files ls df,))
 $(eval $(call set,misc,smolsh sha256sum xxd man less,))
+$(eval $(call set,samples,smolipc_parent,))
+$(eval $(call set,samples,smolipc_child,))
 
 # Make sure all of the requested sets actually exist
 $(foreach s,$(_SETS),$(if $(filter $(s),$(SETS_DEFINED)),,$(error unknown set $(s))))

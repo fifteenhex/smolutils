@@ -376,6 +376,19 @@
 			},
                 	"sys" : {
 				"type": "dir"
+			},
+                	"samples" : {
+				"type": "dir",
+				"mode": "0711",
+				"defaults": {
+					"mode": "0500"
+				},
+				"entities": {
+					"smolipc_parent": {
+					},
+					"smolipc_child": {
+					}
+				}
 			}
 		}
 	}

@@ -200,6 +200,14 @@ bootimage: bootable $(DEPS) $(TOOLCHAINDEP_$(ARCH))
 		| gzip -9 > modules.cpio.gz; \
 	cat $(BOOTIMAGE) modules.cpio.gz > boot.cpio.gz
 
+# tmp boot target
+.PHONY: booty
+booty: bootimage
+		$(QEMU) --kernel $(BOOTKERNEL) \
+		--nographic \
+		--initrd boot.cpio.gz \
+		--append "console=ttyS0 -- smolinit.getty=/dev/ttyS0 smolinit.hostname=eighty6 smolinit.dhcpif=eth0 `cat _build/boot.init`"
+
 # Boot it, log in on both ttys and run uname
 .PHONY: boot
 boot: bootimage
