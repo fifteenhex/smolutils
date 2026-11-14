@@ -22,7 +22,7 @@ struct ringbuf {
 		char bytes[offsetof(struct ringbuf, buf) + (_size)];	\
 	} _name
 
-static inline __nonnull __returns_nonnull
+static inline __smol_nonnull __smol_returns_nonnull
 struct ringbuf *__ringbuf_init(struct ringbuf *r, unsigned int size)
 {
 	r->size = size;
@@ -36,13 +36,13 @@ struct ringbuf *__ringbuf_init(struct ringbuf *r, unsigned int size)
 	__ringbuf_init(&(_s)->ring,					\
 		       sizeof((_s)->bytes) - offsetof(struct ringbuf, buf))
 
-static inline __nonnull
+static inline __smol_nonnull
 unsigned int ringbuf_pending(const struct ringbuf *r)
 {
 	return r->len;
 }
 
-static inline __nonnull
+static inline __smol_nonnull
 unsigned int ringbuf_room(const struct ringbuf *r)
 {
 	return r->size - r->len;
@@ -52,7 +52,7 @@ unsigned int ringbuf_room(const struct ringbuf *r)
  * Returns how many contiguous bytes there are and deposits a pointer into
  * at so you can access them. nomnom the amount consumed once you're done.
  */
-static inline __nonnull
+static inline __smol_nonnull
 unsigned int ringbuf_span(const struct ringbuf *r, const char **at)
 {
 	unsigned int run = r->size - r->start;
@@ -63,21 +63,21 @@ unsigned int ringbuf_span(const struct ringbuf *r, const char **at)
 }
 
 /* Put a single byte into the buffer */
-static inline __nonnull
+static inline __smol_nonnull
 void ringbuf_put(struct ringbuf *r, char c)
 {
 	r->buf[(r->start + r->len) & (r->size - 1)] = c;
 	r->len++;
 }
 
-static inline __nonnull
+static inline __smol_nonnull
 void ringbuf_nomnom(struct ringbuf *r, unsigned int len)
 {
 	r->start = (r->start + len) & (r->size - 1);
 	r->len -= len;
 }
 
-static inline __warn_if_unused __nonnull __access_read_only(2, 3)
+static inline __warn_if_unused __smol_nonnull __access_read_only(2, 3)
 int ringbuf_add(struct ringbuf *r, const void *data, unsigned int len)
 {
 	unsigned int end = (r->start + r->len) & (r->size - 1);

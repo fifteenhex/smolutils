@@ -7,8 +7,8 @@
 #define __smol_always_inline	inline __attribute__((always_inline))
 #define __noinline		__attribute__((noinline))
 #define __packed		__attribute__((packed))
-#define __nonnull		__attribute__((nonnull))
-#define __returns_nonnull	__attribute__((returns_nonnull))
+#define __smol_nonnull		__attribute__((nonnull))
+#define __smol_returns_nonnull	__attribute__((returns_nonnull))
 
 #define __cleanup(_fn)		__attribute__((cleanup(_fn)))
 
